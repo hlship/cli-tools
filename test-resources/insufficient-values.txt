@@ -1,0 +1,12 @@
+Usage: harness sys-configure [OPTIONS] KEY VAL
+Collect key and value.
+
+Options:
+  -h, --help  This command summary
+
+Arguments:
+  KEY: Key to set
+  VAL: Value to set
+
+Error:
+  No value for required argument VAL

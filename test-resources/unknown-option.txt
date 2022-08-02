@@ -1,0 +1,20 @@
+Usage: harness sys-configure [OPTIONS] HOST KV-DATA+
+Configures the system for some thing.
+
+This is more detail.
+
+  This is indented.
+
+This is not indented.
+
+Options:
+  -v, --verbose  Enable verbose logging
+  -h, --help     This command summary
+
+Arguments:
+     HOST: System configuration URL
+  KV-DATA: Data to configure as KEY=VALUE
+
+Errors:
+  Unknown option: "--debug"
+  No value for required argument HOST
