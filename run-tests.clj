@@ -5,13 +5,16 @@
 
 (cp/add-classpath "src:test:test-resources")
 
-(require 'net.lewisship.bb.tasks-test)
+(def test-namespaces '[net.lewisship.bb.tasks-test
+                       net.lewisship.bb.tasks.impl-test])
 
-(def test-results
-  (t/run-tests 'net.lewisship.bb.tasks-test))
+(defn test-results
+  []
+  (apply require test-namespaces)
+  (apply t/run-tests test-namespaces))
 
 (def failures-and-errors
-  (let [{:keys [:fail :error]} test-results]
+  (let [{:keys [:fail :error]} (test-results)]
     (+ fail error)))
 
 (System/exit failures-and-errors)

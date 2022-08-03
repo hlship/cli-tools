@@ -304,7 +304,12 @@
 
 (defmulti consumer (fn [state _form]
                      ; Dispatch on the type of value to be consumed
-                     (:consuming state)))
+                     (:consuming state))
+                   :default ::default)
+
+(defmethod  consumer ::default
+         [state form]
+         (fail "Unexpected interface form" state form))
 
 (defmethod consumer :options
   [state form]
@@ -331,7 +336,8 @@
       ;; Otherwise form is a symbol or a function call list
       (list 'conj form :id id-keyword))))
 
-(defn- valid-definition? [form]
+(defn- valid-definition?
+  [form]
   (or (vector? form)                                        ; Normal case
       (symbol? form)                                        ; A symbol may be used when sharing options between tasks
       (list? form)))                                        ; Or maybe it's a function call to generate the vector
