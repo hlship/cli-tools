@@ -398,6 +398,18 @@
              :consuming :keyword)
       (dissoc :pending)))
 
+(defmethod consumer :in-order
+  [state form]
+  (when-not (boolean? form)
+    (fail "Expected boolean after :in-order" state form))
+
+  (-> state
+      (dissoc :pending)
+      ;; This is slightly dodgy, we should have a memory of whether in :options or :args
+      ;; and return to that.
+      (assoc :consuming :args)
+      (assoc-in [:parse-opts-options :in-order] form)))
+
 (defmethod consumer :keyword
   [state form]
   (when-not (keyword? form)
@@ -428,13 +440,15 @@
 (defn parse-cli
   [current-task command-line-arguments task-map]
   (cond-let
-    :let [task-name (:name current-task)
-          positional-specs (compile-positional-specs task-name (:task-args task-map))
+    :let [{:keys [task-args task-options parse-opts-options]} task-map
+          task-name (:name current-task)
+          {:keys [in-order]
+           :or {in-order false}} parse-opts-options
+          positional-specs (compile-positional-specs task-name task-args)
           task-map' (merge task-map
                            {:task-name task-name
                             :positional-specs positional-specs}
-                           (cli/parse-opts command-line-arguments
-                                           (:task-options task-map)))
+                           (cli/parse-opts command-line-arguments task-options :in-order in-order))
           {:keys [arguments options]} task-map']
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.

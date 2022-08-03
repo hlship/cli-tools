@@ -62,4 +62,12 @@
                             (compile-interface nil '[:left-field true])))]
     (is (= "Unexpected interface form" (ex-message e)))))
 
+(deftest in-order-option
+  (is (= {:in-order true}
+         (:parse-opts-options (compile-interface nil '[:in-order true])))))
+
+(deftest in-order-must-be-boolean
+  (when-let [e (is (thrown? Exception
+                            (compile-interface nil '[:in-order in-order])))]
+    (is (= "Expected boolean after :in-order" (ex-message e)))))
 

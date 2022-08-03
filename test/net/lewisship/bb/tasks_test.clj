@@ -1,6 +1,6 @@
-float-array(ns net.lewisship.bb.tasks-test
-  (:require [clojure.test :refer [deftest is]]
-            [net.lewisship.bb.tasks :as tasks :refer [deftask]]))
+float-array (ns net.lewisship.bb.tasks-test
+              (:require [clojure.test :refer [deftest is]]
+                        [net.lewisship.bb.tasks :as tasks :refer [deftask]]))
 
 (tasks/set-prevent-exit! true)
 (tasks/set-tool-name! "harness")
@@ -42,21 +42,21 @@ float-array(ns net.lewisship.bb.tasks-test
 (defmacro with-exit
   [expected & body]
   `(with-out-str
-    (when-let [e# (is (~'thrown? Exception ~@body))]
-      (is (= "Exit" (ex-message e#)))
-      (is (= {:status ~expected} (ex-data e#))))))
+     (when-let [e# (is (~'thrown? Exception ~@body))]
+       (is (= "Exit" (ex-message e#)))
+       (is (= {:status ~expected} (ex-data e#))))))
 
 (deftest success
-  (is (=  {:verbose true
-           :host "http://myhost.com"
-           :key-values {:fred "flintstone"}}
+  (is (= {:verbose true
+          :host "http://myhost.com"
+          :key-values {:fred "flintstone"}}
          (configure task-data ["-v" "http://myhost.com" "fred=flintstone"])))
 
   (is (= {:verbose nil
           :host "http://myhost.com"
           :key-values {:fred "flintstone"
                        :barney "rubble"}}
-         (configure task-data [ "http://myhost.com" "fred=flintstone" "barney=rubble"]))))
+         (configure task-data ["http://myhost.com" "fred=flintstone" "barney=rubble"]))))
 
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
@@ -78,6 +78,21 @@ float-array(ns net.lewisship.bb.tasks-test
   (is (= (slurp "test-resources/excess-values.txt")
          (with-exit 1 (collect task-data ["the-key" "the-value" "the-extra"])))))
 
-(comment
-  (clojure.test/run-tests)
-  )
+
+(deftask in-order
+  ""
+  [verbose ["-v" "--verbose"]
+   :args
+   command ["COMMAND" "Remote command to execute"]
+   args ["ARGS" "Arguments to remote command"
+         :optional true
+         :repeatable true]
+   ;; Putting this last is idiomatic
+   :in-order true]
+  {:command command
+   :args args})
+
+(deftest in-order-arguments
+  (is (= {:command "ls", :args ["-lR"]}
+         ;; Without :in-order true, the -lR is flagged as an error
+         (in-order nil ["-v" "ls" "-lR"]))))

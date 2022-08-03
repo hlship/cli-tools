@@ -167,6 +167,36 @@ This map captures information about the task, command line arguments,
 and any parsed information; it is used when invoking `net.lewisship.bb.tasks/print-summary`, 
 which a task may wish to do to present errors to the user.
 
+### :in-order true
+
+By default, options are parsed with the `:in-order` option set to false;
+this means that `clojure.tools.cli/parse-opts` will stop at the first
+option-like string that isn't declared.
+
+```
+(deftask remote
+  "Use ssh to run a command remotely."
+  [verbose ["-v" "--verbose"]
+   :args
+   command ["COMMAND" "Remote command to execute"]
+   args ["ARGS" "Arguments to remote command"
+         :optional true
+         :repeatable true]]
+     ...)
+```
+
+You might expect that `bb remote ls -lR` would work, but it will fail
+with an error that `-lR is not recognized`.
+
+You can always use `--` to split options from arguments, so `bb remote -- ls -lR` will work
+but is clumsy.
+
+Instead, add `:in-order true` to the end of the interface, and any
+unrecognized options will be parsed as positional arguments instead,
+so `bb remote ls -lR` will work, and `-lR` will be an string in the `args`
+seq.
+
+
 ### Arities
 
 `deftask` defines a function with three arities:
