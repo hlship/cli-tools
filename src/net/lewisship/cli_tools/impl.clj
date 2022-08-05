@@ -498,10 +498,12 @@
     (println)
     (-> tool-doc cleanup-docstring println))
   (println "\nCommands:")
-  (let [ks (-> commands keys sort)
+  (let [commands' (assoc commands "help"
+                         (with-meta {} {:doc "This command summary"}))
+        ks (-> commands' keys sort)
         width (+ 2 (apply max (map count ks)))]
     (doseq [k ks
-            :let [doc-string (-> commands (get k) meta :doc (or ""))
+            :let [doc-string (-> commands' (get k) meta :doc (or ""))
                   first-doc (-> doc-string str/split-lines first)]]
       (println (str (pad-left k " " width) ": " first-doc))))
   (exit 0))
@@ -532,16 +534,18 @@
 
     (or (nil? command-name)
         (str/starts-with? command-name "-"))
-    (abort (format "No command provided, use %s help to list commands" tool-name))
+    (abort (format "%s: no command provided, use %<s help to list commands" tool-name))
 
     :let [matching-names (find-matches commands command-name)]
 
     (empty? matching-names)
-    (abort (format "%s is not a command, use %s help to list commands" command-name tool-name))
+    (abort (format "%s: %s is not a command, use %1$s help to list commands" tool-name command-name))
 
     (> (count matching-names) 1)
-    (abort (format "%s matches commands %s"
+    (abort (format "%s: %s matches %d commands: %s"
+                   tool-name
                    command-name
+                   (count matching-names)
                    (->> matching-names sort (str/join ", "))))
 
     :else

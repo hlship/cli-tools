@@ -1,13 +1,19 @@
 # io.github.hlship/cli-tools
 
 `cli-tools` is a complement to [Babashka](https://github.com/babashka/babashka) used to create tools
-with sub-commands, much like to provide [Babashka tasks](https://book.babashka.org/#tasks).
+with sub-commands, much like [Babashka tasks](https://book.babashka.org/#tasks).
 
 `cli-tools` is more verbose than [babashka-cli](https://github.com/babashka/cli) and more opinionated.
+At the core, you define local symbols and instruction for how those symbols map to command line options
+or positional arguments; `cli-tools` takes care of the majority of command line parsing and validation
+for you.
 
 `cli-tools` is generally used to create tools that contain sub-commands. It can be used for tools
-that simply have options and argument but not sub-commands.  It isn't intended for tools that
+that simply have options and arguments but not sub-commands.  It isn't intended for tools that
 have more deeply nested levels of sub-commands.
+
+`cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
+for the kind of low-ceremony tools inteaded by `cli-tools`.
 
 ## defcommand
 
