@@ -72,11 +72,11 @@
              ~@let-terms]
          ~@body))))
 
-(defmacro dispatch
+(defn dispatch
   "Locates commands in namespaces, finds the current command
   (as identified by the first command line argument) and processes CLI options and arguments.
 
-  configuration keys:
+  option keys:
   :tool-name (required, string) - used in command summary and errors
   :arguments - command line arguments to parse (defaults to *command-line-args*)
   :namespaces - symbols identifying namespaces to search for commands
@@ -86,22 +86,20 @@
   If option and argument parsing is unsuccessful, then
   a command usage summary is printed, along with errors, and the program exits
   with error code 1."
-  [configuration]
-  `(try
-     (let [conf# ~configuration
-           namespace-symbols# (or (:namespaces conf#)
-                                 (throw (ex-info "No :namespaces specified" {:configuration conf#})))
-           arguments# (or (:arguments conf#)
-                          *command-line-args*)
-           commands# (impl/locate-commands namespace-symbols#)]
-       (impl/dispatch* {:tool-name (:tool-name conf#)
-                        :tool-doc (or (:tool-doc conf#)
-                                      (some-> namespace-symbols# first find-ns meta :doc))
-                        :commands commands#
-                        :args arguments#}))
-     (catch Exception t#
-       (binding [*out* *err*]
-         (println "Command failed:" t#)
-         (when-let [data# (ex-data t#)]
-           (pprint data#)))
-       (impl/exit 1))))
+  [options]
+  (try
+    (let [{:keys [namespaces arguments tool-name tool-doc]} options
+          _ (when-not (seq namespaces)
+              (throw (ex-info "No :namespaces specified" {:configuration options})))
+          commands (impl/locate-commands namespaces)]
+      (impl/dispatch* {:tool-name tool-name
+                       :tool-doc (or tool-doc
+                                     (some-> namespaces first find-ns meta :doc))
+                       :commands commands
+                       :args (or arguments *command-line-args*)}))
+    (catch Exception t
+      (binding [*out* *err*]
+        (println "Command failed:" t )
+        (when-let [data (ex-data t )]
+          (pprint data)))
+      (impl/exit 1))))

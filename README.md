@@ -1,12 +1,15 @@
-# io.github.hlship/bb-commands
+# io.github.hlship/cli
 
 > Pivoting this to an alternate to Babashka commands
 
-`bb-commands` is a complement to [Babashka](https://github.com/babashka/babashka) that makes it easier
-to provide [commands](https://book.babashka.org/#commands) that feature a full command line interface.
+`cli` is a complement to [Babashka](https://github.com/babashka/babashka) used to create tools
+with sub-commands, much like to provide [Babashka tasks](https://book.babashka.org/#tasks).
 
-`bb-commands` is a more complete, but more verbose, approach than leveraging the in-built support
-for [babashka-cli](https://github.com/babashka/cli).
+`cli` is more verbose than [babashka-cli](https://github.com/babashka/cli) and more opinionated.
+
+`cli` is generally used to create tools that contain sub-commands. It can be used for tools
+that simply have options and argument but not sub-commands.  It isn't intended for tools that
+have more deeply nested levels of sub-commands.
 
 ## defcommand
 
@@ -201,6 +204,6 @@ throw an exception, which can be caught by tests.
 
 ## License
 
-`bb-commands` is (c) 2022-present Howard M. Lewis Ship.
+`cli` is (c) 2022-present Howard M. Lewis Ship.
 
 It is released under the terms of the Apache Software License, 2.0.

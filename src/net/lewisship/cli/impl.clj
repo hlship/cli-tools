@@ -7,7 +7,7 @@
 
 (def ^:dynamic *tool-name* "<tool-name>")
 
-(defn- exit
+(defn exit
   [status]
   (when-not prevent-exit
     (System/exit status))
@@ -528,7 +528,7 @@
                     {:configuration configuration}))
 
     (#{"-h" "--help" "help"} command-name)
-    (show-tool-help *tool-name* tool-doc commands)
+    (show-tool-help tool-name tool-doc commands)
 
     (or (nil? command-name)
         (str/starts-with? command-name "-"))
