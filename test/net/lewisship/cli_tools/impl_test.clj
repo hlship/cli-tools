@@ -1,6 +1,6 @@
-(ns net.lewisship.cli.impl-test
+(ns net.lewisship.cli-tools.impl-test
   (:require [clojure.test :refer [deftest is]])
-  (:require [net.lewisship.cli.impl :refer [compile-interface]]))
+  (:require [net.lewisship.cli-tools.impl :refer [compile-interface]]))
 
 (deftest no-options
   (is (= {:option-symbols []

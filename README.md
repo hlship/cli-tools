@@ -1,34 +1,32 @@
-# io.github.hlship/cli
+# io.github.hlship/cli-tools
 
-> Pivoting this to an alternate to Babashka commands
-
-`cli` is a complement to [Babashka](https://github.com/babashka/babashka) used to create tools
+`cli-tools` is a complement to [Babashka](https://github.com/babashka/babashka) used to create tools
 with sub-commands, much like to provide [Babashka tasks](https://book.babashka.org/#tasks).
 
-`cli` is more verbose than [babashka-cli](https://github.com/babashka/cli) and more opinionated.
+`cli-tools` is more verbose than [babashka-cli](https://github.com/babashka/cli) and more opinionated.
 
-`cli` is generally used to create tools that contain sub-commands. It can be used for tools
+`cli-tools` is generally used to create tools that contain sub-commands. It can be used for tools
 that simply have options and argument but not sub-commands.  It isn't intended for tools that
 have more deeply nested levels of sub-commands.
 
 ## defcommand
 
-The core utility is the function `net.lewisship.cli/defcommand`, which defines a command in
+The core utility is the function `net.lewisship.cli-tools/defcommand`, which defines a command in
 terms of a command-line interface, and a body that acts on the data collected from the command line.
 
 The interface defines options as well as positional arguments, and does so while mapping that values for
 those options and arguments to local symbols.
 
-An example to begin; let's say you are creating a Babaska command for configuring some part of your application.
+An example to begin; let's say you are creating a Babaska command for administrating some part of your application.
 You need to know a URL to update, and a set of key/value pairs to configure.  Let's throw in a `--verbose`
 option just for kicks.
 
-**scripts/commands.clj**:
+**src/app_admin/commands.clj**:
 
 ```
-(ns commands
+(ns app-admin.commands
   "Commands specific to this project"
-  (:require [net.lewisship.cli :refer [defcommand]]))
+  (:require [net.lewisship.cli-tools :refer [defcommand]]))
 
 (defcommand configure
   "Configures the system with keys and values"
@@ -43,6 +41,7 @@ option just for kicks.
                :update-fn (fn [m [k v]]
                             (assoc m k v))
                :repeatable true]]
+  ; Placeholder:               
   (prn :verbose verbose :host host :key-values key-values))
 ```
 
@@ -57,17 +56,58 @@ Inside the body, the value will be bound to local symbol `verbose`.
 executed if help is requested, or if there's any kind of validation error processing 
 command line arguments.
 
-TODO: Show how to invoke using a deps.edn.
+A namespace with commands is only part of the puzzle, there's a little bit of infrastructure
+to add as well.
 
+First, we need a main namespace.
 
-
-For `bb`, the `scripts` directory, containing the `commands.clj` source, is added.
-
-With this in place, we can run `bb configure` through its paces:
+**src/app_admin/main.clj**:
 
 ```
-> bb configure -h
-Usage: bb configure [OPTIONS] HOST DATA+
+(ns app-admin.main
+  (:require [net.lewisship.cli-tools :as cli-tools]))
+
+(defn -main [& _]
+  (cli-tools/dispatch {:tool-name "app-admin"
+                       :namespaces ['app-admin.commands]}))
+```
+
+`dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument and use
+it to find the correct command to delegate to.  That command gets the remaining command line arguments.
+
+`dispatch` also recognized `-h`, `--help`, or `help` and will print out a summary of the available commands.
+
+Finally, `dispatch` will allow an abbreviation of a command name to work, as long as that abbeviation uniquely
+identifies one command.
+
+Next, we need a `bb.edn` that sets up the classpath.
+
+**bb.edn**:
+
+```
+{:paths ["src"]
+ :deps io.github.hlship/cli-tools {:mvn/version "<version>"}}}
+```
+
+Next, we need a Bash script, `app-admin`, to properly invoke `bb`:
+
+**bin/app-admin**:
+
+```
+#!/usr/bin/env bash
+set -euo pipefail
+/usr/bin/env bb --config $(dirname $0)/../bb.edn -m app-admin.main $@
+```
+
+The above assumes that `bin` is a sub-directory, and that `bb.edn` is stored above it, at the project root.
+
+The final step is to add that `bin` directory to the shell `$PATH` environment variable.
+
+With all this in place, we can run `app-admin configure` through its paces:
+
+```
+> app-admin configure -h
+Usage: app-admin configure [OPTIONS] HOST DATA+
 Configures the system with keys and values
 
 Options:
@@ -86,8 +126,8 @@ of the function.  The docstring is required.
 Validations are reported as the command summary with errors at the end:
 
 ```
-> bb configure example.org
-Usage: bb configure [OPTIONS] HOST DATA+
+> app-admin configure example.org
+Usage: app-admin configure [OPTIONS] HOST DATA+
 Configures the system with keys and values
 
 Options:
@@ -106,7 +146,7 @@ Error:
 Unless there are errors, the body of the command is invoked:
 
 ```
-> bb configure http://example.org/conf pages=10 skip=true
+> app-admin configure http://example.org/conf pages=10 skip=true
 :verbose nil :host "http://example.org/conf" :key-values {:pages "10", :skip "true"}
 > 
 ```
@@ -115,7 +155,7 @@ The body here just prints out the values passed in.
 
 ## Positional Arguments
 
-The way positional arguments are defined is designed to be similar to how
+The way positional arguments are defined is intended to be similar to how
 options are defined in `clojure.tools.cli`:
 
 ```
@@ -154,7 +194,7 @@ Also note that all command line arguments _must be_ consumed, either as options 
 
 Inside the interface, you can request the _command map_ using `:as`.
 This map captures information about the command, command line arguments,
-and any parsed information; it is used when invoking `net.lewisship.cli/print-summary`, 
+and any parsed information; it is used when invoking `net.lewisship.cli-tools/print-summary`, 
 which a command may wish to do to present errors to the user.
 
 ### :in-order true
@@ -175,7 +215,7 @@ option-like string that isn't declared.
      ...)
 ```
 
-You might expect that `bb remote ls -lR` would work, but it will fail
+You might expect that `app-admin remote ls -lR` would work, but it will fail
 with an error that `-lR is not recognized`.
 
 You can always use `--` to split options from arguments, so `bb remote -- ls -lR` will work
@@ -193,17 +233,17 @@ Normally, the function defined by `defcommand` is passed a seq of strings, from
 
 For testing purposes, you can bypass the parsing, and just pass a map to the function.
 
-You may need to mock out `net.lewisship.cli/print-summary` if your command
-invokes it, as that relies on some additional, non-documented, keys to
+You may need to mock out `net.lewisship.cli-tools/print-summary` if your command
+invokes it, as that relies on some additional non-documented keys to
 be present in the command map.
 
 Finally, validation errors normally print a command summary and then
 call `System/exit`, which is problematic for tests;
-`net.lewisship.cli/set-prevent-exit!` can convert those cases to instead
+`net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
 throw an exception, which can be caught by tests.
 
 ## License
 
-`cli` is (c) 2022-present Howard M. Lewis Ship.
+`io.github.hlship/cli-tools` is (c) 2022-present Howard M. Lewis Ship.
 
 It is released under the terms of the Apache Software License, 2.0.

@@ -1,7 +1,7 @@
-(ns net.lewisship.cli-test
+(ns net.lewisship.cli-tools-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
-            [net.lewisship.cli :as cli :refer [defcommand]]
-            [net.lewisship.cli.impl :as impl]))
+            [net.lewisship.cli-tools :as cli :refer [defcommand]]
+            [net.lewisship.cli-tools.impl :as impl]))
 
 (cli/set-prevent-exit! true)
 

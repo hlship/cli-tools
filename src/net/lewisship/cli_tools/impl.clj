@@ -1,4 +1,4 @@
-(ns ^:no-doc net.lewisship.cli.impl
+(ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for bb.commands, subject to change."
   (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]))

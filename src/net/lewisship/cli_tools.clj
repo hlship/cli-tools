@@ -1,6 +1,6 @@
-(ns net.lewisship.cli
+(ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
-  (:require [net.lewisship.cli.impl :as impl]
+  (:require [net.lewisship.cli-tools.impl :as impl]
             [clojure.pprint :refer [pprint]]))
 
 (defn set-prevent-exit!

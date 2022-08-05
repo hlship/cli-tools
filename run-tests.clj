@@ -7,8 +7,8 @@
 
 (cp/add-classpath "src:test:test-resources")
 
-(def test-namespaces '[net.lewisship.cli-test
-                       net.lewisship.cli.impl-test])
+(def test-namespaces '[net.lewisship.cli-tools-test
+                       net.lewisship.cli-tools.impl-test])
 
 (defn test-results
   []
