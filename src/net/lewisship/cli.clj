@@ -1,14 +1,7 @@
 (ns net.lewisship.cli
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
-  (:require
-    [net.lewisship.cli.impl :as impl]))
-
-(defn set-tool-name!
-  "Changes the name of the tool, which appears in command help summaries.
-
-  The default tool name is `bb`"
-  [s]
-  (alter-var-root #'impl/tool-name (constantly s)))
+  (:require [net.lewisship.cli.impl :as impl]
+            [clojure.pprint :refer [pprint]]))
 
 (defn set-prevent-exit!
   "Normally, after displaying a command summary, `System/exit` is called (with 0 if for --help,
@@ -64,9 +57,9 @@
                     (into `[{:keys ~arg-symbols} (:arguments ~command-map-symbol)]))
         symbol-with-meta (assoc symbol-meta
                                 :doc docstring
-                                ::command-name (name command-name))]
+                                ;; TODO: Override command name as :command <string> in interface
+                                ::impl/command-name (name command-name))]
     `(defn ~command-name
-       ;; TODO: Use a meta map after the symbol name
        ~symbol-with-meta
        [arguments#]
        ;; arguments# is normally a seq of strings, from *command-line-arguments*, but for testing,
@@ -78,3 +71,37 @@
                                                    ~(dissoc parsed-interface :option-symbols :arg-symbols)))
              ~@let-terms]
          ~@body))))
+
+(defmacro dispatch
+  "Locates commands in namespaces, finds the current command
+  (as identified by the first command line argument) and processes CLI options and arguments.
+
+  configuration keys:
+  :tool-name (required, string) - used in command summary and errors
+  :arguments - command line arguments to parse (defaults to *command-line-args*)
+  :namespaces - symbols identifying namespaces to search for commands
+
+  dispatch will load any namespaces specified.
+
+  If option and argument parsing is unsuccessful, then
+  a command usage summary is printed, along with errors, and the program exits
+  with error code 1."
+  [configuration]
+  `(try
+     (let [conf# ~configuration
+           namespace-symbols# (or (:namespaces conf#)
+                                 (throw (ex-info "No :namespaces specified" {:configuration conf#})))
+           arguments# (or (:arguments conf#)
+                          *command-line-args*)
+           commands# (impl/locate-commands namespace-symbols#)]
+       (impl/dispatch* {:tool-name (:tool-name conf#)
+                        :tool-doc (or (:tool-doc conf#)
+                                      (some-> namespace-symbols# first find-ns meta :doc))
+                        :commands commands#
+                        :args arguments#}))
+     (catch Exception t#
+       (binding [*out* *err*]
+         (println "Command failed:" t#)
+         (when-let [data# (ex-data t#)]
+           (pprint data#)))
+       (impl/exit 1))))

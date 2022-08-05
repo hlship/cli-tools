@@ -1,9 +1,15 @@
 (ns net.lewisship.cli-test
-  (:require [clojure.test :refer [deftest is]]
-            [net.lewisship.cli :as cli :refer [defcommand]]))
+  (:require [clojure.test :refer [deftest is use-fixtures]]
+            [net.lewisship.cli :as cli :refer [defcommand]]
+            [net.lewisship.cli.impl :as impl]))
 
 (cli/set-prevent-exit! true)
-(cli/set-tool-name! "harness")
+
+(use-fixtures
+  :once
+  (fn [f]
+    (binding [impl/*tool-name* "harness"]
+      (f))))
 
 ;; An example to test around
 

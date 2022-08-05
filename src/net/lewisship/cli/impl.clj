@@ -5,7 +5,7 @@
 
 (def prevent-exit false)
 
-(def tool-name "bb")
+(def ^:dynamic *tool-name* "<tool-name>")
 
 (defn- exit
   [status]
@@ -103,7 +103,7 @@
   [command-map errors]
   (let [{:keys [command-name positional-specs command-doc summary]} command-map]
     (apply println
-           (remove nil? (concat ["Usage:" tool-name command-name
+           (remove nil? (concat ["Usage:" *tool-name* command-name
                                  "[OPTIONS]"]
                                 (map arg-spec->str positional-specs))))
 
@@ -296,6 +296,10 @@
                  ;; next spec and next argument
                  (assoc state' :specs more-specs)))))))
 
+(defn- abort [s]
+  (println-err s)
+  (exit 1))
+
 (defn- fail
   [message state form]
   (throw (ex-info message
@@ -307,9 +311,9 @@
                      (:consuming state))
                    :default ::default)
 
-(defmethod  consumer ::default
-         [state form]
-         (fail "Unexpected interface form" state form))
+(defmethod consumer ::default
+  [state form]
+  (fail "Unexpected interface form" state form))
 
 (defmethod consumer :options
   [state form]
@@ -445,9 +449,9 @@
            :or {in-order false}} parse-opts-options
           positional-specs (compile-positional-specs command-name command-args)
           command-map' (merge command-map
-                           {:command-name command-name
-                            :positional-specs positional-specs}
-                           (cli/parse-opts command-line-arguments command-options :in-order in-order))
+                              {:command-name command-name
+                               :positional-specs positional-specs}
+                              (cli/parse-opts command-line-arguments command-options :in-order in-order))
           {:keys [arguments options]} command-map']
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.
@@ -468,3 +472,81 @@
     :else
     ;; Replace :arguments from the raw strings to a map
     (assoc command-map' :arguments positional-arguments)))
+
+(defn locate-commands
+  "Locates commands, functions with the :command-name metadata.
+
+  Returns a map from string name to command Var."
+  [namespace-symbols]
+  (let [f (fn [m namespace-symbol]
+            ;; Ensure the namespace is loaded
+            (require namespace-symbol)
+            (->> (find-ns namespace-symbol)
+                 ns-map
+                 vals
+                 (reduce (fn [m v]
+                           (if-let [command-name (-> v meta ::command-name)]
+                             (assoc m command-name v)
+                             m))
+                         m)))]
+    (reduce f {} namespace-symbols)))
+
+(defn- show-tool-help
+  [tool-name tool-doc commands]
+  (println "Usage:" tool-name "COMMAND ...")
+  (when tool-doc
+    (println)
+    (-> tool-doc cleanup-docstring println))
+  (println "\nCommands:")
+  (let [ks (-> commands keys sort)
+        width (+ 2 (apply max (map count ks)))]
+    (doseq [k ks
+            :let [doc-string (-> commands (get k) meta :doc (or ""))
+                  first-doc (-> doc-string str/split-lines first)]]
+      (println (str (pad-left k " " width) ": " first-doc))))
+  (exit 0))
+
+(defn- find-matches
+  [m s]
+  ;; If can find an exact match, then keep just that;
+  (if (get m s)
+    [s]
+    ;; Otherwise, look for command names prefixed by the string
+    ;; TODO: something more sophisticated, maybe convert "foo-bar" to #"foo(.*)bar" for matching?
+    (->> m
+         keys
+         (filter #(str/starts-with? % s)))))
+
+(defn dispatch*
+  [configuration]
+  (cond-let
+    :let [{:keys [tool-name tool-doc commands args]} configuration
+          [command-name & command-args] args]
+
+    (str/blank? *tool-name*)
+    (throw (ex-info "Must specify :tool-name"
+                    {:configuration configuration}))
+
+    (#{"-h" "--help" "help"} command-name)
+    (show-tool-help *tool-name* tool-doc commands)
+
+    (or (nil? command-name)
+        (str/starts-with? command-name "-"))
+    (abort (format "No command provided, use %s help to list commands" tool-name))
+
+    :let [matching-names (find-matches commands command-name)]
+
+    (empty? matching-names)
+    (abort (format "%s is not a command, use %s help to list commands" command-name tool-name))
+
+    (> (count matching-names) 1)
+    (abort (format "%s matches commands %s"
+                   command-name
+                   (->> matching-names sort (str/join ", "))))
+
+    :else
+    (let [command-var (get commands (first matching-names))]
+      (binding [*tool-name* tool-name]
+        ;; First arg identifies the command, strip it off, let command parse
+        ;; the remaining.
+        (command-var (rest args))))))
