@@ -1,4 +1,4 @@
-Usage: harness sys-configure [OPTIONS] HOST KV-DATA+
+Usage: harness configure [OPTIONS] HOST KV-DATA+
 Configures the system for some thing.
 
 This is more detail.

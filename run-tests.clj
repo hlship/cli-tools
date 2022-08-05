@@ -1,12 +1,14 @@
 #!/usr/bin/env bb
 
+;; Just execute this script to run test under Babashka
+
 (require '[clojure.test :as t]
          '[babashka.classpath :as cp])
 
 (cp/add-classpath "src:test:test-resources")
 
-(def test-namespaces '[net.lewisship.bb.tasks-test
-                       net.lewisship.bb.tasks.impl-test])
+(def test-namespaces '[net.lewisship.cli-test
+                       net.lewisship.cli.impl-test])
 
 (defn test-results
   []

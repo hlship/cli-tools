@@ -1,4 +1,4 @@
-Usage: harness sys-configure [OPTIONS] KEY VAL
+Usage: harness collect [OPTIONS] KEY VAL
 Collect key and value.
 
 Options:

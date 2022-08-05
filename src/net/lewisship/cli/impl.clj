@@ -1,5 +1,5 @@
-(ns ^:no-doc net.lewisship.bb.tasks.impl
-  "Private namespace for implementation details for bb.tasks, subject to change."
+(ns ^:no-doc net.lewisship.cli.impl
+  "Private namespace for implementation details for bb.commands, subject to change."
   (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]))
 
@@ -100,15 +100,15 @@
              (str/join "\n"))))))
 
 (defn print-summary
-  [task-map errors]
-  (let [{:keys [task-name positional-specs task-doc summary]} task-map]
+  [command-map errors]
+  (let [{:keys [command-name positional-specs command-doc summary]} command-map]
     (apply println
-           (remove nil? (concat ["Usage:" tool-name task-name
+           (remove nil? (concat ["Usage:" tool-name command-name
                                  "[OPTIONS]"]
                                 (map arg-spec->str positional-specs))))
 
-    (when task-doc
-      (-> task-doc cleanup-docstring println))
+    (when command-doc
+      (-> command-doc cleanup-docstring println))
 
     ;; There's always at least -h/--help:
     (println "\nOptions:")
@@ -132,11 +132,11 @@
 
 (defn- compile-positional-spec
   "Positional specs are similar to option specs."
-  [task-name terms]
+  [command-name terms]
   (let [[label & more] terms]
     ;; The label is required, then it's the optional documentation string
     (if (-> more first string?)
-      (recur task-name
+      (recur command-name
              (into [label :doc (first more)]
                    (rest more)))
       (let [spec-map (apply hash-map more)
@@ -149,7 +149,7 @@
             {:keys [validate update-fn repeatable doc optional parse-fn assoc-fn]} spec-map
             _ (when (and update-fn assoc-fn)
                 (throw (ex-info "May only specify one of :update-fn and :assoc-fn"
-                                {:task-name task-name
+                                {:command-name command-name
                                  :spec spec-map})))
             assoc-fn' (cond
                         assoc-fn
@@ -166,8 +166,8 @@
                         :else
                         assoc)]
         (when (seq invalid-keys)
-          (println-err (format "Warning: task %s, argument %s contains invalid key(s): %s"
-                               task-name
+          (println-err (format "Warning: command %s, argument %s contains invalid key(s): %s"
+                               command-name
                                id
                                (str/join ", " invalid-keys))))
         {:label label
@@ -180,8 +180,8 @@
          :validate validate}))))
 
 (defn- compile-positional-specs
-  [task-name specs]
-  (let [compiled (map #(compile-positional-spec task-name %) specs)]
+  [command-name specs]
+  (let [compiled (map #(compile-positional-spec command-name %) specs)]
     (loop [[this-spec & more-specs] compiled
            ids #{}
            optional-id nil
@@ -194,21 +194,21 @@
         :let [this-id (:id this-spec)]
 
         (contains? ids this-id)
-        (throw (ex-info (str "Argument " this-id " of command " task-name " is not unique")
-                        {:task-name task-name
+        (throw (ex-info (str "Argument " this-id " of command " command-name " is not unique")
+                        {:command-name command-name
                          :spec this-spec}))
 
-        ;; Use the keyword ids, not the labels, since these are a programmer errors, not a runtime error
+        ;; Use the keyword ids, not the labels, since these are programmer errors, not a runtime error
 
         (and optional-id
              (not (:optional this-spec)))
-        (throw (ex-info (str "Argument " this-id " of command " task-name " is not optional but follows optional argument " optional-id)
-                        {:task-name task-name
+        (throw (ex-info (str "Argument " this-id " of command " command-name " is not optional but follows optional argument " optional-id)
+                        {:command-name command-name
                          :spec this-spec}))
 
         (some? repeatable-id)
-        (throw (ex-info (str "Argument " this-id " of command " task-name " follows repeatable argument " repeatable-id ", but only the final argument may be repeatable")
-                        {:task-name task-name
+        (throw (ex-info (str "Argument " this-id " of command " command-name " follows repeatable argument " repeatable-id ", but only the final argument may be repeatable")
+                        {:command-name command-name
                          :spec this-spec}))
 
         :else
@@ -339,7 +339,7 @@
 (defn- valid-definition?
   [form]
   (or (vector? form)                                        ; Normal case
-      (symbol? form)                                        ; A symbol may be used when sharing options between tasks
+      (symbol? form)                                        ; A symbol may be used when sharing options between commands
       (list? form)))                                        ; Or maybe it's a function call to generate the vector
 
 (defmethod consumer :option-def
@@ -352,7 +352,7 @@
         ;; from the parsed :options map correctly via a keyword destructure
         option-def' (append-id option-def option-symbol)]
     (-> state
-        (update :task-options conj option-def')
+        (update :command-options conj option-def')
         (update :option-symbols conj option-symbol)
         (dissoc :symbol :pending)
         (assoc :consuming :options))))
@@ -366,7 +366,7 @@
   (let [arg-symbol (:symbol state)
         arg-def' (append-id arg-def arg-symbol)]
     (-> state
-        (update :task-args conj arg-def')
+        (update :command-args conj arg-def')
         (update :arg-symbols conj arg-symbol)
         (dissoc :symbol :pending)
         (assoc :consuming :args))))
@@ -391,10 +391,10 @@
 (defmethod consumer :as
   [state form]
   (when-not (simple-symbol? form)
-    (fail "Expected task-map symbol" state form))
+    (fail "Expected command-map symbol" state form))
 
   (-> state
-      (assoc :task-map-symbol form
+      (assoc :command-map-symbol form
              :consuming :keyword)
       (dissoc :pending)))
 
@@ -418,15 +418,15 @@
     (assoc state :consuming form :pending true)))
 
 (defn compile-interface
-  "Parses the interface forms of a `deftask` into a base task-map; the interface
+  "Parses the interface forms of a `defcommand` into a base command map; the interface
    defines the options and positional arguments that will be parsed."
-  [task-doc forms]
+  [command-doc forms]
   (let [initial-state {:consuming :options
                        :option-symbols []
                        :arg-symbols []
-                       :task-options []
-                       :task-args []
-                       :task-doc task-doc}
+                       :command-options []
+                       :command-args []
+                       :command-doc command-doc}
         final-state (reduce consumer
                             initial-state forms)]
     (when (:pending final-state)
@@ -435,37 +435,36 @@
                        :forms forms})))
     (-> final-state
         (dissoc :consuming :pending :symbol)
-        (update :task-options conj ["-h" "--help" "This command summary" :id :help]))))
+        (update :command-options conj ["-h" "--help" "This command summary" :id :help]))))
 
 (defn parse-cli
-  [current-task command-line-arguments task-map]
+  [command-name command-line-arguments command-map]
   (cond-let
-    :let [{:keys [task-args task-options parse-opts-options]} task-map
-          task-name (:name current-task)
+    :let [{:keys [command-args command-options parse-opts-options]} command-map
           {:keys [in-order]
            :or {in-order false}} parse-opts-options
-          positional-specs (compile-positional-specs task-name task-args)
-          task-map' (merge task-map
-                           {:task-name task-name
+          positional-specs (compile-positional-specs command-name command-args)
+          command-map' (merge command-map
+                           {:command-name command-name
                             :positional-specs positional-specs}
-                           (cli/parse-opts command-line-arguments task-options :in-order in-order))
-          {:keys [arguments options]} task-map']
+                           (cli/parse-opts command-line-arguments command-options :in-order in-order))
+          {:keys [arguments options]} command-map']
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.
     (:help options)
     (do
-      (print-summary task-map' nil)
+      (print-summary command-map' nil)
       (exit 0))
 
     :let [[positional-arguments arg-errors] (parse-positional-arguments positional-specs arguments)
-          errors (concat (:errors task-map')
+          errors (concat (:errors command-map')
                          arg-errors)]
 
     (seq errors)
     (do
-      (print-summary task-map' errors)
+      (print-summary command-map' errors)
       (exit 1))
 
     :else
     ;; Replace :arguments from the raw strings to a map
-    (assoc task-map' :arguments positional-arguments)))
+    (assoc command-map' :arguments positional-arguments)))

@@ -1,31 +1,33 @@
-# io.github.hlship/bb-tasks
+# io.github.hlship/bb-commands
 
-`bb-tasks` is a complement to [Babashka](https://github.com/babashka/babashka) that makes it easier
-to provide [tasks](https://book.babashka.org/#tasks) that feature a full command line interface.
+> Pivoting this to an alternate to Babashka commands
 
-`bb-tasks` is a more complete, but more verbose, approach than leveraging the in-built support
+`bb-commands` is a complement to [Babashka](https://github.com/babashka/babashka) that makes it easier
+to provide [commands](https://book.babashka.org/#commands) that feature a full command line interface.
+
+`bb-commands` is a more complete, but more verbose, approach than leveraging the in-built support
 for [babashka-cli](https://github.com/babashka/cli).
 
-## deftask
+## defcommand
 
-The core utility is the function `net.lewisship.bb.tasks/deftask`, which defines a task in
+The core utility is the function `net.lewisship.cli/defcommand`, which defines a command in
 terms of a command-line interface, and a body that acts on the data collected from the command line.
 
 The interface defines options as well as positional arguments, and does so while mapping that values for
 those options and arguments to local symbols.
 
-An example to begin; let's say you are creating a Babaska task for configuring some part of your application.
+An example to begin; let's say you are creating a Babaska command for configuring some part of your application.
 You need to know a URL to update, and a set of key/value pairs to configure.  Let's throw in a `--verbose`
 option just for kicks.
 
-**scripts/tasks.clj**:
+**scripts/commands.clj**:
 
 ```
-(ns tasks
-  "Tasks specific to this poroject"
-  (:require [net.lewisship.bb.tasks :refer [deftask]]))
+(ns commands
+  "Commands specific to this project"
+  (:require [net.lewisship.cli :refer [defcommand]]))
 
-(deftask configure
+(defcommand configure
   "Configures the system with keys and values"
   [verbose ["-v" "--verbose" "Enable verbose logging"]
    :args
@@ -39,39 +41,24 @@ option just for kicks.
                             (assoc m k v))
                :repeatable true]]
   (prn :verbose verbose :host host :key-values key-values))
-
 ```
 
-The meat of this `configure` task has been replaced with a call to `prn`, but
-the important part is the interface,, which takes the place of an ordinary
+The meat of this `configure` command has been replaced with a call to `prn`, but
+the important part is the interface, which takes the place of an ordinary
 parameters declaration.
 
 Initially, the interface is about options, and we define an option, `--verbose`, a flag.
 Inside the body, the value will be bound to local symbol `verbose`.
 
-`deftask` always adds a `-h` / `--help` flag, and implements it; the body does not get
+`defcommand` always adds a `-h` / `--help` flag, and implements it; the body does not get
 executed if help is requested, or if there's any kind of validation error processing 
 command line arguments.
 
-The task function must be invoked from the project's `bb.edn`:
-
-```
-{:deps
- {io.github.hlship/bb-tasks {:mvn/version "<version>"}
- :paths ["scripts"]
- :tasks
- {:requires ([tasks :as t])
-  configure {:doc "Configures the system with keys and values"
-             :task (t/configure)}}}
-```
-
-For `bb`, the `scripts` directory, containing the `tasks.clj` source, is added.
-
-> There's some unwanted duplication here, as the :doc should ideally come from the first
-> line of the function's docstring.
+TODO: Show how to invoke using a deps.edn.
 
 
-`deftask` provides several different arities for the function; this is discussed below.
+
+For `bb`, the `scripts` directory, containing the `commands.clj` source, is added.
 
 With this in place, we can run `bb configure` through its paces:
 
@@ -113,7 +100,7 @@ Error:
 >
 ```
 
-Unless there are errors, the body of the task is invoked:
+Unless there are errors, the body of the command is invoked:
 
 ```
 > bb configure http://example.org/conf pages=10 skip=true
@@ -158,14 +145,14 @@ Only the final command line argument may be repeatable.
 
 Also note that all command line arguments _must be_ consumed, either as options or as positional arguments.
 
-## deftest extras
+## defcommand extras
 
 ### :as \<symbol\>
 
-Inside the interface, you can request the _task map_ using `:as`.
-This map captures information about the task, command line arguments,
-and any parsed information; it is used when invoking `net.lewisship.bb.tasks/print-summary`, 
-which a task may wish to do to present errors to the user.
+Inside the interface, you can request the _command map_ using `:as`.
+This map captures information about the command, command line arguments,
+and any parsed information; it is used when invoking `net.lewisship.cli/print-summary`, 
+which a command may wish to do to present errors to the user.
 
 ### :in-order true
 
@@ -174,7 +161,7 @@ this means that `clojure.tools.cli/parse-opts` will stop at the first
 option-like string that isn't declared.
 
 ```
-(deftask remote
+(defcommand remote
   "Use ssh to run a command remotely."
   [verbose ["-v" "--verbose"]
    :args
@@ -196,22 +183,24 @@ unrecognized options will be parsed as positional arguments instead,
 so `bb remote ls -lR` will work, and `-lR` will be an string in the `args`
 seq.
 
+## Testing
 
-### Arities
+Normally, the function defined by `defcommand` is passed a seq of strings, from
+`*command-line-args*`; it then parses this into a map with keys :options and :arguments.
 
-`deftask` defines a function with three arities:
+For testing purposes, you can bypass the parsing, and just pass a map to the function.
 
-- 0: Referenced from `bb.edn`, delegates to the 2-arity, passing the
-     current Babashka task and command line arguments.
-- 2: Parses command line arguments and then either reports errors, or passes the task map
-     to the 1-arity
-- 1: Destructures the task map to local symbols and implements the body of the function
+You may need to mock out `net.lewisship.cli/print-summary` if your command
+invokes it, as that relies on some additional, non-documented, keys to
+be present in the command map.
 
-When writing tests for your tasks, you may want to directly invoke the 1-arity version,
-passing a map with keys :options and :arguments.
+Finally, validation errors normally print a command summary and then
+call `System/exit`, which is problematic for tests;
+`net.lewisship.cli/set-prevent-exit!` can convert those cases to instead
+throw an exception, which can be caught by tests.
 
 ## License
 
-`bb-tasks` is (c) 2022-present Howard M. Lewis Ship.
+`bb-commands` is (c) 2022-present Howard M. Lewis Ship.
 
 It is released under the terms of the Apache Software License, 2.0.

@@ -1,3 +1,4 @@
 {:paths ["src"]
- :deps {babashka/babashka {:mvn/version "0.9.160"}}
+ ;; Needed to build and test w/ clojure
+ :deps {org.clojure/tools.cli {:mvn/version "1.0.206"}}
  :aliases {:dev {:extra-paths ["test" "test-resources"]}}}
