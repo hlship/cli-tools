@@ -29,7 +29,7 @@ option just for kicks.
 
 **src/app_admin/commands.clj**:
 
-```
+```clojure
 (ns app-admin.commands
   "Commands specific to this project"
   (:require [net.lewisship.cli-tools :refer [defcommand]]))
@@ -62,14 +62,14 @@ Inside the body, the value will be bound to local symbol `verbose`.
 executed if help is requested, or if there's any kind of validation error processing 
 command line arguments.
 
-A namespace with commands is only part of the puzzle, there's a little bit of infrastructure
-to add as well.
+A namespace with commands is only part of the solution, to get from a terminal command line
+to the body of the `configure` function, we need to add a bit of infrastructure.
 
 First, we need a main namespace.
 
 **src/app_admin/main.clj**:
 
-```
+```clojure
 (ns app-admin.main
   (:require [net.lewisship.cli-tools :as cli-tools]))
 
@@ -81,16 +81,16 @@ First, we need a main namespace.
 `dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument and use
 it to find the correct command to delegate to.  That command gets the remaining command line arguments.
 
-`dispatch` also recognized `-h`, `--help`, or `help` and will print out a summary of the available commands.
+`dispatch` also recognizes `-h`, `--help`, or `help`, and will print out a summary of the available commands.
 
 Finally, `dispatch` will allow an abbreviation of a command name to work, as long as that abbeviation uniquely
-identifies one command.
+identifies a single possible command.
 
 Next, we need a `bb.edn` that sets up the classpath.
 
 **bb.edn**:
 
-```
+```clojure
 {:paths ["src"]
  :deps io.github.hlship/cli-tools {:mvn/version "<version>"}}}
 ```
@@ -99,7 +99,7 @@ Next, we need a Bash script, `app-admin`, to properly invoke `bb`:
 
 **bin/app-admin**:
 
-```
+```shell
 #!/usr/bin/env bash
 set -euo pipefail
 /usr/bin/env bb --config $(dirname $0)/../bb.edn -m app-admin.main $@
