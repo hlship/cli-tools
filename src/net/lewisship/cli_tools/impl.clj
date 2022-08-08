@@ -315,11 +315,15 @@
   [state form]
   (fail "Unexpected interface form" state form))
 
+(defn- consume-keyword
+  [state form]
+  (consumer (assoc state :consuming :keyword) form))
+
 (defmethod consumer :options
   [state form]
   (cond
     (keyword? form)
-    (assoc state :consuming form :pending true)
+    (consume-keyword state form)
 
     (not (simple-symbol? form))
     (fail "Expected option name symbol" state form)
@@ -358,8 +362,8 @@
     (-> state
         (update :command-options conj option-def')
         (update :option-symbols conj option-symbol)
-        (dissoc :symbol :pending)
-        (assoc :consuming :options))))
+        (assoc :consuming :options
+               :pending false))))
 
 (defmethod consumer :arg-def
   ;; A positional argument
@@ -372,14 +376,15 @@
     (-> state
         (update :command-args conj arg-def')
         (update :arg-symbols conj arg-symbol)
-        (dissoc :symbol :pending)
-        (assoc :consuming :args))))
+        (assoc :consuming :args
+               :pending false))))
 
 (defmethod consumer :args
   [state form]
   (cond
     (keyword? form)
-    (assoc state :consuming form :pending true)
+    (consume-keyword state form)
+
 
     (not (simple-symbol? form))
     (fail "Expected argument name symbol" state form)
@@ -392,15 +397,25 @@
            :pending true
            :consuming :arg-def)))
 
+(defmethod consumer :keyword
+  [state form]
+  (when-not (keyword? form)
+    (fail "Expected a keyword" state form))
+
+  (when-not (contains? #{:in-order :as :args :options :command} form)
+    (fail "Unexpected keyword" state form))
+
+  (assoc state :consuming form
+         :pending true))
+
 (defmethod consumer :as
   [state form]
   (when-not (simple-symbol? form)
     (fail "Expected command-map symbol" state form))
 
-  (-> state
-      (assoc :command-map-symbol form
-             :consuming :keyword)
-      (dissoc :pending)))
+  (assoc state :command-map-symbol form
+         :consuming :keyword
+         :pending false))
 
 (defmethod consumer :in-order
   [state form]
@@ -408,18 +423,18 @@
     (fail "Expected boolean after :in-order" state form))
 
   (-> state
-      (dissoc :pending)
-      ;; This is slightly dodgy, we should have a memory of whether in :options or :args
-      ;; and return to that.
-      (assoc :consuming :args)
-      (assoc-in [:parse-opts-options :in-order] form)))
+      (assoc-in [:parse-opts-options :in-order] form)
+      (assoc :consuming :keyword
+             :pending false)))
 
-(defmethod consumer :keyword
+(defmethod consumer :command
   [state form]
-  (when-not (keyword? form)
-    (fail "Expected a keyword" state form)
+  (when-not (string? form)
+    (fail "Expected string for name of command" state form))
 
-    (assoc state :consuming form :pending true)))
+  (assoc state :command-name form
+         :consuming :keyword
+         :pending false))
 
 (defn compile-interface
   "Parses the interface forms of a `defcommand` into a base command map; the interface

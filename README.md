@@ -203,6 +203,11 @@ This map captures information about the command, command line arguments,
 and any parsed information; it is used when invoking `net.lewisship.cli-tools/print-summary`, 
 which a command may wish to do to present errors to the user.
 
+### :command \<string\>
+
+Overrides the default name for the command, which is normally the same as the function name.
+This is useful, for example, when the command name would conflict with a clojure.core symbol.
+
 ### :in-order true
 
 By default, options are parsed with the `:in-order` option set to false;

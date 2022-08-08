@@ -49,6 +49,8 @@
         parsed-interface (impl/compile-interface docstring interface)
         {:keys [option-symbols arg-symbols command-map-symbol]
          :or {command-map-symbol (gensym "command-map-")}} parsed-interface
+        command-name' (or (:command-name parsed-interface)
+                          (name command-name))
         let-terms (cond-> []
                     (seq option-symbols)
                     (into `[{:keys ~option-symbols} (:options ~command-map-symbol)])
@@ -58,7 +60,7 @@
         symbol-with-meta (assoc symbol-meta
                                 :doc docstring
                                 ;; TODO: Override command name as :command <string> in interface
-                                ::impl/command-name (name command-name))]
+                                ::impl/command-name command-name')]
     `(defn ~command-name
        ~symbol-with-meta
        [arguments#]
@@ -66,7 +68,7 @@
        ;; it can also be a map with keys :options and :arguments.
        (let [~command-map-symbol (if (map? arguments#)
                                    arguments#
-                                   (impl/parse-cli ~(name command-name)
+                                   (impl/parse-cli ~command-name'
                                                    arguments#
                                                    ~(dissoc parsed-interface :option-symbols :arg-symbols)))
              ~@let-terms]

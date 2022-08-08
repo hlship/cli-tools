@@ -60,7 +60,7 @@
 (deftest unexpected-keyword
   (when-let [e (is (thrown? Exception
                             (compile-interface nil '[:left-field true])))]
-    (is (= "Unexpected interface form" (ex-message e)))))
+    (is (= "Unexpected keyword" (ex-message e)))))
 
 (deftest in-order-option
   (is (= {:in-order true}
@@ -70,4 +70,8 @@
   (when-let [e (is (thrown? Exception
                             (compile-interface nil '[:in-order in-order])))]
     (is (= "Expected boolean after :in-order" (ex-message e)))))
+
+(deftest can-override-command-name
+  (is (= "overridden"
+         (:command-name (compile-interface nil '[:command "overridden"])))))
 
