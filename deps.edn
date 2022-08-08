@@ -1,4 +1,17 @@
 {:paths ["src"]
  ;; Needed to build and test w/ clojure
  :deps {org.clojure/tools.cli {:mvn/version "1.0.206"}}
- :aliases {:dev {:extra-paths ["test" "test-resources"]}}}
+ :aliases
+ {:dev
+  {:extra-paths ["test" "test-resources"]}
+
+  :test
+  {:extra-deps {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
+                                                      :git/sha "dfb30dd"}}
+   :exec-fn cognitect.test-runner.api/test
+   :exec-args
+   {:patterns [".*-tests?$"]}}
+
+  :build
+  {:deps {io.github.hlship/build-tools {:git/tag "v0.3" :git/sha "1ca74c2"}}
+   :ns-default build}}}
