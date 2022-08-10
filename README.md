@@ -86,7 +86,8 @@ it to find the correct command to delegate to.  That command gets the remaining 
 Finally, `dispatch` will allow an abbreviation of a command name to work, as long as that abbeviation uniquely
 identifies a single possible command.
 
-Next, we need a `bb.edn` that sets up the classpath.
+Since our tool is built in Babashka, we need a `bb.edn` that sets up the classpath (we would create
+a `deps.edn` file, if the tool requires Clojure).
 
 **bb.edn**:
 
@@ -105,11 +106,11 @@ set -euo pipefail
 /usr/bin/env bb --config $(dirname $0)/../bb.edn -m app-admin.main $@
 ```
 
-The above assumes that `bin` is a sub-directory, and that `bb.edn` is stored above it, at the project root.
+The above assumes that `bin` is a subdirectory, and that `bb.edn` is stored above it, at the project root.
 
 The final step is to add that `bin` directory to the shell `$PATH` environment variable.
 
-With all this in place, we can run `app-admin configure` through its paces:
+With all this in place, we can now run `app-admin configure` through its paces:
 
 ```
 > app-admin configure -h
@@ -159,6 +160,19 @@ Unless there are errors, the body of the command is invoked:
 
 The body here just prints out the values passed in.
 
+## Abbreviated Commands
+
+Feel free to give your commands long names; when `dispatch` is identifying a command to invoke
+from the provided name on the command line, it will
+find any commands whose name contains the provided name; so `app-admin conf` would work, as would `app-admin c` ... 
+as long as there aren't multiple matches for the substring.
+
+When there are multiple matches, `dispatch` will abort and the error message will identify which commands matched the provided
+string.
+
+Exception: when the provided command name _exactly_ matches a command's name, then that command will be used even if 
+that command name is itself a prefix or substring of some other command name.
+
 ## Positional Arguments
 
 The way positional arguments are defined is intended to be similar to how
@@ -206,7 +220,8 @@ which a command may wish to do to present errors to the user.
 ### :command \<string\>
 
 Overrides the default name for the command, which is normally the same as the function name.
-This is useful, for example, when the command name would conflict with a clojure.core symbol.
+This is useful, for example, when the desired command name would conflict with a clojure.core symbol,
+or something else defined with your namespace.
 
 ### :in-order true
 
@@ -229,12 +244,12 @@ option-like string that isn't declared.
 You might expect that `app-admin remote ls -lR` would work, but it will fail
 with an error that `-lR is not recognized`.
 
-You can always use `--` to split options from arguments, so `bb remote -- ls -lR` will work
+You can always use `--` to split options from arguments, so `bb remote -- ls -lR` will work,
 but is clumsy.
 
 Instead, add `:in-order true` to the end of the interface, and any
 unrecognized options will be parsed as positional arguments instead,
-so `bb remote ls -lR` will work, and `-lR` will be an string in the `args`
+so `bb remote ls -lR` will work, and `-lR` will be provided as a string in the `args`
 seq.
 
 ## Testing
