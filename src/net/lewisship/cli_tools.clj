@@ -58,6 +58,7 @@
                     (into `[{:keys ~arg-symbols} (:arguments ~command-map-symbol)]))
         symbol-with-meta (assoc symbol-meta
                                 :doc docstring
+                                :arglists  '[['arguments]]
                                 ;; TODO: Override command name as :command <string> in interface
                                 ::impl/command-name command-name')]
     `(defn ~command-name
@@ -118,19 +119,20 @@
     (reduce f {} namespace-symbols)))
 
 (defn dispatch*
-  [options]
   "Invoked by [[dispatch]] after namespace and command resolution.
 
   This can be used, for example, to avoid including the built in help command
   (or when providing an override).
 
   options:
+  
   - :tool-name - used in command summary and errors
   - :tool-doc - used in command summary
   - :arguments - seq of strings; first is name of command, rest passed to command
   - :commands - map from string command name to a var defined via [[defcommand]]
 
   Returns nil."
+  [options]
   (impl/dispatch options))
 
 (defn dispatch
@@ -138,6 +140,7 @@
   (as identified by the first command line argument) and processes CLI options and arguments.
 
   options:
+  
   - :tool-name (required, string) - used in command summary and errors
   - :tool-doc (options, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to *command-line-args*)
