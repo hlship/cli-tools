@@ -8,12 +8,15 @@ At the core, you define local symbols and instruction for how those symbols map 
 or positional arguments; `cli-tools` takes care of the majority of command line parsing and validation
 for you.
 
-`cli-tools` is generally used to create tools that contain sub-commands. It can be used for tools
-that simply have options and arguments but not sub-commands.  It isn't intended for tools that
-have more deeply nested levels of sub-commands.
+`cli-tools` is generally used to create tools that contain individual commands; each of these commands
+has its own unique options and arguments; `cli-tools` identifies the command from the first command line
+argument, then passes the remaining arguments to the selected command.
+
+`cli-tools` can be used for tools that simply have options and arguments but not commands.  
+It isn't intended for tools that have more deeply nested levels of sub-commands.
 
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
-for the kind of low-ceremony tools inteaded by `cli-tools`.
+for the kind of low-ceremony tools that `cli-tools` is intended for.
 
 ## defcommand
 
