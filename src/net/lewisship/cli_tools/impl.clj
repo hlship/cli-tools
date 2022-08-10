@@ -5,7 +5,7 @@
 
 (def prevent-exit false)
 
-(def ^:dynamic *tool-name* "<tool-name>")
+(def ^:dynamic *options* nil)
 
 (defn exit
   [status]
@@ -101,9 +101,10 @@
 
 (defn print-summary
   [command-map errors]
-  (let [{:keys [command-name positional-specs command-doc summary]} command-map]
+  (let [{:keys [tool-name]} *options*
+        {:keys [command-name positional-specs command-doc summary]} command-map]
     (apply println
-           (remove nil? (concat ["Usage:" *tool-name* command-name
+           (remove nil? (concat ["Usage:" tool-name command-name
                                  "[OPTIONS]"]
                                 (map arg-spec->str positional-specs))))
 
@@ -296,7 +297,7 @@
                  ;; next spec and next argument
                  (assoc state' :specs more-specs)))))))
 
-(defn- abort [s]
+(defn abort [s]
   (println-err s)
   (exit 1))
 
@@ -488,39 +489,20 @@
     ;; Replace :arguments from the raw strings to a map
     (assoc command-map' :arguments positional-arguments)))
 
-(defn locate-commands
-  "Locates commands, functions with the :command-name metadata.
-
-  Returns a map from string name to command Var."
-  [namespace-symbols]
-  (let [f (fn [m namespace-symbol]
-            ;; Ensure the namespace is loaded
-            (require namespace-symbol)
-            (->> (find-ns namespace-symbol)
-                 ns-map
-                 vals
-                 (reduce (fn [m v]
-                           (if-let [command-name (-> v meta ::command-name)]
-                             (assoc m command-name v)
-                             m))
-                         m)))]
-    (reduce f {} namespace-symbols)))
-
-(defn- show-tool-help
-  [tool-name tool-doc commands]
-  (println "Usage:" tool-name "COMMAND ...")
-  (when tool-doc
-    (println)
-    (-> tool-doc cleanup-docstring println))
-  (println "\nCommands:")
-  (let [commands' (assoc commands "help"
-                         (with-meta {} {:doc "This command summary"}))
-        ks (-> commands' keys sort)
-        width (+ 2 (apply max (map count ks)))]
-    (doseq [k ks
-            :let [doc-string (-> commands' (get k) meta :doc (or ""))
-                  first-doc (-> doc-string str/split-lines first)]]
-      (println (str (pad-left k " " width) ": " first-doc))))
+(defn show-tool-help
+  []
+  (let [{:keys [tool-name tool-doc commands]} *options*]
+    (println "Usage:" tool-name "COMMAND ...")
+    (when tool-doc
+      (println)
+      (-> tool-doc cleanup-docstring println))
+    (println "\nCommands:")
+    (let [ks (-> commands keys sort)
+          width (+ 2 (apply max (map count ks)))]
+      (doseq [k ks
+              :let [doc-string (-> commands (get k) meta :doc (or ""))
+                    first-doc (-> doc-string str/split-lines first)]]
+        (println (str (pad-left k " " width) ": " first-doc)))))
   (exit 0))
 
 (defn- find-matches
@@ -534,38 +516,45 @@
          keys
          (filter #(str/starts-with? % s)))))
 
-(defn dispatch*
-  [configuration]
-  (cond-let
-    :let [{:keys [tool-name tool-doc commands args]} configuration
-          [command-name & command-args] args]
+(defn use-help-message
+  [tool-name commands]
+  (if (contains? commands "help")
+    (format ", use %s help to list commands" tool-name)
+    ""))
 
-    (str/blank? *tool-name*)
-    (throw (ex-info "Must specify :tool-name"
-                    {:configuration configuration}))
+(defn dispatch
+  [{:keys [tool-name commands arguments] :as options}]
+  ;; Capture these options for use by help command or when printing usage
+  (binding [*options* options]
+    (cond-let
+      :let [[command-name & command-args] arguments
+            help-var (get commands "help")]
 
-    (#{"-h" "--help" "help"} command-name)
-    (show-tool-help tool-name tool-doc commands)
+      (str/blank? tool-name)
+      (throw (ex-info "Must specify :tool-name" {:options options}))
 
-    (or (nil? command-name)
-        (str/starts-with? command-name "-"))
-    (abort (format "%s: no command provided, use %<s help to list commands" tool-name))
+      ;; In the normal case, when help is available, treat -h or --help the same as help
+      (and (#{"-h" "--help"} command-name)
+           help-var)
+      (help-var command-args)
 
-    :let [matching-names (find-matches commands command-name)]
+      (or (nil? command-name)
+          (str/starts-with? command-name "-"))
+      (abort (str tool-name ": no command provided" (use-help-message tool-name commands)))
 
-    (empty? matching-names)
-    (abort (format "%s: %s is not a command, use %1$s help to list commands" tool-name command-name))
+      :let [matching-names (find-matches commands command-name)]
 
-    (> (count matching-names) 1)
-    (abort (format "%s: %s matches %d commands: %s"
-                   tool-name
-                   command-name
-                   (count matching-names)
-                   (->> matching-names sort (str/join ", "))))
+      (empty? matching-names)
+      (abort (str tool-name ": " command-name " is not a command" (use-help-message tool-name commands)))
 
-    :else
-    (let [command-var (get commands (first matching-names))]
-      (binding [*tool-name* tool-name]
-        ;; First arg identifies the command, strip it off, let command parse
-        ;; the remaining.
-        (command-var (rest args))))))
+      (> (count matching-names) 1)
+      (abort (format "%s: %s matches %d commands: %s"
+                     tool-name
+                     command-name
+                     (count matching-names)
+                     (->> matching-names sort (str/join ", "))))
+
+      :else
+      (let [command-var (get commands (first matching-names))]
+        (command-var command-args)))
+    nil))

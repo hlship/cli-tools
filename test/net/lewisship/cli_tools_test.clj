@@ -8,7 +8,7 @@
 (use-fixtures
   :once
   (fn [f]
-    (binding [impl/*tool-name* "harness"]
+    (binding [impl/*options* {:tool-name "harness"}]
       (f))))
 
 ;; An example to test around

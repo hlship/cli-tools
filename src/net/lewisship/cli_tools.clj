@@ -1,7 +1,6 @@
 (ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
-  (:require [net.lewisship.cli-tools.impl :as impl]
-            [clojure.pprint :refer [pprint]]))
+  (:require [net.lewisship.cli-tools.impl :as impl]))
 
 (defn set-prevent-exit!
   "Normally, after displaying a command summary, `System/exit` is called (with 0 if for --help,
@@ -74,34 +73,78 @@
              ~@let-terms]
          ~@body))))
 
+(defcommand help
+  "List available commands"
+  []
+  (impl/show-tool-help))
+
+(defn locate-commands
+  "Passed a seq of symbols identifying *loaded* namespaces, this function
+  locates commands, functions defined by [[defcommand]].
+
+  Normally, this is called from [[dispatch]] and is only needed when calling [[dispatch*]] directly.
+
+  Returns a map from string command name to command Var."
+  [namespace-symbols]
+  (let [f (fn [m namespace-symbol]
+            (->> (find-ns namespace-symbol)
+                 ns-map
+                 vals
+                 (reduce (fn [m v]
+                           (if-let [command-name (-> v meta ::impl/command-name)]
+                             (assoc m command-name v)
+                             m))
+                         m)))]
+    (reduce f {} namespace-symbols)))
+
+(defn dispatch*
+  [options]
+  "Invoked by [[dispatch]] after namespace and command resolution.
+
+  This can be used, for example, to avoid including the built in help command
+  (or when providing an override).
+
+  options:
+  - :tool-name - used in command summary and errors
+  - :tool-doc - used in command summary
+  - :arguments - seq of strings; first is name of command, rest passed to command
+  - :commands - map from string command name to a var defined via [[defcommand]]
+
+  Returns nil."
+  (impl/dispatch options))
+
 (defn dispatch
   "Locates commands in namespaces, finds the current command
   (as identified by the first command line argument) and processes CLI options and arguments.
 
-  option keys:
-  :tool-name (required, string) - used in command summary and errors
-  :arguments - command line arguments to parse (defaults to *command-line-args*)
-  :namespaces - symbols identifying namespaces to search for commands
+  options:
+  - :tool-name (required, string) - used in command summary and errors
+  - :tool-doc (options, string) - used in help summary
+  - :arguments - command line arguments to parse (defaults to *command-line-args*)
+  - :namespaces - symbols identifying namespaces to search for commands
 
-  dispatch will load any namespaces specified.
+  The default for :tool-doc is the docstring of the first namespace.
+
+  dispatch will load any namespaces specified, then scan those namespaces to identify commands.
+  It also adds a `help` command.
 
   If option and argument parsing is unsuccessful, then
   a command usage summary is printed, along with errors, and the program exits
-  with error code 1."
+  with error code 1.
+
+  dispatch simply loads and scans the namespaces, adds the `help` command, then calls [[dispatch*]].
+
+  Returns nil."
   [options]
-  (try
-    (let [{:keys [namespaces arguments tool-name tool-doc]} options
-          _ (when-not (seq namespaces)
-              (throw (ex-info "No :namespaces specified" {:configuration options})))
-          commands (impl/locate-commands namespaces)]
-      (impl/dispatch* {:tool-name tool-name
-                       :tool-doc (or tool-doc
-                                     (some-> namespaces first find-ns meta :doc))
-                       :commands commands
-                       :args (or arguments *command-line-args*)}))
-    (catch Exception t
-      (binding [*out* *err*]
-        (println "Command failed:" t )
-        (when-let [data (ex-data t )]
-          (pprint data)))
-      (impl/exit 1))))
+  (let [{:keys [namespaces arguments tool-name tool-doc]} options
+        _ (when-not (seq namespaces)
+            (throw (ex-info "No :namespaces specified" {:options options})))
+        ;; Add this namespace, to include the help command by default
+        commands (locate-commands (conj namespaces (ns-name *ns*)))]
+    ;; Load all the namespaces first
+    (run! require namespaces)
+    (dispatch* {:tool-name tool-name
+                :tool-doc (or tool-doc
+                              (some-> namespaces first find-ns meta :doc))
+                :commands commands
+                :arguments (or arguments *command-line-args*)})))
