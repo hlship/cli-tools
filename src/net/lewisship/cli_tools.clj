@@ -78,6 +78,16 @@
   []
   (impl/show-tool-help))
 
+(defn- source-of
+  [v]
+  (str (-> v meta :ns ns-name) "/" (-> v meta :name)))
+
+(defn- resolve-ns
+  [ns-symbol]
+  (if-let [ns-object (find-ns ns-symbol)]
+    ns-object
+    (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
+
 (defn locate-commands
   "Passed a seq of symbols identifying *loaded* namespaces, this function
   locates commands, functions defined by [[defcommand]].
@@ -87,13 +97,23 @@
   Returns a map from string command name to command Var."
   [namespace-symbols]
   (let [f (fn [m namespace-symbol]
-            (->> (find-ns namespace-symbol)
-                 ns-map
+            (->> (resolve-ns namespace-symbol)
+                 ns-publics
                  vals
                  (reduce (fn [m v]
-                           (if-let [command-name (-> v meta ::impl/command-name)]
-                             (assoc m command-name v)
-                             m))
+                           (let [command-name (-> v meta ::impl/command-name)]
+                             (cond
+                               (nil? command-name)
+                               m
+
+                               (contains? m command-name)
+                               (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
+                                                                 command-name
+                                                                 (source-of v)
+                                                                 (source-of (get m command-name)))))
+
+                               :else
+                               (assoc m command-name v))))
                          m)))]
     (reduce f {} namespace-symbols)))
 
@@ -140,9 +160,11 @@
         _ (when-not (seq namespaces)
             (throw (ex-info "No :namespaces specified" {:options options})))
         ;; Add this namespace, to include the help command by default
-        commands (locate-commands (conj namespaces (ns-name *ns*)))]
-    ;; Load all the namespaces first
-    (run! require namespaces)
+        commands (do
+                   ;; Load all the other namespaces first
+                   (run! require namespaces)
+                   ;; Ensure built-in help command is first
+                   (locate-commands (cons 'net.lewisship.cli-tools namespaces)))]
     (dispatch* {:tool-name tool-name
                 :tool-doc (or tool-doc
                               (some-> namespaces first find-ns meta :doc))

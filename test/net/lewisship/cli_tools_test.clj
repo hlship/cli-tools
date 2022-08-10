@@ -98,3 +98,20 @@
   (is (= {:command "ls", :args ["-lR"]}
          ;; Without :in-order true, the -lR is flagged as an error
          (in-order ["-v" "ls" "-lR"]))))
+
+(defcommand help
+           "Conflicts with built-in help"
+  [])
+
+(deftest detects-command-name-conflicts
+  (when-let [e (is (thrown? RuntimeException
+                            (cli/locate-commands ['net.lewisship.cli-tools
+                                                  'net.lewisship.cli-tools-test])))]
+    (is (= "command help defined by net.lewisship.cli-tools-test/help conflicts with net.lewisship.cli-tools/help"
+           (ex-message e)))))
+
+(deftest rejects-undefined-namespace
+  (when-let [e (is (thrown? RuntimeException
+                            (cli/locate-commands ['does.not.exist])))]
+    (is (= "namespace does.not.exist not found (it may need to be required)"
+           (ex-message e)))))
