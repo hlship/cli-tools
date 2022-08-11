@@ -23,8 +23,10 @@ for the kind of low-ceremony tools that `cli-tools` is intended for.
 The core utility is the function `net.lewisship.cli-tools/defcommand`, which defines a command in
 terms of a command-line interface, and a body that acts on the data collected from the command line.
 
-The interface defines options as well as positional arguments, and does so while mapping that values for
-those options and arguments to local symbols.
+The interface defines options as well as positional arguments; those options and arguments are available
+in the body of the command just as if they were parameters passed to the command.
+`defcommand` defines a function that accepts a seq of command line arguments, parses them as
+options and positional arguments, binds those to local symbols, and evaluates the body.
 
 An example to begin; let's say you are creating a Babaska command for administrating some part of your application.
 You need to know a URL to update, and a set of key/value pairs to configure.  Let's throw in a `--verbose`
@@ -211,7 +213,16 @@ Only the final command line argument may be repeatable.
 
 Also note that all command line arguments _must be_ consumed, either as options or as positional arguments.
 
-## defcommand extras
+## defcommand options
+
+### :options
+
+Indicates that any following terms define options; this is the initial state, so `:options`
+is rarely used.
+
+### :args
+
+Indicates that any following terms define positional arguments.
 
 ### :as \<symbol\>
 
@@ -230,12 +241,12 @@ or something else defined with your namespace.
 
 Normally, the summary (which appears next to the command in the `help` tool summary) is just
 the first sentence of the command's docstring, up to the first `.`.  If, for some reason,
-that default is incorrect, the command's summary can be explicitly specified using :summary.
+that default is incorrect, the command's summary can be explicitly specified using `:summary`.
 
 ### :in-order true
 
-By default, options are parsed with the `:in-order` option set to false;
-this means that `clojure.tools.cli/parse-opts` will stop at the first
+By default, options are parsed using `clojure.tools.cli/parse-opts`, with the `:in-order` option set to false;
+this means that `parse-opts` will stop at the first
 option-like string that isn't declared.
 
 ```
@@ -264,7 +275,7 @@ seq.
 ## Testing
 
 Normally, the function defined by `defcommand` is passed a seq of strings, from
-`*command-line-args*`; it then parses this into a map with keys :options and :arguments.
+`*command-line-args*`; it then parses this into a map with keys `:options` and `:arguments`.
 
 For testing purposes, you can bypass the parsing, and just pass a map to the function.
 
