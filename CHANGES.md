@@ -8,6 +8,8 @@ Added `locate-commands`, for when invoking `dispatch*` directly.
 
 Detect command name conflicts when locating commands.
 
+Added :summary <string> to interface.
+
 # v0.1 -- 8 Aug 2022
 
 Initial release.

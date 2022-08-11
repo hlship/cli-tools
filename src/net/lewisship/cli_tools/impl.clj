@@ -66,6 +66,13 @@
            (when repeatable
              (if optional "*" "+")))))
 
+(defn- first-sentence
+  [s]
+  (-> s
+      (str/split #"\s*\.")
+      first
+      str/trim))
+
 (defn- indentation-of-line
   [line]
   (if (str/blank? line)
@@ -403,7 +410,7 @@
   (when-not (keyword? form)
     (fail "Expected a keyword" state form))
 
-  (when-not (contains? #{:in-order :as :args :options :command} form)
+  (when-not (contains? #{:in-order :as :args :options :command :summary} form)
     (fail "Unexpected keyword" state form))
 
   (assoc state :consuming form
@@ -437,9 +444,18 @@
          :consuming :keyword
          :pending false))
 
+(defmethod consumer :summary
+  [state form]
+  (when-not (string? form)
+    (fail "Expected string summary for command" state form))
+
+  (assoc state :command-summary form
+         :consuming :keyword
+         :pending false))
+
 (defn compile-interface
   "Parses the interface forms of a `defcommand` into a base command map; the interface
-   defines the options and positional arguments that will be parsed."
+   defines the options and positional a2rguments that will be parsed."
   [command-doc forms]
   (let [initial-state {:consuming :options
                        :option-symbols []
@@ -489,6 +505,13 @@
     ;; Replace :arguments from the raw strings to a map
     (assoc command-map' :arguments positional-arguments)))
 
+(defn- command-summary
+  [v]
+  (let [v-meta (meta v)
+          {:keys [::command-summary]} v-meta]
+    (or command-summary
+        (-> v-meta :doc first-sentence))))
+
 (defn show-tool-help
   []
   (let [{:keys [tool-name tool-doc commands]} *options*]
@@ -499,10 +522,9 @@
     (println "\nCommands:")
     (let [ks (-> commands keys sort)
           width (+ 2 (apply max (map count ks)))]
-      (doseq [k ks
-              :let [doc-string (-> commands (get k) meta :doc (or ""))
-                    first-doc (-> doc-string str/split-lines first)]]
-        (println (str (pad-left k " " width) ": " first-doc)))))
+      (doseq [k ks]
+        (println (str (pad-left k " " width) ": "
+                      (-> commands (get k) command-summary))))))
   (exit 0))
 
 (defn- find-matches

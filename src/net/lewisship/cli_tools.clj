@@ -46,7 +46,7 @@
           "defcommand expects a vector to define the interface")
   (let [symbol-meta (meta command-name)
         parsed-interface (impl/compile-interface docstring interface)
-        {:keys [option-symbols arg-symbols command-map-symbol]
+        {:keys [option-symbols arg-symbols command-map-symbol command-summary]
          :or {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name' (or (:command-name parsed-interface)
                           (name command-name))
@@ -56,11 +56,11 @@
 
                     (seq arg-symbols)
                     (into `[{:keys ~arg-symbols} (:arguments ~command-map-symbol)]))
-        symbol-with-meta (assoc symbol-meta
-                                :doc docstring
-                                :arglists  '[['arguments]]
-                                ;; TODO: Override command name as :command <string> in interface
-                                ::impl/command-name command-name')]
+        symbol-with-meta (cond-> (assoc symbol-meta
+                                        :doc docstring
+                                        :arglists '[['arguments]]
+                                        ::impl/command-name command-name')
+                           command-summary (assoc ::impl/command-summary command-summary))]
     `(defn ~command-name
        ~symbol-with-meta
        [arguments#]

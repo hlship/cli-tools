@@ -1,6 +1,6 @@
 (ns net.lewisship.cli-tools-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
-            [net.lewisship.cli-tools :as cli :refer [defcommand]]
+            [net.lewisship.cli-tools :as cli :refer [defcommand dispatch]]
             [net.lewisship.cli-tools.impl :as impl]))
 
 (cli/set-prevent-exit! true)
@@ -89,8 +89,8 @@
    args ["ARGS" "Arguments to remote command"
          :optional true
          :repeatable true]
-   ;; Putting this last is idiomatic
-   :in-order true]
+   :in-order true
+   :summary "Execute remote command"]
   {:command command
    :args args})
 
@@ -115,3 +115,10 @@
                             (cli/locate-commands ['does.not.exist])))]
     (is (= "namespace does.not.exist not found (it may need to be required)"
            (ex-message e)))))
+
+(deftest help-with-default-and-explicit-summary
+  (is (= (slurp "test-resources/tool-help.txt")
+         (with-exit 0
+                    (dispatch {:tool-name "test-harness"
+                               :namespaces '[net.lewisship.example-ns]
+                               :arguments ["help"]})))))

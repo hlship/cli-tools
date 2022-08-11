@@ -1,0 +1,10 @@
+Usage: test-harness COMMAND ...
+
+Example commands as part of unit test suite.
+
+Even this docstring is part of the test.
+
+Commands:
+   default: Default command summary
+  explicit: Explicit command summary
+      help: List available commands

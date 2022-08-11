@@ -226,6 +226,12 @@ Overrides the default name for the command, which is normally the same as the fu
 This is useful, for example, when the desired command name would conflict with a clojure.core symbol,
 or something else defined with your namespace.
 
+### :summary \<string\>
+
+Normally, the summary (which appears next to the command in the `help` tool summary) is just
+the first sentence of the command's docstring, up to the first `.`.  If, for some reason,
+that default is incorrect, the command's summary can be explicitly specified using :summary.
+
 ### :in-order true
 
 By default, options are parsed with the `:in-order` option set to false;
