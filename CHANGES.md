@@ -1,3 +1,7 @@
+# v0.3 -- 11 Aug 2022
+
+Fix logic for default command summary to just be first line of docstring.
+
 # v0.2 -- 11 Aug 2022
 
 Don't catch exceptions in `dispatch`.

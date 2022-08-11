@@ -5,7 +5,7 @@
             [net.lewisship.build :refer [requiring-invoke]]))
 
 (def lib 'io.github.hlship/cli-tools)
-(def version "v0.2")
+(def version "v0.3")
 
 (def jar-params {:project-name lib
                  :version version})
