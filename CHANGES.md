@@ -1,4 +1,4 @@
-# v0.2 -- UNRELEASED
+# v0.2 -- 11 Aug 2022
 
 Don't catch exceptions in `dispatch`.
 
