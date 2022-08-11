@@ -1,5 +1,9 @@
 # io.github.hlship/cli-tools
 
+[![Clojars Project](https://img.shields.io/clojars/v/io.github.hlship/cli-tools.svg)](https://clojars.org/io.github.hlship/cli-tools)
+<a href="https://babashka.org" rel="nofollow"><img src="https://github.com/babashka/babashka/raw/master/logo/badge.svg" alt="bb compatible" style="max-width: 100%;"></a>
+[![API Docs](https://img.shields.io/badge/API%20Docs-brightgreen)](https://hlship.github.io/docs/cli-tools/)
+
 `cli-tools` is a complement to [Babashka](https://github.com/babashka/babashka) used to create tools
 with sub-commands, much like [Babashka tasks](https://book.babashka.org/#tasks).
 
