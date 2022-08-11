@@ -69,6 +69,9 @@
 (defn- first-sentence
   [s]
   (-> s
+      str/trim
+      str/split-lines
+      first
       (str/split #"\s*\.")
       first
       str/trim))
