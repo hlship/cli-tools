@@ -276,6 +276,25 @@ unrecognized options will be parsed as positional arguments instead,
 so `bb remote ls -lR` will work, and `-lR` will be provided as a string in the `args`
 seq.
 
+### :let <bindings>
+
+It can be useful to define local symbols that can be referenced inside the option
+and arguments definitions; the `:let` keyword is followed by a vector of bindings.
+
+```clojure
+(defcommand set-mode
+  "Sets the execution mode"
+  [mode ["-m" "--mode MODE" (str "Execution mode, one of " mode-names)
+         :parse-fn keyword
+         :validate [allowed-modes (str "Must be one of " mode-names)]]
+   :let [allowed-modes #{:batch :async :real-time}
+         mode-names (->> allowed-modes (map name) sort (str/join ", "))]]
+  ...)
+```
+
+In the expanded code, the bindings are moved to the top, before the option and argument
+definitions.  Further, if there are multiple :let blocks, they are concatinated.
+
 ## Testing
 
 Normally, the function defined by `defcommand` is passed a seq of strings, from

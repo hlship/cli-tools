@@ -1,3 +1,7 @@
+# v0.4 -- UNRELEASED
+
+Added support for the :let keyword in the command interface.
+
 # v0.3 -- 11 Aug 2022
 
 Fix logic for default command summary to just be first line of docstring.

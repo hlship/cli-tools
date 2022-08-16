@@ -46,7 +46,7 @@
           "defcommand expects a vector to define the interface")
   (let [symbol-meta (meta command-name)
         parsed-interface (impl/compile-interface docstring interface)
-        {:keys [option-symbols arg-symbols command-map-symbol command-summary]
+        {:keys [option-symbols arg-symbols command-map-symbol command-summary let-forms]
          :or {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name' (or (:command-name parsed-interface)
                           (name command-name))
@@ -66,7 +66,8 @@
        [arguments#]
        ;; arguments# is normally a seq of strings, from *command-line-arguments*, but for testing,
        ;; it can also be a map with keys :options and :arguments.
-       (let [~command-map-symbol (if (map? arguments#)
+       (let [~@let-forms
+             ~command-map-symbol (if (map? arguments#)
                                    arguments#
                                    (impl/parse-cli ~command-name'
                                                    arguments#

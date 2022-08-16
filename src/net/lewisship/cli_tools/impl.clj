@@ -1,11 +1,13 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
-  "Private namespace for implementation details for bb.commands, subject to change."
+  "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as str]
             [clojure.tools.cli :as cli]))
 
 (def prevent-exit false)
 
 (def ^:dynamic *options* nil)
+
+(def ^:private supported-keywords  #{:in-order :as :args :options :command :summary :let})
 
 (defn exit
   [status]
@@ -413,20 +415,25 @@
   (when-not (keyword? form)
     (fail "Expected a keyword" state form))
 
-  (when-not (contains? #{:in-order :as :args :options :command :summary} form)
+  (when-not (contains? supported-keywords form)
     (fail "Unexpected keyword" state form))
 
   (assoc state :consuming form
          :pending true))
+
+(defn- complete-keyword
+  [state]
+  (assoc state :consuming :keyword
+         :pending false))
 
 (defmethod consumer :as
   [state form]
   (when-not (simple-symbol? form)
     (fail "Expected command-map symbol" state form))
 
-  (assoc state :command-map-symbol form
-         :consuming :keyword
-         :pending false))
+  (-> state
+      (assoc :command-map-symbol form)
+      complete-keyword))
 
 (defmethod consumer :in-order
   [state form]
@@ -435,26 +442,35 @@
 
   (-> state
       (assoc-in [:parse-opts-options :in-order] form)
-      (assoc :consuming :keyword
-             :pending false)))
+      complete-keyword))
+
+(defmethod consumer :let
+  [state form]
+  (when-not (and (vector? form)
+                 (even? (count form)))
+    (fail "Expected a vector of symbol/expression pairs" state form))
+
+  (-> state
+      (update :let-forms into form)
+      complete-keyword))
 
 (defmethod consumer :command
   [state form]
   (when-not (string? form)
     (fail "Expected string for name of command" state form))
 
-  (assoc state :command-name form
-         :consuming :keyword
-         :pending false))
+  (-> state
+      (assoc :command-name form)
+      complete-keyword))
 
 (defmethod consumer :summary
   [state form]
   (when-not (string? form)
     (fail "Expected string summary for command" state form))
 
-  (assoc state :command-summary form
-         :consuming :keyword
-         :pending false))
+  (-> state
+      (assoc :command-summary form)
+      complete-keyword))
 
 (defn compile-interface
   "Parses the interface forms of a `defcommand` into a base command map; the interface
@@ -465,6 +481,7 @@
                        :arg-symbols []
                        :command-options []
                        :command-args []
+                       :let-forms []
                        :command-doc command-doc}
         final-state (reduce consumer
                             initial-state forms)]

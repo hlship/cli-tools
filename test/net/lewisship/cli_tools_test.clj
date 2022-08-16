@@ -1,7 +1,8 @@
 (ns net.lewisship.cli-tools-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [net.lewisship.cli-tools :as cli :refer [defcommand dispatch]]
-            [net.lewisship.cli-tools.impl :as impl]))
+            [net.lewisship.cli-tools.impl :as impl]
+            [clojure.string :as str]))
 
 (cli/set-prevent-exit! true)
 
@@ -122,3 +123,18 @@
                     (dispatch {:tool-name "test-harness"
                                :namespaces '[net.lewisship.example-ns]
                                :arguments ["help"]})))))
+
+(defcommand set-mode
+  "Sets the execution mode"
+  [mode ["-m" "--mode MODE" (str "Execution mode, one of " mode-names)
+         :parse-fn keyword
+         :validate [allowed-modes (str "Must be one of " mode-names)]]
+   :let [allowed-modes #{:batch :async :real-time}
+         mode-names (->> allowed-modes (map name) sort (str/join ", "))]]
+  {:mode mode})
+
+
+(deftest let-directive
+  (is (= (slurp "test-resources/let-directive.txt")
+         (with-exit 1
+                    (set-mode ["-m" "unknown"])))))

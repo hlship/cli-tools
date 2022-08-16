@@ -6,6 +6,7 @@
 (deftest no-options
   (is (= {:option-symbols []
           :arg-symbols []
+          :let-forms []
           :command-options [["-h" "--help" "This command summary" :id :help]]
           :command-args []
           :command-doc "<DOC>"}
@@ -16,6 +17,32 @@
          (-> (compile-interface nil '[execute? ["-x" "--execute"]])
              :command-options
              butlast))))
+
+(deftest let-requires-a-vecteor
+  (when-let [e (is (thrown? Exception
+                            (compile-interface nil '[:let :foo])))]
+    (is (= "Expected a vector of symbol/expression pairs" (ex-message e)))
+    (is (= :foo (-> e ex-data :form)))))
+
+(deftest let-requires-even-vector
+  (is (thrown-with-msg? Exception #"Expected a vector of symbol/expression pairs"
+               (compile-interface nil '[:let [:a :b :c]]))))
+
+(deftest let-success
+  (is (= '[a :a
+           b :b]
+         (-> (compile-interface nil '[:let [a :a
+                                            b :b]])
+             :let-forms))))
+
+(deftest let-forms-accumulate
+  (is (= '[a :a
+           b :b
+           c :c]
+         (-> (compile-interface nil '[:let [a :a
+                                            b :b]
+                                      :let [c :c]])
+             :let-forms))))
 
 (deftest docstring-becomes-doc
   (is (= [["-x" "--execute" "Command to execute" :id :execute?]]

@@ -1,0 +1,9 @@
+Usage: harness set-mode [OPTIONS]
+Sets the execution mode
+
+Options:
+  -m, --mode MODE  Execution mode, one of async, batch, real-time
+  -h, --help       This command summary
+
+Error:
+  Failed to validate "-m unknown": Must be one of async, batch, real-time
