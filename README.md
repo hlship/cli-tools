@@ -8,7 +8,7 @@
 with sub-commands, much like [Babashka tasks](https://book.babashka.org/#tasks).
 
 `cli-tools` is more verbose than [babashka-cli](https://github.com/babashka/cli) and more opinionated.
-At the core, you define local symbols and instruction for how those symbols map to command line options
+At the core, you define local symbols and instructions for how those symbols map to command line options
 or positional arguments; `cli-tools` takes care of the majority of command line parsing and validation
 for you.
 
@@ -68,7 +68,7 @@ Initially, the interface is about options, and we define an option, `--verbose`,
 Inside the body, the value will be bound to local symbol `verbose`.
 
 `defcommand` always adds a `-h` / `--help` flag, and implements it; the body does not get
-executed if help is requested, or if there's any kind of validation error processing 
+evaluated if help is requested, or if there's any kind of validation error processing 
 command line arguments.
 
 A namespace with commands is only part of the solution, to get from a terminal command line
@@ -276,7 +276,7 @@ unrecognized options will be parsed as positional arguments instead,
 so `bb remote ls -lR` will work, and `-lR` will be provided as a string in the `args`
 seq.
 
-### :let <bindings>
+### :let \<bindings\>
 
 It can be useful to define local symbols that can be referenced inside the option
 and arguments definitions; the `:let` keyword is followed by a vector of bindings.
@@ -293,7 +293,7 @@ and arguments definitions; the `:let` keyword is followed by a vector of binding
 ```
 
 In the expanded code, the bindings are moved to the top, before the option and argument
-definitions.  Further, if there are multiple :let blocks, they are concatinated.
+definitions.  Further, if there are multiple `:let` blocks, they are concatinated.
 
 ## Testing
 

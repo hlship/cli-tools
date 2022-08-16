@@ -150,7 +150,7 @@
   The default for :tool-doc is the docstring of the first namespace.
 
   dispatch will load any namespaces specified, then scan those namespaces to identify commands.
-  It also adds a `help` command.
+  It also adds a `help` command from this namespace.
 
   If option and argument parsing is unsuccessful, then
   a command usage summary is printed, along with errors, and the program exits
