@@ -5,7 +5,6 @@
 
 (deftest no-options
   (is (= {:option-symbols []
-          :arg-symbols []
           :let-forms []
           :command-options [["-h" "--help" "This command summary" :id :help]]
           :command-args []
@@ -49,6 +48,20 @@
          (-> (compile-interface nil '[execute? ["-x" "--execute" "Command to execute"]])
              :command-options
              butlast))))
+
+(deftest option-symbols-must-be-unique
+  (when-let [e (is (thrown? Exception
+                            (compile-interface nil '[switch ["-s" "--switch"]
+                                                     verbose ["-v" "--verbose"]
+                                                     :args
+                                                     switch ["SWITCH" "Switch to operate on"]])))]
+    (is (= "Option and argument symbols must be unique" (ex-message e))))
+
+
+  (when-let [e (is (thrown? Exception
+                            (compile-interface nil '[switch ["-s" "--switch"]
+                                                     switch ["-v" "--verbose"]])))]
+    (is (= "Option and argument symbols must be unique" (ex-message e)))))
 
 (deftest missing-argument-after-arg-symbol
   (when-let [e (is (thrown? Exception

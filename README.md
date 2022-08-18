@@ -302,11 +302,11 @@ definitions.  Further, if there are multiple `:let` blocks, they are concatinate
 ## Testing
 
 Normally, the function defined by `defcommand` is passed a number of strings arguments, from
-`*command-line-args*`; it then parses this into a command map, a map with keys `:options` and `:arguments`
+`*command-line-args*`; it then parses this into a command map, a map with an `:options` key
 (plus a lot of undocumented internal data).
 
 For testing purposes, you can bypass the parsing, and just pass a single map to the function, with
-`:options` and `:arguments`.
+a nested `:options` key.
 
 You may need to mock out `net.lewisship.cli-tools/print-summary` if your command
 invokes it, as that relies on some additional non-documented keys to

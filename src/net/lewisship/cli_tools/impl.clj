@@ -341,7 +341,8 @@
     (not (simple-symbol? form))
     (fail "Expected option name symbol" state form)
 
-    ;; Could check for uniqueness here
+    (contains? (-> state :option-symbols set) form)
+    (fail "Option and argument symbols must be unique" state form)
 
     :else
     (assoc state
@@ -363,6 +364,7 @@
       (symbol? form)                                        ; A symbol may be used when sharing options between commands
       (list? form)))                                        ; Or maybe it's a function call to generate the vector
 
+
 (defmethod consumer :option-def
   [state option-def]
   (when-not (valid-definition? option-def)
@@ -375,6 +377,7 @@
     (-> state
         (update :command-options conj option-def')
         (update :option-symbols conj option-symbol)
+        (dissoc :symbol)
         (assoc :consuming :options
                :pending false))))
 
@@ -388,7 +391,8 @@
         arg-def' (append-id arg-def arg-symbol)]
     (-> state
         (update :command-args conj arg-def')
-        (update :arg-symbols conj arg-symbol)
+        (update :option-symbols conj arg-symbol)
+        (dissoc :symbol)
         (assoc :consuming :args
                :pending false))))
 
@@ -398,11 +402,11 @@
     (keyword? form)
     (consume-keyword state form)
 
-
     (not (simple-symbol? form))
     (fail "Expected argument name symbol" state form)
 
-    ;; Could check for uniqueness here
+    (contains? (-> state :option-symbols set) form)
+    (fail "Option and argument symbols must be unique" state form)
 
     :else
     (assoc state
@@ -474,11 +478,10 @@
 
 (defn compile-interface
   "Parses the interface forms of a `defcommand` into a base command map; the interface
-   defines the options and positional a2rguments that will be parsed."
+   defines the options and positional arguments that will be parsed."
   [command-doc forms]
   (let [initial-state {:consuming :options
                        :option-symbols []
-                       :arg-symbols []
                        :command-options []
                        :command-args []
                        :let-forms []
@@ -522,8 +525,8 @@
       (exit 1))
 
     :else
-    ;; Replace :arguments from the raw strings to a map
-    (assoc command-map' :arguments positional-arguments)))
+    ;; option and positional argument are verified to have unique symbols, so merge it all together
+    (update command-map' :options merge positional-arguments)))
 
 (defn- command-summary
   [v]

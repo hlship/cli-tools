@@ -36,6 +36,7 @@
                :repeatable true]]
   {:verbose verbose :host host :key-values key-values})
 
+
 (defcommand collect
   "Collect key and value."
   [:args
@@ -51,10 +52,10 @@
        (is (= {:status ~expected} (ex-data e#))))))
 
 (deftest success
-  (is (= {:verbose true
+  (is (= (configure "-v" "http://myhost.com" "fred=flintstone")
+         {:verbose true
           :host "http://myhost.com"
-          :key-values {:fred "flintstone"}}
-         (configure "-v" "http://myhost.com" "fred=flintstone")))
+          :key-values {:fred "flintstone"}}))
 
   (is (= {:verbose nil
           :host "http://myhost.com"
@@ -140,6 +141,9 @@
          (with-exit 1
                     (set-mode "-m" "unknown")))))
 
+;; This test fails under Babashka (repl/doc returns empty string) and not sure why.
+;; There's some subtle differences in now macros are expanded when meta data is involved.
+;; Just ignoring it for now.
 (deftest generate-correct-meta
   (is (= (slurp "test-resources/set-mode-doc.txt")
           (with-out-str

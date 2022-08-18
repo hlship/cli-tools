@@ -47,32 +47,31 @@
           "defcommand expects a vector to define the interface")
   (let [symbol-meta (meta command-name)
         parsed-interface (impl/compile-interface docstring interface)
-        {:keys [option-symbols arg-symbols command-map-symbol command-summary let-forms]
+        {:keys [option-symbols command-map-symbol command-summary let-forms]
          :or {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name' (or (:command-name parsed-interface)
                           (name command-name))
         let-terms (cond-> []
                     (seq option-symbols)
-                    (into `[{:keys ~option-symbols} (:options ~command-map-symbol)])
-
-                    (seq arg-symbols)
-                    (into `[{:keys ~arg-symbols} (:arguments ~command-map-symbol)]))
+                    (into `[{:keys ~option-symbols} (:options ~command-map-symbol)]))
         symbol-with-meta (cond-> (assoc symbol-meta
                                         :doc docstring
                                         :arglists '[['& 'args]]
                                         ::impl/command-name command-name')
-                           command-summary (assoc ::impl/command-summary command-summary))]
+                           command-summary (assoc ::impl/command-summary command-summary))
+        ;; Keys actually used by parse-cli and print-summary
+        parse-cli-keys [:command-args :command-options :parse-opts-options :command-doc :summary]]
     `(defn ~command-name
        ~symbol-with-meta
-       [~'& arguments#]
-       ;; arguments# is normally a seq of strings, from *command-line-arguments*, but for testing,
+       [~'& args#]
+       ;; args# is normally a seq of strings, from *command-line-arguments*, but for testing,
        ;; it can also be a map with keys :options and :arguments.
        (let [~@let-forms
-             ~command-map-symbol (if (impl/command-map? arguments#)
-                                   (first arguments#)
+             ~command-map-symbol (if (impl/command-map? args#)
+                                   (first args#)
                                    (impl/parse-cli ~command-name'
-                                                   arguments#
-                                                   ~(dissoc parsed-interface :option-symbols :arg-symbols)))
+                                                   args#
+                                                   ~(select-keys parsed-interface parse-cli-keys)))
              ~@let-terms]
          ~@body))))
 
