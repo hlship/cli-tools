@@ -1,4 +1,4 @@
-# v0.4 -- UNRELEASED
+# v0.4 -- 18 Aug 2022
 
 Added support for the :let keyword in the command interface.
 
