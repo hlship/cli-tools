@@ -29,10 +29,10 @@ terms of a command-line interface, and a body that acts on the data collected fr
 
 The interface defines options as well as positional arguments; those options and arguments are available
 in the body of the command just as if they were parameters passed to the command.
-`defcommand` defines a function that accepts a seq of command line arguments, parses them as
-options and positional arguments, binds those to local symbols, and evaluates the body.
+`defcommand` defines a function that accepts a variadic number of command line argument strings, 
+parses them as options and positional arguments, binds those to local symbols, and evaluates the body.
 
-An example to begin; let's say you are creating a Babaska command for administrating some part of your application.
+An example to begin; let's say you are creating a command for administrating some part of your application.
 You need to know a URL to update, and a set of key/value pairs to configure.  Let's throw in a `--verbose`
 option just for kicks.
 
@@ -241,6 +241,10 @@ Overrides the default name for the command, which is normally the same as the fu
 This is useful, for example, when the desired command name would conflict with a clojure.core symbol,
 or something else defined with your namespace.
 
+The `:command` option is also useful when using cli-tools to define
+the `-main` function for a simple tool (a tool with options and arguments,
+but not subcommands).
+
 ### :summary \<string\>
 
 Normally, the summary (which appears next to the command in the `help` tool summary) is just
@@ -297,10 +301,12 @@ definitions.  Further, if there are multiple `:let` blocks, they are concatinate
 
 ## Testing
 
-Normally, the function defined by `defcommand` is passed a seq of strings, from
-`*command-line-args*`; it then parses this into a map with keys `:options` and `:arguments`.
+Normally, the function defined by `defcommand` is passed a number of strings arguments, from
+`*command-line-args*`; it then parses this into a command map, a map with keys `:options` and `:arguments`
+(plus a lot of undocumented internal data).
 
-For testing purposes, you can bypass the parsing, and just pass a map to the function.
+For testing purposes, you can bypass the parsing, and just pass a single map to the function, with
+`:options` and `:arguments`.
 
 You may need to mock out `net.lewisship.cli-tools/print-summary` if your command
 invokes it, as that relies on some additional non-documented keys to

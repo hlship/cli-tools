@@ -33,8 +33,9 @@
 
    Commands must always have a docstring; this is part of the `-h` / `--help` summary.
 
-   The returned function takes a single parameter; either a seq of strings (command line arguments), or
-   a map. The latter is used only for testing, and will have keys :options and :arguments.
+   The returned function takes is variadic, accepting a number of strings, much
+   like a `-main` function. For testing purposes, it may instead by passed a single map,
+   a command map, which bypasses parsing of the arguments.
 
    Finally, the body inside a let that destructures the options and positional arguments into local symbols."
   [command-name docstring interface & body]
@@ -58,17 +59,17 @@
                     (into `[{:keys ~arg-symbols} (:arguments ~command-map-symbol)]))
         symbol-with-meta (cond-> (assoc symbol-meta
                                         :doc docstring
-                                        :arglists '[['arguments]]
+                                        :arglists '[['& 'args]]
                                         ::impl/command-name command-name')
                            command-summary (assoc ::impl/command-summary command-summary))]
     `(defn ~command-name
        ~symbol-with-meta
-       [arguments#]
+       [~'& arguments#]
        ;; arguments# is normally a seq of strings, from *command-line-arguments*, but for testing,
        ;; it can also be a map with keys :options and :arguments.
        (let [~@let-forms
-             ~command-map-symbol (if (map? arguments#)
-                                   arguments#
+             ~command-map-symbol (if (impl/command-map? arguments#)
+                                   (first arguments#)
                                    (impl/parse-cli ~command-name'
                                                    arguments#
                                                    ~(dissoc parsed-interface :option-symbols :arg-symbols)))
@@ -122,7 +123,7 @@
 (defn dispatch*
   "Invoked by [[dispatch]] after namespace and command resolution.
 
-  This can be used, for example, to avoid including the built in help command
+  This can be used, for example, to avoid including the builtin help command
   (or when providing an override).
 
   options:

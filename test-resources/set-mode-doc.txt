@@ -1,0 +1,4 @@
+-------------------------
+net.lewisship.cli-tools-test/set-mode
+[[& args]]
+  Sets the execution mode

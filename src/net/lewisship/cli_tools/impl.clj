@@ -598,5 +598,10 @@
 
       :else
       (let [command-var (get commands (first matching-names))]
-        (command-var command-args)))
+        (apply command-var command-args)))
     nil))
+
+(defn command-map?
+  [arguments]
+  (and (= 1 (count arguments))
+       (-> arguments first map?)))

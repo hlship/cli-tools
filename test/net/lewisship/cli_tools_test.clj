@@ -2,6 +2,7 @@
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [net.lewisship.cli-tools :as cli :refer [defcommand dispatch]]
             [net.lewisship.cli-tools.impl :as impl]
+            [clojure.repl :as repl]
             [clojure.string :as str]))
 
 (cli/set-prevent-exit! true)
@@ -53,33 +54,33 @@
   (is (= {:verbose true
           :host "http://myhost.com"
           :key-values {:fred "flintstone"}}
-         (configure ["-v" "http://myhost.com" "fred=flintstone"])))
+         (configure "-v" "http://myhost.com" "fred=flintstone")))
 
   (is (= {:verbose nil
           :host "http://myhost.com"
           :key-values {:fred "flintstone"
                        :barney "rubble"}}
-         (configure ["http://myhost.com" "fred=flintstone" "barney=rubble"]))))
+         (configure "http://myhost.com" "fred=flintstone" "barney=rubble"))))
 
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
-         (with-exit 0 (configure ["-h"])))))
+         (with-exit 0 (configure "-h")))))
 
 (deftest unknown-option
   (is (= (slurp "test-resources/unknown-option.txt")
-         (with-exit 1 (configure ["--debug"])))))
+         (with-exit 1 (configure "--debug")))))
 
 (deftest pos-arg-validation-failure
   (is (= (slurp "test-resources/pos-arg-validation-failure.txt")
-         (with-exit 1 (configure ["myhost.com" "fred=flinstone"])))))
+         (with-exit 1 (configure "myhost.com" "fred=flinstone")))))
 
 (deftest insuffient-values
   (is (= (slurp "test-resources/insufficient-values.txt")
-         (with-exit 1 (collect ["just-key"])))))
+         (with-exit 1 (collect "just-key")))))
 
 (deftest excess-values
   (is (= (slurp "test-resources/excess-values.txt")
-         (with-exit 1 (collect ["the-key" "the-value" "the-extra"])))))
+         (with-exit 1 (collect "the-key" "the-value" "the-extra")))))
 
 
 (defcommand in-order
@@ -98,7 +99,7 @@
 (deftest in-order-arguments
   (is (= {:command "ls", :args ["-lR"]}
          ;; Without :in-order true, the -lR is flagged as an error
-         (in-order ["-v" "ls" "-lR"]))))
+         (in-order "-v" "ls" "-lR"))))
 
 (defcommand help
            "Conflicts with built-in help"
@@ -137,4 +138,9 @@
 (deftest let-directive
   (is (= (slurp "test-resources/let-directive.txt")
          (with-exit 1
-                    (set-mode ["-m" "unknown"])))))
+                    (set-mode "-m" "unknown")))))
+
+(deftest generate-correct-meta
+  (is (= (slurp "test-resources/set-mode-doc.txt")
+          (with-out-str
+            (repl/doc set-mode)))))
