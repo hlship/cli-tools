@@ -65,7 +65,7 @@
        ~symbol-with-meta
        [~'& args#]
        ;; args# is normally a seq of strings, from *command-line-arguments*, but for testing,
-       ;; it can also be a map with keys :options and :arguments.
+       ;; it can also be a map with key :options
        (let [~@let-forms
              ~command-map-symbol (if (impl/command-map? args#)
                                    (first args#)
