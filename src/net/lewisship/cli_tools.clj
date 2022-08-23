@@ -2,6 +2,15 @@
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
   (:require [net.lewisship.cli-tools.impl :as impl]))
 
+(defn exit
+  "An indirect call to System/exit, passing a numeric status code (0 for success, non-zero for
+  an error).
+
+  This is provided so that, during testing, when [[set-prevent-exit!]] has been called, the call
+  to `exit` will instead throw an exception."
+  [status]
+  (impl/exit status))
+
 (defn set-prevent-exit!
   "Normally, after displaying a command summary, `System/exit` is called (with 0 if for --help,
    or 1 if a validation error).

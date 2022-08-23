@@ -1,3 +1,7 @@
+# v0.5 -- UNRELEASED
+
+Add public `exit` function as a testable way to call `System/exit`.
+
 # v0.4 -- 18 Aug 2022
 
 Added support for the :let keyword in the command interface.

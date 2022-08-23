@@ -17,14 +17,14 @@ has its own unique options and arguments; `cli-tools` identifies the command fro
 argument, then passes the remaining arguments to the selected command.
 
 `cli-tools` can be used for tools that simply have options and arguments but not commands.  
-It isn't intended for tools that have more deeply nested levels of sub-commands.
+It isn't intended for tools that have more deeply ne[sted levels of sub-commands.
 
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
 for the kind of low-ceremony tools that `cli-tools` is intended for.
 
 ## defcommand
 
-The core utility is the function `net.lewisship.cli-tools/defcommand`, which defines a command in
+The core utility is the `net.lewisship.cli-tools/defcommand` macro, which defines a command in
 terms of a command-line interface, and a body that acts on the data collected from the command line.
 
 The interface defines options as well as positional arguments; those options and arguments are available
@@ -316,6 +316,9 @@ Finally, validation errors normally print a command summary and then
 call `System/exit`, which is problematic for tests;
 `net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
 throw an exception, which can be caught by tests.
+
+Further, application code should also invoke `net.lewisship.cli-tools/exit`
+rather than `System/exit`.
 
 ## License
 

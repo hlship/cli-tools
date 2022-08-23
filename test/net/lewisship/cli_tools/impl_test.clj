@@ -17,7 +17,7 @@
              :command-options
              butlast))))
 
-(deftest let-requires-a-vecteor
+(deftest let-requires-a-vector
   (when-let [e (is (thrown? Exception
                             (compile-interface nil '[:let :foo])))]
     (is (= "Expected a vector of symbol/expression pairs" (ex-message e)))

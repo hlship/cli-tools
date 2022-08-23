@@ -63,6 +63,10 @@
                        :barney "rubble"}}
          (configure "http://myhost.com" "fred=flintstone" "barney=rubble"))))
 
+(deftest exit-will-throw-exception-instead
+  (with-exit 999
+             (cli/exit 999)))
+
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
          (with-exit 0 (configure "-h")))))
