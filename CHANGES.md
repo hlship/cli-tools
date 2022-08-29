@@ -2,6 +2,11 @@
 
 Add public `exit` function as a testable way to call `System/exit`.
 
+Now highlights the tool name and command name in bold, in error messages.
+
+Now suggests the most likely command name when the given name doesn't match exactly one
+command.
+
 # v0.4 -- 18 Aug 2022
 
 Added support for the :let keyword in the command interface.

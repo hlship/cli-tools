@@ -1,7 +1,9 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as str]
-            [clojure.tools.cli :as cli]))
+            [io.aviso.ansi :as ansi]
+            [clojure.tools.cli :as cli]
+            [clj-fuzzy.metrics :as m]))
 
 (def prevent-exit false)
 
@@ -57,6 +59,17 @@
     (println (if (= 1 (count errors)) "Error:" "Errors:"))
     (doseq [e errors]
       (println (str "  " e)))))
+
+(defn fuzzy-matches
+  [s values]
+  (->> values
+       (map (fn [v]
+              (assoc (m/mra-comparison s v)
+                     :word v)))
+       (filter :match)
+       (sort-by :simularity)
+       reverse
+       (map :word)))
 
 (defn- arg-spec->str
   [arg-spec]
@@ -564,7 +577,7 @@
 (defn use-help-message
   [tool-name commands]
   (if (contains? commands "help")
-    (format ", use %s help to list commands" tool-name)
+    (format ", use %s%s %s%s to list commands." ansi/bold-font tool-name "help" ansi/reset-font)
     ""))
 
 (defn dispatch
@@ -587,22 +600,39 @@
           (str/starts-with? command-name "-"))
       (abort (str tool-name ": no command provided" (use-help-message tool-name commands)))
 
-      :let [matching-names (find-matches commands command-name)]
+      :let [matching-names (find-matches commands command-name)
+            match-count (count matching-names)]
 
-      (empty? matching-names)
-      (abort (str tool-name ": " command-name " is not a command" (use-help-message tool-name commands)))
-
-      (> (count matching-names) 1)
-      (abort (format "%s: %s matches %d commands: %s"
-                     tool-name
-                     command-name
-                     (count matching-names)
-                     (->> matching-names sort (str/join ", "))))
+      (not= 1 match-count)
+      (let [body (if (pos? match-count)
+                   (format "matches %d commands" match-count)
+                   "is not a command")
+            fuzzy-match (first (fuzzy-matches command-name
+                                              (keys commands)))
+            suffix (when fuzzy-match
+                     (format ", did you mean %s?"
+                             (ansi/bold fuzzy-match)))
+            help? (contains? commands "help")
+            help-suffix (when help?
+                          (str
+                            (if suffix " Use " ", use ")
+                            ansi/bold-font
+                            tool-name " "
+                            "help"
+                            ansi/reset-font
+                            " to list commands."))]
+        (abort (str
+                 (format "%s: %s "
+                         tool-name
+                         (ansi/bold command-name))
+                 body
+                 suffix
+                 help-suffix)))
 
       :else
       (let [command-var (get commands (first matching-names))]
         (apply command-var command-args)))
-    nil))
+      nil))
 
 (defn command-map?
   [arguments]

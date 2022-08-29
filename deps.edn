@@ -1,6 +1,8 @@
 {:paths ["src"]
  ;; Needed to build and test w/ clojure
- :deps {org.clojure/tools.cli {:mvn/version "1.0.206"}}
+ :deps {org.clojure/tools.cli {:mvn/version "1.0.206"}
+        io.aviso/pretty {:mvn/version "1.1.1"}
+        clj-fuzzy/clj-fuzzy {:mvn/version "0.4.1"}}
  :aliases
  {:dev
   {:extra-paths ["test" "test-resources"]}

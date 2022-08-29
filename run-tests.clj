@@ -3,9 +3,14 @@
 ;; Just execute this script to run test under Babashka
 
 (require '[clojure.test :as t]
+         '[clojure.java.shell :refer [sh]]
+         '[clojure.string :as str]
          '[babashka.classpath :as cp])
 
-(cp/add-classpath "src:test:test-resources")
+(def cp (-> (sh "clojure" "-Spath" "-A:dev")
+            :out
+            str/trim))
+(cp/add-classpath cp)
 
 (def test-namespaces '[net.lewisship.cli-tools-test
                        net.lewisship.cli-tools.impl-test])

@@ -1,6 +1,7 @@
 (ns net.lewisship.cli-tools.impl-test
-  (:require [clojure.test :refer [deftest is]])
-  (:require [net.lewisship.cli-tools.impl :refer [compile-interface]]
+  (:require [clojure.test :refer [deftest is]]
+            [io.aviso.ansi :as ansi]
+            [net.lewisship.cli-tools.impl :refer [compile-interface]]
             [net.lewisship.cli-tools.impl :as impl]))
 
 (deftest no-options
@@ -117,9 +118,10 @@
          (:command-name (compile-interface nil '[:command "overridden"])))))
 
 (deftest omits-tool-help-when-help-not-available
-  (is (= ", use this-tool help to list commands"
-         (impl/use-help-message "this-tool" {"help" nil
-                                             "some-command" nil})))
+  (is (= ", use this-tool help to list commands."
+         (ansi/strip-ansi
+           (impl/use-help-message "this-tool" {"help" nil
+                                               "some-command" nil}))))
   (is (= ""
          (impl/use-help-message "this-tool" {"some-command" nil}))))
 
@@ -141,7 +143,8 @@
       (impl/dispatch {:tool-name "loco"
                       :commands {"help" nil}
                       :arguments ["-not-such-option"]})
-      (is (= "loco: no command provided, use loco help to list commands" @*message*))
+      (is (= "loco: no command provided, use loco help to list commands."
+             (ansi/strip-ansi @*message*)))
 
       (reset! *message* nil)
 
@@ -149,4 +152,5 @@
                       :commands {"help" nil}
                       :arguments ["no-such-command"]})
 
-      (is (= "bravo: no-such-command is not a command, use bravo help to list commands" @*message*)))))
+      (is (= "bravo: no-such-command is not a command, use bravo help to list commands."
+             (ansi/strip-ansi @*message*))))))
