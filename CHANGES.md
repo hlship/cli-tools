@@ -1,4 +1,4 @@
-# v0.5 -- UNRELEASED
+# v0.5 -- 29 Aug 2022
 
 Add public `exit` function as a testable way to call `System/exit`.
 
