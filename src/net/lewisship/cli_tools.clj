@@ -1,6 +1,7 @@
 (ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
-  (:require [net.lewisship.cli-tools.impl :as impl]))
+  (:require [net.lewisship.cli-tools.impl :as impl]
+            [clojure.string :as str]))
 
 (defn exit
   "An indirect call to System/exit, passing a numeric status code (0 for success, non-zero for
@@ -33,6 +34,44 @@
   errors is a seq of strings to display as errors."
   [command-map errors]
   (impl/print-summary command-map errors))
+
+(defn best-match
+  "Given an input string and a seq of possible values, returns the matching value if it can
+  be uniquely identified.
+
+  values may be strings, symbols, or keywords.
+
+  best-match does a caseless substring match against the provided values. It returns the single
+  value that matches the input. It returns nil if no value matches, or if multiple values match.
+
+  Some special handling for the `-` character; the input value is split on `-` and turned into
+  a generous regular expression that matches the substring on either side of the `-` as well as the `-`
+  itself.
+
+  Returns the string/symbol/keyword from values.
+
+  e.g. `:parse-fn #(cli-tools/best-match % #{:red :green :blue})` would parse an input of `red` to
+  `:red`, or an input of `b` to `:blue`; `z` matches nothing and returns nil, as would
+  `e` which matches multiple values.
+
+  Expects symbols and keywords to be unqualified."
+  [input values]
+  (let [m (reduce (fn [m v]
+                    (assoc m (name v) v))
+                  {}
+                  values)
+        matches (impl/find-matches input (keys m))]
+    (when (= 1 (count matches))
+      (get m (first matches)))))
+
+(defn sorted-name-list
+  "Converts a seq of strings, keywords, or symbols (as used with [[best-match]]) to a comma-separated
+  string listing the values. This is often used with help summary or error messages related."
+  [values]
+  (->> values
+       (map name)
+       sort
+       (str/join ", ")))
 
 (defmacro defcommand
   "Defines a command.

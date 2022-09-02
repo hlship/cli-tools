@@ -3,7 +3,8 @@
   (:require [clojure.string :as str]
             [io.aviso.ansi :as ansi]
             [clojure.tools.cli :as cli]
-            [clj-fuzzy.metrics :as m]))
+            [clj-fuzzy.metrics :as m])
+  (:import (java.util.regex Pattern)))
 
 (def prevent-exit false)
 
@@ -563,21 +564,33 @@
                       (-> commands (get k) command-summary))))))
   (exit 0))
 
-(defn- find-matches
-  [m s]
-  ;; If can find an exact match, then keep just that;
-  (if (get m s)
-    [s]
-    ;; Otherwise, look for command names prefixed by the string
-    ;; TODO: something more sophisticated, maybe convert "foo-bar" to #"foo(.*)bar" for matching?
-    (->> m
-         keys
-         (filter #(str/starts-with? % s)))))
+(defn- to-matcher
+  [s]
+  (let [terms (str/split s #"\-")
+        re-pattern (apply str "(?i)"
+                          (map-indexed (fn [i term]
+                                         (str
+                                           (when (pos? i) "\\-")
+                                           ".*\\Q" term "\\E.*")
+                                         )
+                                       terms))
+        re (Pattern/compile re-pattern)]
+    (fn [input]
+      (re-matches re input))))
+
+(defn find-matches
+  [s values]
+  (let [values' (set values)]
+    ;; If can find an exact match, then keep just that;
+    (if (contains? values' s)
+      [s]
+      ;; Otherwise, treat s as a match string and find any values that loosely match it.
+      (filter (to-matcher s) values'))))
 
 (defn use-help-message
   [tool-name commands]
   (if (contains? commands "help")
-    (format ", use %s%s %s%s to list commands." ansi/bold-font tool-name "help" ansi/reset-font)
+    (format ", use %s %s to list commands." (ansi/bold tool-name) (ansi/bold "help"))
     ""))
 
 (defn dispatch
@@ -600,7 +613,7 @@
           (str/starts-with? command-name "-"))
       (abort (str tool-name ": no command provided" (use-help-message tool-name commands)))
 
-      :let [matching-names (find-matches commands command-name)
+      :let [matching-names (find-matches command-name (keys commands))
             match-count (count matching-names)]
 
       (not= 1 match-count)

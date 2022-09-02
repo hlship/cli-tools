@@ -1,5 +1,5 @@
 (ns net.lewisship.cli-tools-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is use-fixtures are]]
             [net.lewisship.cli-tools :as cli :refer [defcommand dispatch]]
             [net.lewisship.cli-tools.impl :as impl]
             [clojure.repl :as repl]
@@ -152,3 +152,29 @@
   (is (= (slurp "test-resources/set-mode-doc.txt")
           (with-out-str
             (repl/doc set-mode)))))
+
+(deftest best-match
+  (let [colors #{:red :green :blue}
+        commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}]
+    (are [input values expected] (= expected (cli/best-match input values))
+
+                                 "r" colors nil             ; multiple matches
+                                 "red" colors :red          ; exact match
+                                 "b" colors :blue           ; partial match
+                                 "z" colors nil             ; no match
+
+                                 "Red" colors :red          ; caseless
+
+                                 "exact" #{:exact :exact-is-prefix} :exact
+
+                                 "h" commands :help
+                                 "g" commands nil
+                                 "g-g" commands :gnip-gnop
+                                 "frob-wg" commands nil
+                                 "f-g" commands :frob-widget
+                                 "t-t" commands nil
+                                 "ti-t" commands :tip-top)))
+
+(deftest sorted-name-list
+  (is (= "foxtrot, tango, whiskey"
+         (cli/sorted-name-list [:whiskey :tango :foxtrot]))))
