@@ -74,18 +74,37 @@ command line arguments.
 A namespace with commands is only part of the solution, to get from a terminal command line
 to the body of the `configure` function, we need to add a bit of infrastructure.
 
-First, we need a main namespace.
+Since our tool is built in Babashka, we need a `bb.edn` file to set up the classpath (we would create
+a `deps.edn` file, if the tool requires Clojure).
 
-**src/app_admin/main.clj**:
+**bb.edn**:
 
 ```clojure
-(ns app-admin.main
-  (:require [net.lewisship.cli-tools :as cli-tools]))
-
-(defn -main [& _]
-  (cli-tools/dispatch {:tool-name "app-admin"
-                       :namespaces ['app-admin.commands]}))
+{:paths ["src"]
+ :deps io.github.hlship/cli-tools {:mvn/version "<version>"}}
 ```
+
+Next, we need a Babashka script, `app-admin`, to properly invoke `bb`:
+
+**bin/app-admin**:
+
+```shell
+#!/usr/bin/env bb
+
+(require '[net.lewisship.cli-tools :as cli])
+
+(cli/dispatch {:tool-name "app-admin"
+               :namespaces '[app-admin.commands]})
+```
+
+The first line identifies, to the shell, that this command is implemented using Babashka.
+On startup, Babashka will scan upwards from this script file, to find the `bb.edn` file that defines the dependencies
+and classpath.
+
+The above assumes that `bin` is a subdirectory, and that `bb.edn` is stored above it, at the project root.
+
+The final step is to add that `bin` directory to the shell `$PATH` environment variable; this is done in your
+`~/.zshrc` file, or equivalent.
 
 `dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument and use
 it to find the correct command to delegate to.  That command gets the remaining command line arguments.
@@ -95,31 +114,7 @@ it to find the correct command to delegate to.  That command gets the remaining 
 Finally, `dispatch` will allow an abbreviation of a command name to work, as long as that abbeviation uniquely
 identifies a single possible command.
 
-Since our tool is built in Babashka, we need a `bb.edn` that sets up the classpath (we would create
-a `deps.edn` file, if the tool requires Clojure).
-
-**bb.edn**:
-
-```clojure
-{:paths ["src"]
- :deps io.github.hlship/cli-tools {:mvn/version "<version>"}}}
-```
-
-Next, we need a Bash script, `app-admin`, to properly invoke `bb`:
-
-**bin/app-admin**:
-
-```shell
-#!/usr/bin/env bash
-set -euo pipefail
-/usr/bin/env bb --config $(dirname $0)/../bb.edn -m app-admin.main $@
-```
-
-The above assumes that `bin` is a subdirectory, and that `bb.edn` is stored above it, at the project root.
-
-The final step is to add that `bin` directory to the shell `$PATH` environment variable.
-
-With all this in place, we can now run `app-admin configure` through its paces:
+With all that in place, we can now run `app-admin configure` through its paces:
 
 ```
 > app-admin configure -h
@@ -135,6 +130,10 @@ Arguments:
   DATA: Data to configure as KEY=VALUE
 > 
 ```
+
+> You may see a short delay the first time your script is executed as dependencies are determined and downloaded;
+> Subsequent executions are lightning fast.
+
 
 Help is provided automatically, and builds its content from the interface and the docstring
 of the function.  The docstring is required.
