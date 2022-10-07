@@ -3,7 +3,8 @@
   (:require [clojure.string :as str]
             [io.aviso.ansi :as ansi]
             [clojure.tools.cli :as cli]
-            [clj-fuzzy.metrics :as m])
+            [clj-fuzzy.metrics :as m]
+            [clojure.java.io :as io])
   (:import (java.util.regex Pattern)))
 
 (def prevent-exit false)
@@ -651,3 +652,8 @@
   [arguments]
   (and (= 1 (count arguments))
        (-> arguments first map?)))
+
+(defn default-tool-name
+  []
+  (when-let [path (System/getProperty "babashka.file")]
+    (-> path io/file .getName)))

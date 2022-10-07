@@ -89,12 +89,11 @@ sets up the classpath and invokes `cli/dispatch`.
       paths [(fs/path root "src")
              (fs/path root "resources")]]
   (deps/add-deps {:paths paths
-                   :deps '{io.github.hlship/cli-tools {:mvn/version "0.5"}}}))
+                  :deps '{io.github.hlship/cli-tools {:mvn/version "<mvn version>"}}}))
 
 (require '[net.lewisship.cli-tools :as cli])
 
-(cli/dispatch {:tool-name "app-admin"
-               :namespaces '[app-admin.commands]})
+(cli/dispatch {:namespaces '[app-admin.commands]})
 ```
 
 The first line identifies, to the shell, that this command is implemented using Babashka.
@@ -106,6 +105,7 @@ Once the dependencies have been added, it is safe to load the `cli-tools` namesp
 
 `dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument, and use
 it to find the correct command to delegate to.  That command gets the remaining command line arguments.
+The default tool name will be the name of the script, `app-admin`.
 
 `dispatch` also recognizes `-h`, `--help`, or `help`, and will print out a summary of the available commands.
 

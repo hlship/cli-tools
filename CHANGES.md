@@ -3,6 +3,8 @@
 Exposed a `best-match` function which uses the same match logic as
 the dispatch function.
 
+Added default for :tool-name option (to `dispatch`), determined from the `babashka.file` system property.
+
 # 0.5 -- 29 Aug 2022
 
 Add public `exit` function as a testable way to call `System/exit`.

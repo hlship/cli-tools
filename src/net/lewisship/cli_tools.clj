@@ -178,7 +178,9 @@
   - :tool-name - used in command summary and errors
   - :tool-doc - used in command summary
   - :arguments - seq of strings; first is name of command, rest passed to command
-  - :commands - map from string command name to a var defined via [[defcommand]]
+  - :commands - map from string command name to a var (defined via [[defcommand]])
+
+  All options are required.
 
   Returns nil."
   [options]
@@ -190,10 +192,14 @@
 
   options:
   
-  - :tool-name (required, string) - used in command summary and errors
-  - :tool-doc (options, string) - used in help summary
+  - :tool-name (optional, string) - used in command summary and errors
+  - :tool-doc (optional, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to *command-line-args*)
   - :namespaces - symbols identifying namespaces to search for commands
+
+  The :tool-name option is only semi-optional; in a Babashka script, it will default
+  from the `babashka.file` system property, if any. An exception is thrown if :tool-name
+  is not provided and can't be defaulted.
 
   The default for :tool-doc is the docstring of the first namespace.
 
@@ -209,6 +215,9 @@
   Returns nil."
   [options]
   (let [{:keys [namespaces arguments tool-name tool-doc]} options
+        tool-name' (or tool-name
+                       (impl/default-tool-name)
+                       (throw (ex-info "No :tool-name specified" {:options options})))
         _ (when-not (seq namespaces)
             (throw (ex-info "No :namespaces specified" {:options options})))
         ;; Add this namespace, to include the help command by default
@@ -217,7 +226,7 @@
                    (run! require namespaces)
                    ;; Ensure built-in help command is first
                    (locate-commands (cons 'net.lewisship.cli-tools namespaces)))]
-    (dispatch* {:tool-name tool-name
+    (dispatch* {:tool-name tool-name'
                 :tool-doc (or tool-doc
                               (some-> namespaces first find-ns meta :doc))
                 :commands commands
