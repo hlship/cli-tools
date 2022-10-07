@@ -9,6 +9,7 @@
           :let-forms []
           :command-options [["-h" "--help" "This command summary" :id :help]]
           :command-args []
+          :validate-cases []
           :command-doc "<DOC>"}
          (compile-interface "<DOC>" []))))
 
@@ -43,6 +44,18 @@
                                             b :b]
                                       :let [c :c]])
              :let-forms))))
+
+(deftest validate-must-be-vector-with-even-count
+  (is (thrown-with-msg? Exception #"Expected a vector of test/message pairs"
+                        (compile-interface nil '[:validate foo])))
+  (is (thrown-with-msg? Exception #"Expected even number of tests and messages"
+                        (compile-interface nil '[:validate [1 2 3]]))))
+
+(deftest validate-forms-collect
+  (is (= '[1 2 a b]
+         (-> (compile-interface nil '[:validate [1 2]
+                                     :validate [a b]])
+             :validate-cases))))
 
 (deftest docstring-becomes-doc
   (is (= [["-x" "--execute" "Command to execute" :id :execute?]]

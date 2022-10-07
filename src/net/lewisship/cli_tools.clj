@@ -81,9 +81,9 @@
 
    Commands must always have a docstring; this is part of the `-h` / `--help` summary.
 
-   The returned function takes is variadic, accepting a number of strings, much
-   like a `-main` function. For testing purposes, it may instead by passed a single map,
-   a command map, which bypasses parsing of the arguments.
+   The returned function is variadic, accepting a number of strings, much
+   like a `-main` function. For testing purposes, it may instead be passed a single map,
+   a command map, which bypasses parsing of the arguments, and is used only for testing.
 
    Finally, the body inside a let that destructures the options and positional arguments into local symbols."
   [command-name docstring interface & body]
@@ -95,32 +95,39 @@
           "defcommand expects a vector to define the interface")
   (let [symbol-meta (meta command-name)
         parsed-interface (impl/compile-interface docstring interface)
-        {:keys [option-symbols command-map-symbol command-summary let-forms]
+        {:keys [option-symbols command-map-symbol command-summary let-forms validate-cases]
          :or {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name' (or (:command-name parsed-interface)
                           (name command-name))
-        let-terms (cond-> []
-                    (seq option-symbols)
-                    (into `[{:keys ~option-symbols} (:options ~command-map-symbol)]))
+        let-option-symbols (cond-> []
+                             (seq option-symbols)
+                             (into `[{:keys ~option-symbols} (:options ~command-map-symbol)]))
         symbol-with-meta (cond-> (assoc symbol-meta
                                         :doc docstring
                                         :arglists '[['& 'args]]
                                         ::impl/command-name command-name')
                            command-summary (assoc ::impl/command-summary command-summary))
         ;; Keys actually used by parse-cli and print-summary
-        parse-cli-keys [:command-args :command-options :parse-opts-options :command-doc :summary]]
+        parse-cli-keys [:command-args :command-options :parse-opts-options :command-doc :summary]
+        validations (when (seq validate-cases)
+                      `(when-let [message# (cond ~@(impl/invert-tests-in-validate-cases validate-cases))]
+                         (print-summary ~command-map-symbol [message#])
+                         (exit 1)))]
     `(defn ~command-name
        ~symbol-with-meta
        [~'& args#]
-       ;; args# is normally a seq of strings, from *command-line-arguments*, but for testing,
-       ;; it can also be a map with key :options
        (let [~@let-forms
-             ~command-map-symbol (if (impl/command-map? args#)
+             ;; args# is normally a seq of strings, from *command-line-arguments*, but for testing,
+             ;; it can also be a map with key :options
+             test-mode?# (impl/command-map? args#)
+             ~command-map-symbol (if test-mode?#
                                    (first args#)
                                    (impl/parse-cli ~command-name'
                                                    args#
                                                    ~(select-keys parsed-interface parse-cli-keys)))
-             ~@let-terms]
+             ~@let-option-symbols]
+         (when-not test-mode?#
+           ~validations)
          ~@body))))
 
 (defcommand help

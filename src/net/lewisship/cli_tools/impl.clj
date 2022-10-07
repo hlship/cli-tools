@@ -11,7 +11,7 @@
 
 (def ^:dynamic *options* nil)
 
-(def ^:private supported-keywords  #{:in-order :as :args :options :command :summary :let})
+(def ^:private supported-keywords  #{:in-order :as :args :options :command :summary :let :validate})
 
 (defn exit
   [status]
@@ -491,6 +491,18 @@
       (assoc :command-summary form)
       complete-keyword))
 
+(defmethod consumer :validate
+  [state form]
+  (when-not (vector? form)
+    (fail "Expected a vector of test/message pairs" state form))
+
+  (when-not (-> form count even?)
+    (fail "Expected even number of tests and messages" state form))
+
+  (-> state
+      (update :validate-cases into form)
+      complete-keyword))
+
 (defn compile-interface
   "Parses the interface forms of a `defcommand` into a base command map; the interface
    defines the options and positional arguments that will be parsed."
@@ -500,6 +512,7 @@
                        :command-options []
                        :command-args []
                        :let-forms []
+                       :validate-cases []
                        :command-doc command-doc}
         final-state (reduce consumer
                             initial-state forms)]
@@ -657,3 +670,13 @@
   []
   (when-let [path (System/getProperty "babashka.file")]
     (-> path io/file .getName)))
+
+(defn invert-tests-in-validate-cases
+  [validate-cases]
+  (->> validate-cases
+       (partition 2)
+       (mapcat (fn [[test expr]]
+                 [(list not test) expr])))
+
+
+  )

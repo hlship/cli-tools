@@ -51,6 +51,14 @@
        (is (= "Exit" (ex-message e#)))
        (is (= {:status ~expected} (ex-data e#))))))
 
+(defmacro with-exit-errors
+  [expected-errors & body]
+  `(let [*errors# (atom nil)]
+     (with-redefs [cli/print-summary (fn [_command-map# errors#]
+                                       (reset! *errors# errors#))]
+       (with-exit 1 ~@body))
+     (is (= @*errors# ~expected-errors))))
+
 (deftest success
   (is (= (configure "-v" "http://myhost.com" "fred=flintstone")
          {:verbose true
@@ -145,13 +153,30 @@
          (with-exit 1
                     (set-mode "-m" "unknown")))))
 
+(defcommand validate
+  ""
+  [a ["-a" "--alpha S"]
+   n ["-n" "--numeric N"]
+   :validate [(some? a) "--alpha is required"
+              (some? n) "--numeric is required"
+              (not (and a n)) "--alpha and --numeric are exclusive"]])
+
+(deftest validate-directive
+
+  (with-exit-errors ["--numeric is required"]
+                    (validate "-a" "alpha" ))
+
+  (with-exit-errors ["--alpha and --numeric are exclusive"]
+                    (validate "-a" "alpha" "-n" "123")))
+
+
 ;; This test fails under Babashka (repl/doc returns empty string) and not sure why.
 ;; There's some subtle differences in now macros are expanded when meta data is involved.
 ;; Just ignoring it for now.
 (deftest generate-correct-meta
   (is (= (slurp "test-resources/set-mode-doc.txt")
-          (with-out-str
-            (repl/doc set-mode)))))
+         (with-out-str
+           (repl/doc set-mode)))))
 
 (deftest best-match
   (let [colors #{:red :green :blue}

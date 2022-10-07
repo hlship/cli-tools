@@ -299,6 +299,28 @@ and arguments definitions; the `:let` keyword is followed by a vector of binding
 In the expanded code, the bindings are moved to the top, before the option and argument
 definitions.  Further, if there are multiple `:let` blocks, they are concatinated.
 
+### :validate \<vector of test/message pairs\>
+
+Often you will need to perform validations that consider multiple fields.
+The `:validate` directive adds tests that occur after primary parsing of command line options
+has occurred, but before executing the body of the function.
+
+It is a vector of tests and messages.
+Each test expression is evaluated in turn; if the result is falsey, then the message
+is passed to `print-summary` as an error, and `exit` is called with the value 1.
+
+A common case is to handle mutually exclusive arguments:
+
+```clojure
+(defcommand sort-data
+  "Sorts some data"
+  [alpha ["-a" "--alpha-numeric" "Sort in alpha-numeric order"]
+   numeric ["-n" "--numeric" "Sort in numeric order"]
+   :validate [(not (and alpha numeric)) "Only one of --alpha-numeric or --numeric is allowed"]]
+  ; At most one of alpha or numeric is true here
+)
+```
+
 ## Testing
 
 Normally, the function defined by `defcommand` is passed a number of strings arguments, from
@@ -316,6 +338,9 @@ Finally, validation errors normally print a command summary and then
 call `System/exit`, which is problematic for tests;
 `net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
 throw an exception, which can be caught by tests.
+
+When passing a map to a command function, the validations (defined by the :validate directive)
+are bypassed.
 
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
 rather than `System/exit`.
