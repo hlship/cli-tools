@@ -1,4 +1,4 @@
-# 0.6 -- UNRELEASED
+# 0.6 -- 7 Oct 2022
 
 Exposed a `best-match` function which uses the same match logic as
 the dispatch function.
