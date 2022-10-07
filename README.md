@@ -72,24 +72,24 @@ evaluated if help is requested, or if there's any kind of validation error proce
 command line arguments.
 
 A namespace with commands is only part of the solution, to get from a terminal command line
-to the body of the `configure` function, we need to add a bit of infrastructure.
+to the body of the `configure` function, we need to add Babashka script, `bin/app-admin`, which 
+sets up the classpath and invokes `cli/dispatch`.
 
-Since our tool is built in Babashka, we need a `bb.edn` file to set up the classpath (we would create
-a `deps.edn` file, if the tool requires Clojure).
-
-**bb.edn**:
-
-```clojure
-{:paths ["src"]
- :deps io.github.hlship/cli-tools {:mvn/version "<version>"}}
-```
-
-Next, we need a Babashka script, `app-admin`, to properly invoke `bb`:
 
 **bin/app-admin**:
 
 ```shell
 #!/usr/bin/env bb
+
+(require '[babashka.deps :as deps])
+
+(let [root (-> *file*
+              fs/parent
+              fs/parent)
+      paths [(fs/path root "src")
+             (fs/path root "resources")]]
+  (deps/add-deps {:paths paths
+                   :deps '{io.github.hlship/cli-tools {:mvn/version "0.5"}}}))
 
 (require '[net.lewisship.cli-tools :as cli])
 
@@ -98,21 +98,22 @@ Next, we need a Babashka script, `app-admin`, to properly invoke `bb`:
 ```
 
 The first line identifies, to the shell, that this command is implemented using Babashka.
-On startup, Babashka will scan upwards from this script file, to find the `bb.edn` file that defines the dependencies
-and classpath.
 
-The above assumes that `bin` is a subdirectory, and that `bb.edn` is stored above it, at the project root.
+`*file*` is the path name of the file for this script; from that, we can find the root directory, and add
+ `src` and `resources` to the final classpath.
 
-The final step is to add that `bin` directory to the shell `$PATH` environment variable; this is done in your
-`~/.zshrc` file, or equivalent.
+Once the dependencies have been added, it is safe to load the `cli-tools` namespace and invoke `dispatch`.
 
-`dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument and use
+`dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument, and use
 it to find the correct command to delegate to.  That command gets the remaining command line arguments.
 
 `dispatch` also recognizes `-h`, `--help`, or `help`, and will print out a summary of the available commands.
 
 Finally, `dispatch` will allow an abbreviation of a command name to work, as long as that abbeviation uniquely
 identifies a single possible command.
+
+The final step is to add that `bin` directory to the shell `$PATH` environment variable; this is done in your
+`~/.zshrc` file, or equivalent.
 
 With all that in place, we can now run `app-admin configure` through its paces:
 
@@ -136,7 +137,7 @@ Arguments:
 
 
 Help is provided automatically, and builds its content from the interface and the docstring
-of the function.  The docstring is required.
+of each command function.  The docstring is required.
 
 Validations are reported as the command summary with errors at the end:
 
