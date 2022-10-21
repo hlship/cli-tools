@@ -1,3 +1,7 @@
+# 0.7 -- UNRELEASED
+
+Make use of more fonts, and bump io.aviso/pretty to version 1.3.
+
 # 0.6 -- 7 Oct 2022
 
 Exposed a `best-match` function which uses the same match logic as

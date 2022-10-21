@@ -1,4 +1,4 @@
-Usage: harness configure [OPTIONS] HOST KV-DATA+
+Usage: [1mharness[m [1mconfigure[m [OPTIONS] HOST KV-DATA+
 Configures the system for some thing.
 
 This is more detail.

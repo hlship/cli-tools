@@ -1,4 +1,4 @@
-Usage: harness configure [OPTIONS] HOST KV-DATA+
+Usage: [1mharness[m [1mconfigure[m [OPTIONS] HOST KV-DATA+
 Configures the system for some thing.
 
 This is more detail.
@@ -16,5 +16,5 @@ Arguments:
   KV-DATA: Data to configure as KEY=VALUE
 
 Errors:
-  Unknown option: "--debug"
-  No value for required argument HOST
+  [31mUnknown option: "--debug"[m
+  [31mNo value for required argument HOST[m

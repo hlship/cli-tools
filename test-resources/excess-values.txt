@@ -1,4 +1,4 @@
-Usage: harness collect [OPTIONS] KEY VAL
+Usage: [1mharness[m [1mcollect[m [OPTIONS] KEY VAL
 Collect key and value.
 
 Options:
@@ -9,4 +9,4 @@ Arguments:
   VAL: Value to set
 
 Error:
-  Unexpected argument 'the-extra'
+  [31mUnexpected argument 'the-extra'[m

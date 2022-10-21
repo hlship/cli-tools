@@ -2,10 +2,10 @@
 
 (ns build
   (:require [clojure.tools.build.api :as b]
-            [net.lewisship.build :refer [requiring-invoke]]))
+            [net.lewisship.build :refer [requiring-invoke] :as bt]))
 
 (def lib 'io.github.hlship/cli-tools)
-(def version "0.6")
+(def version "0.7")
 
 (def jar-params {:project-name lib
                  :version version})
@@ -16,16 +16,15 @@
 
 (defn jar
   [_params]
-  (requiring-invoke net.lewisship.build.jar/create-jar jar-params))
+  (bt/create-jar jar-params))
 
 (defn deploy
   [_params]
   (clean nil)
-  (jar nil)
-  (requiring-invoke net.lewisship.build.jar/deploy-jar jar-params))
+  (-> jar-params
+      bt/create-jar
+      bt/deploy-jar))
 
 (defn codox
   [_params]
-  (requiring-invoke net.lewisship.build.codox/generate
-                    {:project-name lib
-                     :version version}))
+  (bt/generate-codox jar-params))

@@ -60,7 +60,7 @@
     (println)
     (println (if (= 1 (count errors)) "Error:" "Errors:"))
     (doseq [e errors]
-      (println (str "  " e)))))
+      (println (str "  " (ansi/red e))))))
 
 (defn fuzzy-matches
   [s values]
@@ -131,7 +131,9 @@
   (let [{:keys [tool-name]} *options*
         {:keys [command-name positional-specs command-doc summary]} command-map]
     (apply println
-           (remove nil? (concat ["Usage:" tool-name command-name
+           (remove nil? (concat ["Usage:" (when tool-name
+                                            (ansi/bold tool-name))
+                                 (ansi/bold command-name)
                                  "[OPTIONS]"]
                                 (map arg-spec->str positional-specs))))
 
@@ -324,7 +326,8 @@
                  ;; next spec and next argument
                  (assoc state' :specs more-specs)))))))
 
-(defn abort [s]
+(defn abort
+  [s]
   (println-err s)
   (exit 1))
 
@@ -566,7 +569,7 @@
 (defn show-tool-help
   []
   (let [{:keys [tool-name tool-doc commands]} *options*]
-    (println "Usage:" tool-name "COMMAND ...")
+    (println "Usage:" (ansi/bold tool-name) "COMMAND ...")
     (when tool-doc
       (println)
       (-> tool-doc cleanup-docstring println))
@@ -643,18 +646,24 @@
             help-suffix (when help?
                           (str
                             (if suffix " Use " ", use ")
-                            ansi/bold-font
-                            tool-name " "
+                            ansi/bold-red-font
+                            tool-name
+                            " "
                             "help"
                             ansi/reset-font
+                            ansi/red-font
                             " to list commands."))]
         (abort (str
+                 ansi/bold-red-font
                  (format "%s: %s "
                          tool-name
-                         (ansi/bold command-name))
+                         command-name)
+                 ansi/reset-font
+                 ansi/red-font
                  body
                  suffix
-                 help-suffix)))
+                 help-suffix
+                 ansi/reset-font)))
 
       :else
       (let [command-var (get commands (first matching-names))]
@@ -676,7 +685,4 @@
   (->> validate-cases
        (partition 2)
        (mapcat (fn [[test expr]]
-                 [(list not test) expr])))
-
-
-  )
+                 [(list not test) expr]))))

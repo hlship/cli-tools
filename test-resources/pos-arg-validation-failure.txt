@@ -1,4 +1,4 @@
-Usage: harness configure [OPTIONS] HOST KV-DATA+
+Usage: [1mharness[m [1mconfigure[m [OPTIONS] HOST KV-DATA+
 Configures the system for some thing.
 
 This is more detail.
@@ -16,4 +16,4 @@ Arguments:
   KV-DATA: Data to configure as KEY=VALUE
 
 Error:
-  HOST: must be a URL
+  [31mHOST: must be a URL[m

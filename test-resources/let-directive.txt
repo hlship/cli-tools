@@ -1,4 +1,4 @@
-Usage: harness set-mode [OPTIONS]
+Usage: [1mharness[m [1mset-mode[m [OPTIONS]
 Sets the execution mode
 
 Options:
@@ -6,4 +6,4 @@ Options:
   -h, --help       This command summary
 
 Error:
-  Failed to validate "-m unknown": Must be one of async, batch, real-time
+  [31mFailed to validate "-m unknown": Must be one of async, batch, real-time[m
