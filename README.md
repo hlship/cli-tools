@@ -17,7 +17,7 @@ has its own unique options and arguments; `cli-tools` identifies the command fro
 argument, then passes the remaining arguments to the selected command.
 
 `cli-tools` can be used for tools that simply have options and arguments but not commands.  
-It isn't intended for tools that have more deeply ne[sted levels of sub-commands.
+It isn't intended for tools that have more deeply nested levels of sub-commands.
 
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
 for the kind of low-ceremony tools that `cli-tools` is intended for.
@@ -61,13 +61,14 @@ option just for kicks.
 ```
 
 The meat of this `configure` command has been replaced with a call to `prn`, but
-the important part is the interface, which takes the place of an ordinary
-parameters declaration.
+the important part for this discussion is the interface, which takes the place of an ordinary
+function's parameters declaration.
 
-Initially, the interface is about options, and we define an option, `--verbose`, a flag.
-Inside the body, the value will be bound to local symbol `verbose`.
+Initially, the interface is about options, and we define one option, `--verbose`, a flag.
+Inside the body, the value will be bound to local symbol `verbose`, which will be nil if `--verbose` is
+not specified, or true if it is..
 
-`defcommand` always adds a `-h` / `--help` flag, and implements it; the body does not get
+`defcommand` always adds the `-h` / `--help` flag, and implements it; the body does not get
 evaluated if help is requested, or if there's any kind of validation error processing 
 command line arguments.
 
@@ -104,8 +105,8 @@ The first line identifies, to the shell, that this command is implemented using 
 Once the dependencies have been added, it is safe to load the `cli-tools` namespace and invoke `dispatch`.
 
 `dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument, and use
-it to find the correct command to delegate to.  That command gets the remaining command line arguments.
-The default tool name will be the name of the script, `app-admin`.
+it to find the correct command to delegate to.  That command will be passed the remaining command line arguments.
+The default tool name will be the name of the script, `app-admin` in this example.
 
 `dispatch` also recognizes `-h`, `--help`, or `help`, and will print out a summary of the available commands.
 
@@ -194,13 +195,13 @@ options are defined in `clojure.tools.cli`:
 The `<LABEL>` is a string used in the summary, and in validation error messages;
 the `<DOC>` is a string used in the summary.  After that come key/value pairs.
 
-* `:optional` (boolean) -- if true, the argument may be omitted if there isn't a
+* `:optional` (boolean, default false) -- if true, the argument may be omitted if there isn't a
     command line argument to match
 
-* `:repeatable` (boolean) -- if true, then any remaining command line arguments are processed
+* `:repeatable` (boolean, default false) -- if true, then any remaining command line arguments are processed
 by the argument
 
-* `:parse-fn` - passed the command line argument, returns a value, or throws an exception
+* `:parse-fn` - passed the command line argument string, returns a value, or throws an exception
 
 * `:validate` - a vector of function/message pairs
 
@@ -216,12 +217,17 @@ For non-repeatable arguments, the default update function simply sets the value.
 Only the final command line argument may be repeatable.
 
 Also note that all command line arguments _must be_ consumed, either as options or as positional arguments.
+Any additional command line arguments will be reported as a validation error.
 
 ## defcommand options
 
+The interface vector of defcommand may have additional options; these are keywords that change
+how following values in the vector are parsed. We saw this in the example above, where `:args` was used to 
+switch from defining options to defining positional arguments.
+
 ### :options
 
-Indicates that any following terms define options; this is the initial state, so `:options`
+Indicates that any following terms define options; this is the initial parser state, so `:options`
 is rarely used.
 
 ### :args
@@ -239,7 +245,7 @@ which a command may wish to do to present errors to the user.
 
 Overrides the default name for the command, which is normally the same as the function name.
 This is useful, for example, when the desired command name would conflict with a clojure.core symbol,
-or something else defined with your namespace.
+or something else defined within your namespace.
 
 The `:command` option is also useful when using cli-tools to define
 the `-main` function for a simple tool (a tool with options and arguments,
@@ -321,9 +327,12 @@ A common case is to handle mutually exclusive arguments:
 )
 ```
 
+Note that unlike a validate function for an option or argument, these are expressions that can leverage 
+local symbols (such as `alpha` and `numeric`) and not functions that are passed a value.
+
 ## Testing
 
-Normally, the function defined by `defcommand` is passed a number of strings arguments, from
+Normally, the function defined by `defcommand` is passed a number of string arguments, from
 `*command-line-args*`; it then parses this into a command map, a map with an `:options` key
 (plus a lot of undocumented internal data).
 
@@ -335,15 +344,17 @@ invokes it, as that relies on some additional non-documented keys to
 be present in the command map.
 
 Finally, validation errors normally print a command summary and then
-call `System/exit`, which is problematic for tests;
-`net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
+call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 
+problematic for tests.
+
+The function `net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
 throw an exception, which can be caught by tests.
 
-When passing a map to a command function, the validations (defined by the :validate directive)
+When passing a map to a command function, the validations (defined by the `:validate` directive)
 are bypassed.
 
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
-rather than `System/exit`.
+rather than `System/exit`, for the same reason.
 
 ## License
 
