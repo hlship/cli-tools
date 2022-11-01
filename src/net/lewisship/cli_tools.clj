@@ -39,7 +39,7 @@
   "Given an input string and a seq of possible values, returns the matching value if it can
   be uniquely identified.
 
-  values may be strings, symbols, or keywords.
+  Values may be strings, symbols, or keywords.
 
   best-match does a caseless substring match against the provided values. It returns the single
   value that matches the input. It returns nil if no value matches, or if multiple values match.
@@ -83,9 +83,9 @@
 
    The returned function is variadic, accepting a number of strings, much
    like a `-main` function. For testing purposes, it may instead be passed a single map,
-   a command map, which bypasses parsing of the arguments, and is used only for testing.
+   a command map, which bypasses parsing and validation of the arguments, and is used only for testing.
 
-   Finally, the body inside a let that destructures the options and positional arguments into local symbols."
+   Finally, the body is evaluated inside a let that destructures the options and positional arguments into local symbols."
   [command-name docstring interface & body]
   (assert (simple-symbol? command-name)
           "defcommand expects a symbol for command name")
