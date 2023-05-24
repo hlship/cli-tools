@@ -1,4 +1,4 @@
-Usage: [1mharness[m [1mconfigure[m [OPTIONS] HOST KV-DATA+
+Usage: [1mharness configure[22m [OPTIONS] HOST KV-DATA+[m
 Configures the system for some thing.
 
 This is more detail.
@@ -15,6 +15,6 @@ Arguments:
      HOST: System configuration URL
   KV-DATA: Data to configure as KEY=VALUE
 
-Errors:
+[31mErrors:[m
   [31mUnknown option: "--debug"[m
   [31mNo value for required argument HOST[m

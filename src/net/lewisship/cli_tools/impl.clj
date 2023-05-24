@@ -1,7 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as str]
-            [io.aviso.ansi :as ansi]
+            [io.aviso.ansi :refer [compose]]
             [clojure.tools.cli :as cli]
             [clj-fuzzy.metrics :as m]
             [clojure.java.io :as io])
@@ -11,7 +11,10 @@
 
 (def ^:dynamic *options* nil)
 
-(def ^:private supported-keywords  #{:in-order :as :args :options :command :summary :let :validate})
+(def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
+
+(defn- pcompose [& args]
+  (println (apply compose args)))
 
 (defn exit
   [status]
@@ -58,9 +61,9 @@
   [errors]
   (when (seq errors)
     (println)
-    (println (if (= 1 (count errors)) "Error:" "Errors:"))
+    (pcompose [:red (if (= 1 (count errors)) "Error:" "Errors:")])
     (doseq [e errors]
-      (println (str "  " (ansi/red e))))))
+      (pcompose "  " [:red e]))))
 
 (defn fuzzy-matches
   [s values]
@@ -129,14 +132,16 @@
 (defn print-summary
   [command-map errors]
   (let [{:keys [tool-name]} *options*
-        {:keys [command-name positional-specs command-doc summary]} command-map]
-    (apply println
-           (remove nil? (concat ["Usage:" (when tool-name
-                                            (ansi/bold tool-name))
-                                 (ansi/bold command-name)
-                                 "[OPTIONS]"]
-                                (map arg-spec->str positional-specs))))
-
+        {:keys [command-name positional-specs command-doc summary]} command-map
+        arg-strs (map arg-spec->str positional-specs)]
+    (pcompose
+      "Usage: "
+      (when tool-name
+        [:bold tool-name " "])
+      [:bold command-name]
+      " [OPTIONS]"
+      (map list (repeat " ")
+                arg-strs))
     (when command-doc
       (-> command-doc cleanup-docstring println))
 
@@ -146,7 +151,7 @@
 
     (when (seq positional-specs)
       (let [label-width (->> positional-specs
-                             (map :label)
+                          (map :label)
                              (map count)
                              (reduce max)
                              ;; For indentation
@@ -569,7 +574,7 @@
 (defn show-tool-help
   []
   (let [{:keys [tool-name tool-doc commands]} *options*]
-    (println "Usage:" (ansi/bold tool-name) "COMMAND ...")
+    (pcompose "Usage: " [:bold tool-name] " COMMAND ...")
     (when tool-doc
       (println)
       (-> tool-doc cleanup-docstring println))
@@ -607,8 +612,8 @@
 (defn use-help-message
   [tool-name commands]
   (if (contains? commands "help")
-    (format ", use %s %s to list commands." (ansi/bold tool-name) (ansi/bold "help"))
-    ""))
+    (list ", use " [:bold tool-name " help"] " to list commands")
+    nil))
 
 (defn dispatch
   [{:keys [tool-name commands arguments] :as options}]
@@ -628,43 +633,33 @@
 
       (or (nil? command-name)
           (str/starts-with? command-name "-"))
-      (abort (str tool-name ": no command provided" (use-help-message tool-name commands)))
+      (abort (compose [:bold tool-name] ": no command provided" (use-help-message tool-name commands)))
 
       :let [matching-names (find-matches command-name (keys commands))
             match-count (count matching-names)]
 
       (not= 1 match-count)
       (let [body (if (pos? match-count)
-                   (format "matches %d commands" match-count)
+                   (format "matches %d possible commands" match-count)
                    "is not a command")
             fuzzy-match (first (fuzzy-matches command-name
-                                              (keys commands)))
+                                 (keys commands)))
             suffix (when fuzzy-match
-                     (format ", did you mean %s?"
-                             (ansi/bold fuzzy-match)))
+                     (list ", did you mean "
+                       [:bold fuzzy-match]
+                       "?"))
             help? (contains? commands "help")
             help-suffix (when help?
-                          (str
-                            (if suffix " Use " ", use ")
-                            ansi/bold-red-font
-                            tool-name
-                            " "
-                            "help"
-                            ansi/reset-font
-                            ansi/red-font
-                            " to list commands."))]
-        (abort (str
-                 ansi/bold-red-font
-                 (format "%s: %s "
-                         tool-name
-                         command-name)
-                 ansi/reset-font
-                 ansi/red-font
-                 body
-                 suffix
-                 help-suffix
-                 ansi/reset-font)))
-
+                          (list
+                            (if suffix
+                              " Use "
+                              ", use ")
+                            [:bold tool-name " help"]
+                            " to list commands"))]
+        (abort
+          (compose
+            [:bold tool-name ": " [:red command-name]] " "
+            body suffix help-suffix)))
       :else
       (let [command-var (get commands (first matching-names))]
         (apply command-var command-args)))

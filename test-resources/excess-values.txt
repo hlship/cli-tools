@@ -1,4 +1,4 @@
-Usage: [1mharness[m [1mcollect[m [OPTIONS] KEY VAL
+Usage: [1mharness collect[22m [OPTIONS] KEY VAL[m
 Collect key and value.
 
 Options:
@@ -8,5 +8,5 @@ Arguments:
   KEY: Key to set
   VAL: Value to set
 
-Error:
+[31mError:[m
   [31mUnexpected argument 'the-extra'[m

@@ -131,11 +131,14 @@
          (:command-name (compile-interface nil '[:command "overridden"])))))
 
 (deftest omits-tool-help-when-help-not-available
-  (is (= ", use this-tool help to list commands."
-         (ansi/strip-ansi
-           (impl/use-help-message "this-tool" {"help" nil
-                                               "some-command" nil}))))
-  (is (= ""
+  (is (= '(", use "
+            [:bold
+             "this-tool"
+             " help"]
+            " to list commands")
+        (impl/use-help-message "this-tool" {"help"         nil
+                                            "some-command" nil})))
+  (is (= nil
          (impl/use-help-message "this-tool" {"some-command" nil}))))
 
 (deftest provides-help-with-h-or-help
@@ -156,7 +159,7 @@
       (impl/dispatch {:tool-name "loco"
                       :commands {"help" nil}
                       :arguments ["-not-such-option"]})
-      (is (= "loco: no command provided, use loco help to list commands."
+      (is (= "loco: no command provided, use loco help to list commands"
              (ansi/strip-ansi @*message*)))
 
       (reset! *message* nil)
@@ -165,5 +168,5 @@
                       :commands {"help" nil}
                       :arguments ["no-such-command"]})
 
-      (is (= "bravo: no-such-command is not a command, use bravo help to list commands."
+      (is (= "bravo: no-such-command is not a command, use bravo help to list commands"
              (ansi/strip-ansi @*message*))))))

@@ -1,4 +1,4 @@
-Usage: [1mtest-harness[m COMMAND ...
+Usage: [1mtest-harness[22m COMMAND ...[m
 
 Example commands as part of unit test suite.
 

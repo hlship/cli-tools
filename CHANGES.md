@@ -1,6 +1,6 @@
 # 0.7 -- UNRELEASED
 
-Make use of more fonts, and bump io.aviso/pretty to version 1.3.
+Make use of more fonts, and bump io.aviso/pretty to version 1.4.2.
 
 # 0.6 -- 7 Oct 2022
 
