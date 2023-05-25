@@ -66,11 +66,14 @@ function's parameters declaration.
 
 Initially, the interface is about options, and we define one option, `--verbose`, a flag.
 Inside the body, the value will be bound to local symbol `verbose`, which will be nil if `--verbose` is
-not specified, or true if it is..
+not specified, or true if it is.
 
 `defcommand` always adds the `-h` / `--help` flag, and implements it; the body does not get
 evaluated if help is requested, or if there's any kind of validation error processing 
 command line arguments.
+
+An option definition always starts with three strings: the short option name, the long option name,
+and the option description; these are positional, and a nil may be supplied.
 
 A namespace with commands is only part of the solution, to get from a terminal command line
 to the body of the `configure` function, we need to add Babashka script, `bin/app-admin`, which 

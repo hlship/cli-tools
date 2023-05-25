@@ -8,9 +8,9 @@ This is more detail.
 This is not indented.
 
 Options:
-  -v, --verbose  Enable verbose logging
-  -h, --help     This command summary
+  [1m-v, --verbose[22m Enable verbose logging
+  [1m-h, --help[22m    This command summary[m
 
 Arguments:
-     HOST: System configuration URL
-  KV-DATA: Data to configure as KEY=VALUE
+     [1mHOST[22m: System configuration URL
+  [1mKV-DATA[22m: Data to configure as KEY=VALUE[m

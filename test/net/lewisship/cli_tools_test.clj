@@ -96,6 +96,17 @@
          (with-exit 1 (collect "the-key" "the-value" "the-extra")))))
 
 
+(defcommand default-variants
+  "Different option defaults."
+  [foo [nil "--foo FOO" "Foo option" :default "abc"]
+   bar [nil "--bar BAR" "Bar option" :default-fn (constantly "xyz")]
+   bazz [nil "--bazz BAZZ" "Bazz option" :default :bazz :default-desc "Bazzy"]]
+  nil)
+
+(deftest option-defaults
+  (is (= (slurp "test-resources/option-defaults.txt")
+        (with-exit 0 (default-variants "-h")))))
+
 (defcommand in-order
   ""
   [verbose ["-v" "--verbose"]

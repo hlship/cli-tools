@@ -23,6 +23,13 @@
   ;; If in testing mode ...
   (throw (ex-info "Exit" {:status status})))
 
+(defn- padding
+  [value-length field-width]
+  (let [x (- field-width value-length)]
+    (if (pos? x)
+      (apply str (repeat x " "))
+      "")))
+
 (defn- pad-left
   [s pad n]
   (let [x (- n (.length s))]
@@ -155,15 +162,74 @@
                              (map count)
                              (reduce max)
                              ;; For indentation
-                             (+ 2))]
+                             (+ 2))
+            lines (for [{:keys [label doc]} positional-specs]
+                    (list
+                      (padding (.length label) label-width)
+                      [:bold label]
+                      ": "
+                      doc))]
         (println "\nArguments:")
-        (doseq [{:keys [label doc]} positional-specs]
-          (println (str
-                     (pad-left label " " label-width)
-                     ": "
-                     doc)))))
-
+        (println (compose (interpose \newline lines)))))
     (print-errors errors)))
+
+(defn- format-option-summary
+  [max-option-width max-default-width summary-part]
+  (let [{:keys [opt-label opt-width default default-width opt-desc]} summary-part]
+    (list
+      "  "
+      opt-label
+      (padding opt-width max-option-width)
+      " "
+      default
+      (padding default-width max-default-width)
+
+      (when (pos? max-default-width)
+        " ")
+      opt-desc)))
+
+(defn- make-summary-part
+  "Given a single compiled option spec, into a compose-compatible label, a width for that label,
+  a compose-compatible default description, and a width for the description."
+  [show-defaults? spec]
+  (let [{:keys [short-opt long-opt required desc
+                default default-desc default-fn]} spec
+        opt          (cond (and short-opt long-opt) (str short-opt ", " long-opt)
+                           long-opt (str "    " long-opt)
+                           short-opt short-opt)
+        opt-label    (if required
+                       (str opt " " required)
+                       opt)
+        default-desc (if show-defaults?
+                       (or default-desc
+                           (when (contains? spec :default)
+                             (if (some? default)
+                               (str default)
+                               "nil"))
+                           (when default-fn "<computed>")
+                           "")
+                       "")]
+    {:opt-label     [:bold opt-label]
+     :opt-width     (.length opt-label)
+     :default       [:italic default-desc]
+     :default-width (.length default-desc)
+     :opt-desc      desc}))
+
+(defn summarize-specs
+  [specs]
+  (if (seq specs)
+    (let [show-defaults?    (some #(or (contains? % :default)
+                                       (contains? % :default-fn)) specs)
+          parts             (map #(make-summary-part show-defaults? %) specs)
+          max-of            (fn [k] (->> parts
+                                      (map k)
+                                      (reduce max)))
+          max-opt-width     (max-of :opt-width)             ; Indent by two
+          max-default-width (max-of :default-width)
+          lines             (interpose \newline
+                              (map #(format-option-summary max-opt-width max-default-width %) parts))]
+      (compose lines))
+    ""))
 
 (defn- compile-positional-spec
   "Positional specs are similar to option specs."
@@ -536,13 +602,16 @@
   [command-name command-line-arguments command-map]
   (cond-let
     :let [{:keys [command-args command-options parse-opts-options]} command-map
-          {:keys [in-order]
-           :or {in-order false}} parse-opts-options
+          {:keys [in-order summary-fn]
+           :or {in-order false
+                summary-fn summarize-specs}} parse-opts-options
           positional-specs (compile-positional-specs command-name command-args)
           command-map' (merge command-map
                               {:command-name command-name
                                :positional-specs positional-specs}
-                              (cli/parse-opts command-line-arguments command-options :in-order in-order))
+                              (cli/parse-opts command-line-arguments command-options
+                                :in-order in-order
+                                :summary-fn summary-fn))
           {:keys [arguments options]} command-map']
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.
