@@ -1,6 +1,6 @@
 {:paths ["src"]
  ;; Needed to build and test w/ clojure
- :deps  {org.clojure/tools.cli {:mvn/version "1.0.214"}
+ :deps  {org.clojure/tools.cli {:mvn/version "1.0.219"}
          io.aviso/pretty       {:mvn/version "1.4.3"}
          clj-fuzzy/clj-fuzzy   {:mvn/version "0.4.1"}}
  :aliases
@@ -15,5 +15,5 @@
    {:patterns [".*-tests?$"]}}
 
   :build
-  {:deps       {io.github.hlship/build-tools {:git/tag "0.7" :git/sha "8a9c95"}}
+  {:deps       {io.github.hlship/build-tools {:git/tag "0.9" :git/sha "4efa3c9"}}
    :ns-default build}}}

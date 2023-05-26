@@ -2,7 +2,7 @@
 
 (ns build
   (:require [clojure.tools.build.api :as b]
-            [net.lewisship.build :refer [requiring-invoke] :as bt]))
+            [net.lewisship.build :as bt]))
 
 (def lib 'io.github.hlship/cli-tools)
 (def version "0.7")

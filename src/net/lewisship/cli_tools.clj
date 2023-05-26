@@ -201,7 +201,7 @@
   
   - :tool-name (optional, string) - used in command summary and errors
   - :tool-doc (optional, string) - used in help summary
-  - :arguments - command line arguments to parse (defaults to *command-line-args*)
+  - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
   - :namespaces - symbols identifying namespaces to search for commands
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
