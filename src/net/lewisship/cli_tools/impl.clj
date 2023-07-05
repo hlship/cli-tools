@@ -1,7 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as str]
-            [io.aviso.ansi :refer [compose]]
+            [clj-commons.ansi :refer [compose]]
             [clojure.tools.cli :as cli]
             [clj-fuzzy.metrics :as m]
             [clojure.java.io :as io])
@@ -649,10 +649,13 @@
       (-> tool-doc cleanup-docstring println))
     (println "\nCommands:")
     (let [ks (-> commands keys sort)
-          width (+ 2 (apply max (map count ks)))]
+          width  (apply max (map count ks))]
       (doseq [k ks]
-        (println (str (pad-left k " " width) ": "
-                      (-> commands (get k) command-summary))))))
+        (pcompose
+          "  "
+          [{:width width} [:bold.green k]]
+          ": "
+          (-> commands (get k) command-summary)))))
   (exit 0))
 
 (defn- to-matcher
@@ -715,13 +718,13 @@
                                  (keys commands)))
             suffix (when fuzzy-match
                      (list ", did you mean "
-                       [:bold fuzzy-match]
+                       [:bold.green fuzzy-match]
                        "?"))
             help? (contains? commands "help")
             help-suffix (when help?
                           (list
                             (if suffix
-                              " Use "
+                              "\nUse "
                               ", use ")
                             [:bold tool-name " help"]
                             " to list commands"))]

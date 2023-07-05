@@ -1,16 +1,22 @@
 (ns net.lewisship.cli-tools.impl-test
-  (:require [clojure.test :refer [deftest is]]
-            [io.aviso.ansi :as ansi]
+  (:require [clojure.test :refer [deftest is use-fixtures]]
+            [clj-commons.ansi :as ansi]
             [net.lewisship.cli-tools.impl :refer [compile-interface]]
             [net.lewisship.cli-tools.impl :as impl]))
 
+;; Disable ANSI color output during tests.
+(use-fixtures :once
+              (fn [f]
+                (binding [ansi/*color-enabled* false]
+                  (f))))
+
 (deftest no-options
-  (is (= {:option-symbols []
-          :let-forms []
+  (is (= {:option-symbols  []
+          :let-forms       []
           :command-options [["-h" "--help" "This command summary" :id :help]]
-          :command-args []
-          :validate-cases []
-          :command-doc "<DOC>"}
+          :command-args    []
+          :validate-cases  []
+          :command-doc     "<DOC>"}
          (compile-interface "<DOC>" []))))
 
 (deftest symbol-name-becomes-option-id
@@ -157,16 +163,16 @@
   (let [*message* (atom nil)]
     (with-redefs [impl/abort #(reset! *message* %)]
       (impl/dispatch {:tool-name "loco"
-                      :commands {"help" nil}
+                      :commands  {"help" nil}
                       :arguments ["-not-such-option"]})
       (is (= "loco: no command provided, use loco help to list commands"
-             (ansi/strip-ansi @*message*)))
+             @*message*))
 
       (reset! *message* nil)
 
       (impl/dispatch {:tool-name "bravo"
-                      :commands {"help" nil}
+                      :commands  {"help" nil}
                       :arguments ["no-such-command"]})
 
       (is (= "bravo: no-such-command is not a command, use bravo help to list commands"
-             (ansi/strip-ansi @*message*))))))
+             @*message*)))))
