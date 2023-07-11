@@ -5,7 +5,8 @@
 [![API Docs](https://img.shields.io/badge/API%20Docs-brightgreen)](https://hlship.github.io/docs/cli-tools/)
 
 `cli-tools` is a complement to [Babashka](https://github.com/babashka/babashka) used to create tools
-with sub-commands, much like [Babashka tasks](https://book.babashka.org/#tasks).
+with sub-commands, much like [Babashka tasks](https://book.babashka.org/#tasks). It is effectively
+a layer on top of [org.clojure/tools.cli](https://github.com/clojure/tools.cli).
 
 `cli-tools` is more verbose than [babashka-cli](https://github.com/babashka/cli) and more opinionated.
 At the core, you define local symbols and instructions for how those symbols map to command line options
@@ -85,27 +86,12 @@ sets up the classpath and invokes `cli/dispatch`.
 ```shell
 #!/usr/bin/env bb
 
-(require '[babashka.deps :as deps])
-
-(let [root (-> *file*
-              fs/parent
-              fs/parent)
-      paths [(fs/path root "src")
-             (fs/path root "resources")]]
-  (deps/add-deps {:paths paths
-                  :deps '{io.github.hlship/cli-tools {:mvn/version "<mvn version>"}}}))
-
 (require '[net.lewisship.cli-tools :as cli])
 
 (cli/dispatch {:namespaces '[app-admin.commands]})
 ```
 
 The first line identifies, to the shell, that this command is implemented using Babashka.
-
-`*file*` is the path name of the file for this script; from that, we can find the root directory, and add
- `src` and `resources` to the final classpath.
-
-Once the dependencies have been added, it is safe to load the `cli-tools` namespace and invoke `dispatch`.
 
 `dispatch` will find all `defcommand`s in the given namespaces, parse the first command line argument, and use
 it to find the correct command to delegate to.  That command will be passed the remaining command line arguments.
@@ -115,6 +101,17 @@ The default tool name will be the name of the script, `app-admin` in this exampl
 
 Finally, `dispatch` will allow an abbreviation of a command name to work, as long as that abbeviation uniquely
 identifies a single possible command.
+
+How does the `app-admin` script know where to find the code?  We add a `bb.edn` file to the `bin` directory.
+
+**bin/bb.edn**
+
+```clojure
+{:paths ["../src" "../resources"]
+ :deps {io.github.hlship/cli-tools {:mvn/version "<mvn version>"}}       
+```
+
+Babashka looks for the `bb.edn` file in the same directory as the script, and uses it to set up the classpath.
 
 The final step is to add that `bin` directory to the shell `$PATH` environment variable; this is done in your
 `~/.zshrc` file, or equivalent.
