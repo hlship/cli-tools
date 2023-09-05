@@ -66,7 +66,7 @@
 
 (defn sorted-name-list
   "Converts a seq of strings, keywords, or symbols (as used with [[best-match]]) to a comma-separated
-  string listing the values. This is often used with help summary or error messages related."
+  string listing the values. This is often used with help summary or error messages."
   [values]
   (->> values
        (map name)

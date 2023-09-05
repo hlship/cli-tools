@@ -1,7 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as str]
-            [clj-commons.ansi :refer [compose]]
+            [clj-commons.ansi :refer [compose pcompose]]
             [clojure.tools.cli :as cli]
             [clj-fuzzy.metrics :as m]
             [clojure.java.io :as io])
@@ -12,9 +12,6 @@
 (def ^:dynamic *options* nil)
 
 (def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
-
-(defn- pcompose [& args]
-  (println (apply compose args)))
 
 (defn exit
   [status]
