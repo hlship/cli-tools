@@ -278,12 +278,12 @@ option-like string that isn't declared.
 You might expect that `app-admin remote ls -lR` would work, but it will fail
 with an error that `-lR is not recognized`.
 
-You can always use `--` to split options from arguments, so `bb remote -- ls -lR` will work,
+You can always use `--` to split options from arguments, so `app-admin remote -- ls -lR` will work,
 but is clumsy.
 
 Instead, add `:in-order true` to the end of the interface, and any
 unrecognized options will be parsed as positional arguments instead,
-so `bb remote ls -lR` will work, and `-lR` will be provided as a string in the `args`
+so `app-admin remote ls -lR` will work, and `-lR` will be provided as a string in the `args`
 seq.
 
 ### :let \<bindings\>
@@ -334,24 +334,20 @@ local symbols (such as `alpha` and `numeric`) and not functions that are passed 
 
 Normally, the function defined by `defcommand` is passed a number of string arguments, from
 `*command-line-args*`; it then parses this into a command map, a map with an `:options` key
-(plus a lot of undocumented internal data).
+that contains all the parsed and validated values for options and positional arguments (plus a lot of undocumented internal data).
 
-For testing purposes, you can bypass the parsing, and just pass a single map to the function, with
-a nested `:options` key.
+For testing purposes, you can bypass the parsing and validation, and just pass a single map to the function. 
 
 You may need to mock out `net.lewisship.cli-tools/print-summary` if your command
 invokes it, as that relies on some additional non-documented keys to
 be present in the command map.
 
-Finally, validation errors normally print a command summary and then
-call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 
+When _not_ bypassing parsing and validation (that is, when testing by passing strings to the command function), 
+validation errors normally print a command summary and then call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 
 problematic for tests.
 
 The function `net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
 throw an exception, which can be caught by tests.
-
-When passing a map to a command function, the validations (defined by the `:validate` directive)
-are bypassed.
 
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
 rather than `System/exit`, for the same reason.

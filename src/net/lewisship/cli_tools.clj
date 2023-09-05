@@ -121,7 +121,7 @@
              ;; it can also be a map with key :options
              test-mode?# (impl/command-map? args#)
              ~command-map-symbol (if test-mode?#
-                                   (first args#)
+                                   {:options (first args#)}
                                    (impl/parse-cli ~command-name'
                                                    args#
                                                    ~(select-keys parsed-interface parse-cli-keys)))
