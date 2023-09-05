@@ -165,20 +165,30 @@
                     (set-mode "-m" "unknown")))))
 
 (defcommand validate
-  ""
+  "validate command"
   [a ["-a" "--alpha S"]
    n ["-n" "--numeric N"]
    :validate [(some? a) "--alpha is required"
               (some? n) "--numeric is required"
-              (not (and a n)) "--alpha and --numeric are exclusive"]])
+              (not (and a n)) "--alpha and --numeric are exclusive"]]
+  {:alpha a
+   :numeric n})
 
 (deftest validate-directive
 
   (with-exit-errors ["--numeric is required"]
-                    (validate "-a" "alpha" ))
+                    (validate "-a" "alpha"))
 
   (with-exit-errors ["--alpha and --numeric are exclusive"]
                     (validate "-a" "alpha" "-n" "123")))
+
+(deftest map-bypasses-validations
+  (is (= {:mode ::unexpected}
+         (set-mode {:mode ::unexpected})))
+
+  (is (= {:alpha   true
+          :numeric true}
+         (validate {:a true :n true}))))
 
 
 ;; This test fails under Babashka (repl/doc returns empty string) and not sure why.
