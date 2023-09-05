@@ -1,0 +1,16 @@
+(ns {{ns}}
+  "Command group {{ns}}"
+  (:require [net.lewisship.cli-tools :refer [defcommand]]))
+
+{% for command-name in command-names %}
+(defcommand {{command-name}}
+  "The {{command-name}} command."
+  [verbose ["-v" "--verbose" "Enable verbose logging"]
+   max ["-m" "--max COUNT"  "Maximum number of results"
+        :parse-fn parse-long
+        :validate [pos? "Must be greater than zero"]]
+   filter ["-f" "--filter STRING" "Filter results, keeping those with provided string"]
+   :args
+   files ["FILES" "Files to process"
+          :repeatable true]])
+{% endfor %}

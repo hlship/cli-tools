@@ -108,7 +108,7 @@ How does the `app-admin` script know where to find the code?  We add a `bb.edn` 
 
 ```clojure
 {:paths ["../src" "../resources"]
- :deps {io.github.hlship/cli-tools {:mvn/version "<mvn version>"}}       
+ :deps {io.github.hlship/cli-tools {:mvn/version "<mvn version>"}}}      
 ```
 
 Babashka looks for the `bb.edn` file in the same directory as the script, and uses it to set up the classpath.
