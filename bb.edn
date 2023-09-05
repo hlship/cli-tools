@@ -1,6 +1,4 @@
 {:paths ["scale-test"]
  :tasks
  {setup-scale-test {:doc      "Sets up the scale test"
-                    :requires ([scale-test :as sc])
-                    :task     (sc/setup)
-                    }}}
+                    :task     (exec 'scale-test/setup)}}}

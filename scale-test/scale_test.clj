@@ -3,9 +3,6 @@
             [babashka.fs :as fs]
             [selmer.parser :as selmer]))
 
-(def ns-count 100)
-(def command-count 20)
-
 (def root-dir "scale-test/uber")
 
 (def command-name-terms
@@ -42,14 +39,21 @@
              :command-names command-names})
     ns-name))
 
-((defn setup
-   []
-   (fs/delete-tree root-dir)
-   (fs/create-dirs (str root-dir "/src/commands"))
-   (let [commands-per-ns (->> (partition command-count command-names)
-                              (take ns-count))
-         ns-names        (doall (map-indexed write-ns commands-per-ns))]
-     ;; TODO: Maybe can set this up to use the local workspace version?
-     (render "bb.edn" "bb.edn" {})
-     (render "app.edn" "app" {:ns-names ns-names}))
-   (fs/set-posix-file-permissions (str root-dir "/app") "rwxrwxrwx")))
+(defn setup
+  {:org.babashka/cli {:coerce {:namespaces :long
+                               :commands   :long}}}
+  [opts]
+  (fs/delete-tree root-dir)
+  (fs/create-dirs (str root-dir "/src/commands"))
+  (let [{:keys [commands namespaces]
+         :or   {commands   5
+                namespaces 10}} opts
+        commands-per-ns (->> command-names
+                             (partition commands)
+                             (take namespaces))
+        ns-names        (doall (map-indexed write-ns commands-per-ns))]
+    (render "bb.edn" "bb.edn" {})
+    (render "app.edn" "app" {:ns-names ns-names})
+    (fs/set-posix-file-permissions (str root-dir "/app") "rwxrwxrwx")
+    (printf "%,d namespaces, %,d commands/namespace, %,d total command%n"
+            namespaces commands (* namespaces commands))))
