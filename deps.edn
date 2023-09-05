@@ -1,7 +1,7 @@
 {:paths ["src"]
  ;; Needed to build and test w/ clojure
  :deps  {org.clojure/tools.cli  {:mvn/version "1.0.219"}
-         org.clj-commons/pretty {:mvn/version "2.0-beta-2"}
+         org.clj-commons/pretty {:mvn/version "2.2"}
          clj-fuzzy/clj-fuzzy    {:mvn/version "0.4.1"}}
  :aliases
  {
