@@ -337,10 +337,12 @@ Normally, the function defined by `defcommand` is passed a number of string argu
 that contains all the parsed and validated values for options and positional arguments (plus a lot of undocumented internal data).
 
 For testing purposes, you can bypass the parsing and validation, and just pass a single map to the function. 
+The map must provide a keyword key for each option or positional argument; the keys match the option or argument symbols,
+even for options that normally have a default value. All normal option or argument validation is skipped.
 
 You may need to mock out `net.lewisship.cli-tools/print-summary` if your command
 invokes it, as that relies on some additional non-documented keys to
-be present in the command map.
+be present in the command map. Fortunately, it is quite rare for a command to need to invoke this function.
 
 When _not_ bypassing parsing and validation (that is, when testing by passing strings to the command function), 
 validation errors normally print a command summary and then call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 

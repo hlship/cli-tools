@@ -165,7 +165,7 @@
                     (set-mode "-m" "unknown")))))
 
 (defcommand validate
-  ""
+  "validate command"
   [a ["-a" "--alpha S"]
    n ["-n" "--numeric N"]
    :validate [(some? a) "--alpha is required"
