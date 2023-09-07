@@ -9,7 +9,9 @@
 
 (def prevent-exit false)
 
-(def ^:dynamic *options* nil)
+(def ^:dynamic *options*
+  "Bound by [[dispatch]] so that certain functions, such as help, can operate."
+  nil)
 
 (def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
 
@@ -27,15 +29,7 @@
       (apply str (repeat x " "))
       "")))
 
-(defn- pad-left
-  [s pad n]
-  (let [x (- n (.length s))]
-    (if (pos? x)
-      (str (apply str (repeat x pad))
-           s)
-      s)))
-
-;; better-cond has some dependencies
+;; better-cond is a better implementation, but has some dependencies
 (defmacro cond-let
   "An alternative to `clojure.core/cond` where instead of a test/expression pair, it is possible
   to have a :let/binding vector pair."
@@ -633,26 +627,37 @@
 (defn- command-summary
   [v]
   (let [v-meta (meta v)
-          {:keys [::command-summary]} v-meta]
+        {:keys [::command-summary]} v-meta]
     (or command-summary
         (-> v-meta :doc first-sentence))))
 
+(defn- print-commands
+  [command-name-width commands]
+  (doseq [{:keys       [command-name]
+           command-var :var} (sort-by :command-name commands)]
+    (pcompose
+      "  "
+      [{:width command-name-width} [:bold.green command-name]]
+      ": "
+      (command-summary command-var))))
+
 (defn show-tool-help
-  []
-  (let [{:keys [tool-name tool-doc commands]} *options*]
+  [options]
+  (let [{:keys [tool-name tool-doc commands categories flat]} options]
     (pcompose "Usage: " [:bold tool-name] " COMMAND ...")
     (when tool-doc
       (println)
       (-> tool-doc cleanup-docstring println))
     (println "\nCommands:")
-    (let [ks (-> commands keys sort)
-          width  (apply max (map count ks))]
-      (doseq [k ks]
-        (pcompose
-          "  "
-          [{:width width} [:bold.green k]]
-          ": "
-          (-> commands (get k) command-summary)))))
+    (let [grouped-commands   (group-by :category (vals commands))
+          sorted-categories  (sort-by (juxt :order :category) categories)
+          command-name-width (apply max (map count (-> commands keys)))]
+      (if flat
+        (print-commands command-name-width (vals commands))
+        (doseq [{:keys [category label]} sorted-categories]
+          (println)
+          (pcompose [:bold label])
+          (print-commands command-name-width (get grouped-commands category))))))
   (exit 0))
 
 (defn- to-matcher
@@ -690,7 +695,7 @@
   (binding [*options* options]
     (cond-let
       :let [[command-name & command-args] arguments
-            help-var (get commands "help")]
+            help-var (get-in commands ["help" :var])]
 
       (str/blank? tool-name)
       (throw (ex-info "Must specify :tool-name" {:options options}))
@@ -730,7 +735,7 @@
             [:bold tool-name ": " [:red command-name]] " "
             body suffix help-suffix)))
       :else
-      (let [command-var (get commands (first matching-names))]
+      (let [command-var (get-in commands [(first matching-names) :var])]
         (apply command-var command-args)))
       nil))
 

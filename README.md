@@ -15,7 +15,8 @@ for you.
 
 `cli-tools` is generally used to create tools that contain individual commands; each of these commands
 has its own unique options and arguments; `cli-tools` identifies the command from the first command line
-argument, then passes the remaining arguments to the selected command.
+argument, then passes the remaining arguments to the selected command.  In this case,
+a built-in `help` command lists out what commands are available.
 
 `cli-tools` can be used for tools that simply have options and arguments but not commands.  
 It isn't intended for tools that have more deeply nested levels of sub-commands.
@@ -330,6 +331,43 @@ A common case is to handle mutually exclusive arguments:
 Note that unlike a validate function for an option or argument, these are expressions that can leverage 
 local symbols (such as `alpha` and `numeric`) and not functions that are passed a value.
 
+## Namespaces and categories
+
+Each namespace that defines commands (as passed to the `dispatch` function) becomes a _category_,
+containing the commands defined in that namespace.
+
+This is used by the built-in `help` command, which prints a summary of the tool and all commands
+in the tool:
+
+```
+> app-admin help
+Usage: app-admin COMMAND ...
+
+Application adminstration tools.
+
+Commands:
+
+System configuration
+  configure: Configures the system with keys and values
+       list: List configuation for the system
+
+Built-in
+       help: List available commands
+```
+
+The namespace `net.lewisship.cli-tools` is automatically added, and has the label "Built-in".
+By default, a namespace's label is the same as it's namespace name, but this is usually
+overridden by setting the :command-category metadata on the namespace to a short string.
+
+Each category has a sort order, which defaults to 0.  The categories are sorted by this sort order,
+then (within each set of categories with the same sort order) by label.  The sort order
+can be specified as the :command-category-order metadata on the namespace.  `net.lewisship.cli-tools` has
+a sort order of 100, so that it will generally be last.
+
+If you want to see the list of commands without categories, use the `-f` / `--flat` option to `help`.
+If you want to use multiple namespaces for your commands without using categories,
+add the `:flat` option to the map passed to `dispatch`.
+
 ## Testing
 
 Normally, the function defined by `defcommand` is passed a number of string arguments, from
@@ -346,13 +384,13 @@ be present in the command map. Fortunately, it is quite rare for a command to ne
 
 When _not_ bypassing parsing and validation (that is, when testing by passing strings to the command function), 
 validation errors normally print a command summary and then call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 
-problematic for tests.
+problematic for tests, as the JVM will exit during test execution.
 
 The function `net.lewisship.cli-tools/set-prevent-exit!` can convert those cases to instead
 throw an exception, which can be caught by tests.
 
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
-rather than `System/exit`, for the same reason.
+rather than `System/exit`, for the same reasons.
 
 ## License
 

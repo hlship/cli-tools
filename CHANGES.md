@@ -1,3 +1,16 @@
+# 0.9 -- UNRELEASED
+
+Testing was simplified; command functions can be tested by passing them a single map of option and
+argument values (previously values map was nested in another map).
+
+Namespaces now represent _categories_ of related commands; this changes the output from the `help` command.
+
+[Closed Issues](https://github.com/hlship/cli-tools/issues?q=is%3Aclosed+milestone%3A0.9)
+
+# 0.8 -- 5 Jul 2023
+
+Switched from io.aviso/pretty to org.clj-commons/pretty.
+
 # 0.7 -- 26 May 2023
 
 Make use of more fonts, and bump io.aviso/pretty to version 1.4.2.

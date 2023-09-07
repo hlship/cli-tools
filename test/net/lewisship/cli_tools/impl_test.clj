@@ -149,9 +149,9 @@
 
 (deftest provides-help-with-h-or-help
   (let [*help-args* (atom nil)
-        commands {"help" #(reset! *help-args* %)}
-        options {:tool-name "test-tool"
-                 :commands commands}]
+        commands    {"help" {:var #(reset! *help-args* %)}}
+        options     {:tool-name "test-tool"
+                     :commands  commands}]
     (doseq [arg ["-h" "--help"]
             :let [extra-arg (str "extra" arg)]]
       (reset! *help-args* nil)
