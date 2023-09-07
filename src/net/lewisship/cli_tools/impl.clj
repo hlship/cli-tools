@@ -631,9 +631,19 @@
     (or command-summary
         (-> v-meta :doc first-sentence))))
 
+(defn- print-commands
+  [command-name-width commands]
+  (doseq [{:keys       [command-name]
+           command-var :var} (sort-by :command-name commands)]
+    (pcompose
+      "  "
+      [{:width command-name-width} [:bold.green command-name]]
+      ": "
+      (command-summary command-var))))
+
 (defn show-tool-help
-  []
-  (let [{:keys [tool-name tool-doc commands categories]} *options*]
+  [options]
+  (let [{:keys [tool-name tool-doc commands categories flat]} options]
     (pcompose "Usage: " [:bold tool-name] " COMMAND ...")
     (when tool-doc
       (println)
@@ -642,18 +652,12 @@
     (let [grouped-commands   (group-by :category (vals commands))
           sorted-categories  (sort-by (juxt :order :category) categories)
           command-name-width (apply max (map count (-> commands keys)))]
-      (doseq [{:keys [category label]} sorted-categories]
-        (println)
-        (pcompose [:bold label])
-
-        (doseq [{:keys       [command-name]
-                 command-var :var} (->> (get grouped-commands category)
-                                        (sort-by :command-name))]
-          (pcompose
-            "  "
-            [{:width command-name-width} [:bold.green command-name]]
-            ": "
-            (command-summary command-var))))))
+      (if flat
+        (print-commands command-name-width (vals commands))
+        (doseq [{:keys [category label]} sorted-categories]
+          (println)
+          (pcompose [:bold label])
+          (print-commands command-name-width (get grouped-commands category))))))
   (exit 0))
 
 (defn- to-matcher

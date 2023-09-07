@@ -149,6 +149,13 @@
                                :namespaces '[net.lewisship.example-ns]
                                :arguments ["help"]})))))
 
+(deftest help-with-default-and-explicit-summary-flat
+  (is (= (slurp "test-resources/tool-help-flat.txt")
+         (with-exit 0
+                    (dispatch {:tool-name "test-harness"
+                               :namespaces '[net.lewisship.example-ns]
+                               :arguments ["help" "-f"]})))))
+
 (defcommand set-mode
   "Sets the execution mode"
   [mode ["-m" "--mode MODE" (str "Execution mode, one of " mode-names)

@@ -134,8 +134,9 @@
 
 (defcommand help
   "List available commands"
-  []
-  (impl/show-tool-help))
+  [flat ["-f" "--flat" "Ignore categories and show a simple list of commands"]]
+  ;; dispatch binds *options* for us
+  (impl/show-tool-help (assoc impl/*options* :flat flat)))
 
 (defn- source-of
   [v]
