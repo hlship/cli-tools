@@ -5,6 +5,10 @@ Example commands as part of unit test suite.
 Even this docstring is part of the test.
 
 Commands:
+
+[1mnet.lewisship.example-ns[m
    [32;1mdefault[39;22m: Default command summary[m
   [32;1mexplicit[39;22m: Explicit command summary[m
+
+[1mBuilt-in[m
       [32;1mhelp[39;22m: List available commands[m

@@ -1,5 +1,7 @@
 (ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
+  {:command-category       "Built-in"
+   :command-category-order 100}
   (:require [net.lewisship.cli-tools.impl :as impl]
             [clojure.string :as str]))
 
@@ -151,7 +153,8 @@
 
   Normally, this is called from [[dispatch]] and is only needed when calling [[dispatch*]] directly.
 
-  Returns a map from string command name to command Var."
+  Returns a map from string command name to a map of :category (the namespace symbol)
+  and :var (the Var containing the command function)."
   [namespace-symbols]
   (let [f (fn [m namespace-symbol]
             (->> (resolve-ns namespace-symbol)
@@ -167,10 +170,12 @@
                                (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
                                                                  command-name
                                                                  (source-of v)
-                                                                 (source-of (get m command-name)))))
+                                                                 (source-of (get-in m [command-name :var])))))
 
                                :else
-                               (assoc m command-name v))))
+                               (assoc m command-name {:category     namespace-symbol
+                                                      :command-name command-name
+                                                      :var          v}))))
                          m)))]
     (reduce f {} namespace-symbols)))
 
@@ -185,13 +190,29 @@
   - :tool-name - used in command summary and errors
   - :tool-doc - used in command summary
   - :arguments - seq of strings; first is name of command, rest passed to command
-  - :commands - map from string command name to a var (defined via [[defcommand]])
+  - :categories - seq of maps describing the command categories
+  - :commands - map from string command name to a map of var and command category (see [[locate-commands]])
+
+  Each namespace forms a command category, represented as a map with keys:
+  - :category - symbol identifying the namespace
+  - :label - string (from :command-category metadata on namespace), defaults to the namespace name
+  - :order - number (from :command-category-order metadata), defaults to 0
+
+  In the `help` command summary, the categories are sorted into ascending order by :order,
+  then by :label. Individual commands are listed under each category, in ascending alphabetic order.
 
   All options are required.
 
   Returns nil."
   [options]
   (impl/dispatch options))
+
+(defn- namespace->category
+  [ns-symbol]
+  (let [ns-meta (-> ns-symbol find-ns meta)]
+    {:category ns-symbol
+     :label    (:command-category ns-meta (name ns-symbol))
+     :order    (:command-category-order ns-meta 0)}))
 
 (defn dispatch
   "Locates commands in namespaces, finds the current command
@@ -222,19 +243,22 @@
   Returns nil."
   [options]
   (let [{:keys [namespaces arguments tool-name tool-doc]} options
-        tool-name' (or tool-name
-                       (impl/default-tool-name)
-                       (throw (ex-info "No :tool-name specified" {:options options})))
-        _ (when-not (seq namespaces)
-            (throw (ex-info "No :namespaces specified" {:options options})))
+        tool-name'         (or tool-name
+                               (impl/default-tool-name)
+                               (throw (ex-info "No :tool-name specified" {:options options})))
+        _                  (when-not (seq namespaces)
+                             (throw (ex-info "No :namespaces specified" {:options options})))
         ;; Add this namespace, to include the help command by default
-        commands (do
-                   ;; Load all the other namespaces first
-                   (run! require namespaces)
-                   ;; Ensure built-in help command is first
-                   (locate-commands (cons 'net.lewisship.cli-tools namespaces)))]
-    (dispatch* {:tool-name tool-name'
-                :tool-doc (or tool-doc
-                              (some-> namespaces first find-ns meta :doc))
-                :commands commands
-                :arguments (or arguments *command-line-args*)})))
+        all-namespaces     (cons 'net.lewisship.cli-tools namespaces)
+        commands           (do
+                             ;; Load all the other namespaces first
+                             (run! require namespaces)
+                             ;; Ensure built-in help command is first
+                             (locate-commands all-namespaces))
+        command-categories (map namespace->category all-namespaces)]
+    (dispatch* {:tool-name  tool-name'
+                :tool-doc   (or tool-doc
+                                (some-> namespaces first find-ns meta :doc))
+                :categories command-categories
+                :commands   commands
+                :arguments  (or arguments *command-line-args*)})))
