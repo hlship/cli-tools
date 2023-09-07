@@ -2,7 +2,8 @@
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
   {:command-category       "Built-in"
    :command-category-order 100}
-  (:require [net.lewisship.cli-tools.impl :as impl]
+  (:require [clojure.spec.alpha :as s]
+            [net.lewisship.cli-tools.impl :as impl]
             [clojure.string :as str]))
 
 (defn exit
@@ -215,6 +216,32 @@
      :label    (:command-category ns-meta (name ns-symbol))
      :order    (:command-category-order ns-meta 0)}))
 
+(defn expand-dispatch-options
+  "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
+  Some applications may call this instead of `dispatch`, modify the results, and then
+  invoke `dispatch*`."
+  [options]
+  (let [{:keys [namespaces arguments tool-name tool-doc]} options
+        tool-name'         (or tool-name
+                               (impl/default-tool-name)
+                               (throw (ex-info "No :tool-name specified" {:options options})))
+        _                  (when-not (seq namespaces)
+                             (throw (ex-info "No :namespaces specified" {:options options})))
+        ;; Add this namespace, to include the help command by default
+        all-namespaces     (cons 'net.lewisship.cli-tools namespaces)
+        commands           (do
+                             ;; Load all the other namespaces first
+                             (run! require namespaces)
+                             ;; Ensure built-in help command is first
+                             (locate-commands all-namespaces))
+        command-categories (map namespace->category all-namespaces)]
+    {:tool-name  tool-name'
+     :tool-doc   (or tool-doc
+                     (some-> namespaces first find-ns meta :doc))
+     :categories command-categories
+     :commands   commands
+     :arguments  (or arguments *command-line-args*)}))
+
 (defn dispatch
   "Locates commands in namespaces, finds the current command
   (as identified by the first command line argument) and processes CLI options and arguments.
@@ -243,23 +270,19 @@
 
   Returns nil."
   [options]
-  (let [{:keys [namespaces arguments tool-name tool-doc]} options
-        tool-name'         (or tool-name
-                               (impl/default-tool-name)
-                               (throw (ex-info "No :tool-name specified" {:options options})))
-        _                  (when-not (seq namespaces)
-                             (throw (ex-info "No :namespaces specified" {:options options})))
-        ;; Add this namespace, to include the help command by default
-        all-namespaces     (cons 'net.lewisship.cli-tools namespaces)
-        commands           (do
-                             ;; Load all the other namespaces first
-                             (run! require namespaces)
-                             ;; Ensure built-in help command is first
-                             (locate-commands all-namespaces))
-        command-categories (map namespace->category all-namespaces)]
-    (dispatch* {:tool-name  tool-name'
-                :tool-doc   (or tool-doc
-                                (some-> namespaces first find-ns meta :doc))
-                :categories command-categories
-                :commands   commands
-                :arguments  (or arguments *command-line-args*)})))
+  (-> options
+      expand-dispatch-options
+      dispatch*))
+
+(s/def ::dispatch-options (s/keys :req-un [::namespaces]
+                                  :opt-un [::tool-name ::tool-doc ::arguments]))
+(s/def ::non-blank-string (s/and string?
+                                 #(not (str/blank? %))))
+(s/def ::tool-name ::non-blank-string)
+(s/def ::tool-doc string?)
+(s/def ::arguments (s/coll-of string?))
+(s/def ::namespaces (s/coll-of simple-symbol?))
+
+;; dispatch doesn't actually return
+(s/fdef dispatch :args (s/cat :options ::dispatch-options))
+
