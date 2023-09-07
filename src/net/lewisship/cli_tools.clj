@@ -137,8 +137,8 @@
   "List available commands"
   [flat ["-f" "--flat" "Ignore categories and show a simple list of commands"]]
   ;; dispatch binds *options* for us
-  (impl/show-tool-help (assoc impl/*options* :flat flat)))
-
+  (impl/show-tool-help (cond-> impl/*options*
+                               flat (assoc :flat true))))
 (defn- source-of
   [v]
   (str (-> v meta :ns ns-name) "/" (-> v meta :name)))
@@ -221,7 +221,7 @@
   Some applications may call this instead of `dispatch`, modify the results, and then
   invoke `dispatch*`."
   [options]
-  (let [{:keys [namespaces arguments tool-name tool-doc]} options
+  (let [{:keys [namespaces arguments tool-name tool-doc flat]} options
         tool-name'         (or tool-name
                                (impl/default-tool-name)
                                (throw (ex-info "No :tool-name specified" {:options options})))
@@ -238,6 +238,7 @@
     {:tool-name  tool-name'
      :tool-doc   (or tool-doc
                      (some-> namespaces first find-ns meta :doc))
+     :flat       (boolean flat)
      :categories command-categories
      :commands   commands
      :arguments  (or arguments *command-line-args*)}))
@@ -252,6 +253,7 @@
   - :tool-doc (optional, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
   - :namespaces - symbols identifying namespaces to search for commands
+  - :flat (optional, boolean) - if true, then the default help will be flat (no categories)
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
@@ -275,13 +277,14 @@
       dispatch*))
 
 (s/def ::dispatch-options (s/keys :req-un [::namespaces]
-                                  :opt-un [::tool-name ::tool-doc ::arguments]))
+                                  :opt-un [::tool-name ::tool-doc ::arguments ::flat]))
 (s/def ::non-blank-string (s/and string?
                                  #(not (str/blank? %))))
 (s/def ::tool-name ::non-blank-string)
 (s/def ::tool-doc string?)
 (s/def ::arguments (s/coll-of string?))
 (s/def ::namespaces (s/coll-of simple-symbol?))
+(s/def ::flat boolean?)
 
 ;; dispatch doesn't actually return
 (s/fdef dispatch :args (s/cat :options ::dispatch-options))

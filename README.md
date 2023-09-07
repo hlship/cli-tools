@@ -356,13 +356,17 @@ Built-in
 ```
 
 The namespace `net.lewisship.cli-tools` is automatically added, and has the label "Built-in".
-By default, a namespace's label is the same as it's namespace name, but this can be
+By default, a namespace's label is the same as it's namespace name, but this is usually
 overridden by setting the :command-category metadata on the namespace to a short string.
 
-Each namespace has a sort order, which defaults to 0.  The categories are sorted by this sort order,
+Each category has a sort order, which defaults to 0.  The categories are sorted by this sort order,
 then (within each set of categories with the same sort order) by label.  The sort order
 can be specified as the :command-category-order metadata on the namespace.  `net.lewisship.cli-tools` has
 a sort order of 100, so that it will generally be last.
+
+If you want to see the list of commands without categories, use the `-f` / `--flat` option to `help`.
+If you want to use multiple namespaces for your commands without using categories,
+add the `:flat` option to the map passed to `dispatch`.
 
 ## Testing
 
