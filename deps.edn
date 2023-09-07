@@ -3,6 +3,10 @@
  :deps  {org.clojure/tools.cli  {:mvn/version "1.0.219"}
          org.clj-commons/pretty {:mvn/version "2.2"}
          clj-fuzzy/clj-fuzzy    {:mvn/version "0.4.1"}}
+
+ :net.lewisship.build/scm
+ {:url "https://github.com/hlship/cli-tools"}
+
  :aliases
  {
   ;; clj -X:test

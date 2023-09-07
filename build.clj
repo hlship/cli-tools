@@ -1,8 +1,8 @@
 ;; clj -T:build <var>
 
 (ns build
-  (:require [clojure.tools.build.api :as b]
-            [net.lewisship.build :as bt]))
+  (:require [clojure.tools.build.api :as build]
+            [net.lewisship.build :as b]))
 
 (def lib 'io.github.hlship/cli-tools)
 (def version "0.8")
@@ -12,19 +12,20 @@
 
 (defn clean
   [_params]
-  (b/delete {:path "target"}))
+  (build/delete {:path "target"}))
 
 (defn jar
   [_params]
-  (bt/create-jar jar-params))
+  (b/create-jar jar-params))
 
 (defn deploy
   [_params]
   (clean nil)
   (-> jar-params
-      bt/create-jar
-      bt/deploy-jar))
+      b/create-jar
+      (assoc :sign-artifacts? false)
+      b/deploy-jar))
 
 (defn codox
   [_params]
-  (bt/generate-codox jar-params))
+  (b/generate-codox jar-params))
