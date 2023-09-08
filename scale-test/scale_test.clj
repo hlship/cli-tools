@@ -27,7 +27,7 @@
     (spit output-path output)))
 
 (defn write-ns
-  [i command-names]
+  [group? i command-names]
   (let [ns-name (str "commands.command-ns-" i)
         ns-file (-> ns-name
                     (str/replace "-" "_")
@@ -36,22 +36,27 @@
     (render "command-ns.edn"
             (str "src/" ns-file ".clj")
             {:ns            ns-name
-             :command-names command-names})
+             :command-names command-names
+             :category      (str "Category " i)
+             :group         (when group?
+                              (str "command-" i))})
     ns-name))
 
 (defn setup
   {:org.babashka/cli {:coerce {:namespaces :long
-                               :commands   :long}}}
+                               :commands   :long
+                               :group      :boolean}}}
   [opts]
   (fs/delete-tree root-dir)
   (fs/create-dirs (str root-dir "/src/commands"))
-  (let [{:keys [commands namespaces]
-         :or   {commands   5
-                namespaces 10}} opts
+  (let [{:keys [commands namespaces group]
+         :or   {commands   6
+                namespaces 250
+                group      false}} opts
         commands-per-ns (->> command-names
                              (partition commands)
                              (take namespaces))
-        ns-names        (doall (map-indexed write-ns commands-per-ns))]
+        ns-names        (doall (map-indexed (partial write-ns group) commands-per-ns))]
     (render "bb.edn" "bb.edn" {})
     (render "app.edn" "app" {:ns-names ns-names})
     (fs/set-posix-file-permissions (str root-dir "/app") "rwxrwxrwx")
