@@ -4,7 +4,9 @@ Testing was simplified; command functions can be tested by passing them a single
 argument values (previously values map was nested in another map).
 
 Namespaces now represent _categories_ of related commands; this changes the output from the `help` command.
-
+Further, categories may also be command groups, which applies a prefix to all commands within the category
+(this is useful with tools that define large numbers of subcommands).
+ 
 [Closed Issues](https://github.com/hlship/cli-tools/issues?q=is%3Aclosed+milestone%3A0.9)
 
 # 0.8 -- 5 Jul 2023

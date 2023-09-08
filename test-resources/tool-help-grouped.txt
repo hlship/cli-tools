@@ -1,0 +1,16 @@
+Usage: [1mgroup-test[22m COMMAND ...[m
+
+Group example namespace
+
+Commands:
+
+[32;1mgroup[39m - Grouped commands[m
+      [32;1mecho[39;22m: Echo a string[m
+      [32;1medit[39;22m: Edit a whatever[m
+
+[1mnet.lewisship.example-ns[m
+   [32;1mdefault[39;22m: Default command summary[m
+  [32;1mexplicit[39;22m: Explicit command summary[m
+
+[1mBuilt-in[m
+      [32;1mhelp[39;22m: List available commands[m

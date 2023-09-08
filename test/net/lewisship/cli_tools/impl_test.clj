@@ -142,19 +142,18 @@
              "this-tool"
              " help"]
             " to list commands")
-        (impl/use-help-message "this-tool" {"help"         nil
-                                            "some-command" nil})))
+        (impl/use-help-message "this-tool" true)))
   (is (= nil
-         (impl/use-help-message "this-tool" {"some-command" nil}))))
+         (impl/use-help-message "this-tool" nil))))
 
 (deftest provides-help-with-h-or-help
   (let [*help-args* (atom nil)
-        commands    {"help" {:var #(reset! *help-args* %)}}
+        commands    {"help" {:var (fn [& args] (reset! *help-args* args))}}
         options     {:tool-name "test-tool"
                      :commands  commands}]
     (doseq [arg ["-h" "--help"]
             :let [extra-arg (str "extra" arg)]]
-      (reset! *help-args* nil)
+      (reset! *help-args* ::unset)
       (impl/dispatch (assoc options :arguments [arg extra-arg]))
       (is (= [extra-arg]
              @*help-args*)))))
@@ -163,15 +162,15 @@
   (let [*message* (atom nil)]
     (with-redefs [impl/abort #(reset! *message* %)]
       (impl/dispatch {:tool-name "loco"
-                      :commands  {"help" nil}
-                      :arguments ["-not-such-option"]})
+                      :commands  {"help" {:var ::placeholder}}
+                      :arguments ["-no-such-option"]})
       (is (= "loco: no command provided, use loco help to list commands"
              @*message*))
 
       (reset! *message* nil)
 
       (impl/dispatch {:tool-name "bravo"
-                      :commands  {"help" nil}
+                      :commands  {"help" {:var ::placeholder}}
                       :arguments ["no-such-command"]})
 
       (is (= "bravo: no-such-command is not a command, use bravo help to list commands"

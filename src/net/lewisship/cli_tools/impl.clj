@@ -1,6 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
-  (:require [clojure.string :as str]
+  (:require [clojure.string :as string]
+            [clojure.string :as str]
             [clj-commons.ansi :refer [compose pcompose]]
             [clojure.tools.cli :as cli]
             [clj-fuzzy.metrics :as m]
@@ -11,6 +12,10 @@
 
 (def ^:dynamic *options*
   "Bound by [[dispatch]] so that certain functions, such as help, can operate."
+  nil)
+
+(def ^:dynamic *command*
+  "Bound to the command map selected by dispatch for execution."
   nil)
 
 (def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
@@ -130,13 +135,19 @@
 (defn print-summary
   [command-map errors]
   (let [{:keys [tool-name]} *options*
+        {:keys [command-path]} *command*
         {:keys [command-name positional-specs command-doc summary]} command-map
         arg-strs (map arg-spec->str positional-specs)]
     (pcompose
       "Usage: "
+      ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
       (when tool-name
         [:bold tool-name " "])
-      [:bold command-name]
+      ;; A stand-alone tool will use its command-name, a command within
+      ;; a multi-command tool will have a command-path.
+      [:bold (if command-path
+               (str/join " " command-path)
+               command-name)]
       " [OPTIONS]"
       (map list (repeat " ")
                 arg-strs))
@@ -641,6 +652,22 @@
       ": "
       (command-summary command-var))))
 
+(defn- collect-commands
+  "Walks the commands tree, to produce a map from command category to seq of command map."
+  ([commands] (collect-commands {} commands))
+  ([category->command commands]
+   (reduce-kv (fn [m k v]
+                (if (string? k)
+                  (let [{:keys [category]} v]
+                    (if category
+                      (update m category conj v)
+                      ;; It's a group psuedo-command, a container of nested commands; recurse in
+                      ;; (this is where non-string keys come in)
+                      (collect-commands m v)))
+                  m))
+              category->command
+              commands)))
+
 (defn show-tool-help
   [options]
   (let [{:keys [tool-name tool-doc commands categories flat]} options]
@@ -649,14 +676,26 @@
       (println)
       (-> tool-doc cleanup-docstring println))
     (println "\nCommands:")
-    (let [grouped-commands   (group-by :category (vals commands))
-          sorted-categories  (sort-by (juxt :order :category) categories)
-          command-name-width (apply max (map count (-> commands keys)))]
+    (let [grouped-commands   (collect-commands commands)
+          all-commands       (cond->> (reduce into [] (vals grouped-commands))
+                                      ;; For a flat view, each command's name is it's path (i.e., prefixed with the command group).
+                                     flat (map (fn [command]
+                                                 (assoc command :command-name (str/join " " (:command-path command))))))
+          command-name-width (->> all-commands
+                                  (map :command-name)
+                                  (map count)
+                                  (apply max))]
       (if flat
-        (print-commands command-name-width (vals commands))
-        (doseq [{:keys [category label]} sorted-categories]
+        (print-commands command-name-width all-commands)
+        ;; TODO: Adjust ordering based on the command-group
+        (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)]
           (println)
-          (pcompose [:bold label])
+          (pcompose [:bold
+                     (when command-group
+                       (list
+                         [:green command-group]
+                         " - "))
+                     label])
           (print-commands command-name-width (get grouped-commands category))))))
   (exit 0))
 
@@ -667,8 +706,7 @@
                           (map-indexed (fn [i term]
                                          (str
                                            (when (pos? i) "\\-")
-                                           ".*\\Q" term "\\E.*")
-                                         )
+                                           ".*\\Q" term "\\E.*"))
                                        terms))
         re (Pattern/compile re-pattern)]
     (fn [input]
@@ -684,60 +722,93 @@
       (filter (to-matcher s) values'))))
 
 (defn use-help-message
-  [tool-name commands]
-  (if (contains? commands "help")
+  [tool-name help?]
+  (if help?
     (list ", use " [:bold tool-name " help"] " to list commands")
     nil))
+
+(defn- invoke-command
+  [command-map args]
+  (binding [*command* command-map]
+    (apply (:var command-map) args)))
 
 (defn dispatch
   [{:keys [tool-name commands arguments] :as options}]
   ;; Capture these options for use by help command or when printing usage
   (binding [*options* options]
     (cond-let
-      :let [[command-name & command-args] arguments
-            help-var (get-in commands ["help" :var])]
-
       (str/blank? tool-name)
-      (throw (ex-info "Must specify :tool-name" {:options options}))
+      (throw (ex-info "must specify :tool-name" {:options options}))
+
+      :let [[command-name & command-args] arguments
+            help-command (get commands "help")]
 
       ;; In the normal case, when help is available, treat -h or --help the same as help
       (and (#{"-h" "--help"} command-name)
-           help-var)
-      (help-var command-args)
+           help-command)
+      ;; help calls exit
+      (invoke-command help-command command-args)
 
       (or (nil? command-name)
           (str/starts-with? command-name "-"))
-      (abort (compose [:bold tool-name] ": no command provided" (use-help-message tool-name commands)))
+      (abort (compose [:bold tool-name] ": no command provided" (use-help-message tool-name help-command)))
 
-      :let [matching-names (find-matches command-name (keys commands))
-            match-count (count matching-names)]
-
-      (not= 1 match-count)
-      (let [body (if (pos? match-count)
-                   (format "matches %d possible commands" match-count)
-                   "is not a command")
-            fuzzy-match (first (fuzzy-matches command-name
-                                 (keys commands)))
-            suffix (when fuzzy-match
-                     (list ", did you mean "
-                       [:bold.green fuzzy-match]
-                       "?"))
-            help? (contains? commands "help")
-            help-suffix (when help?
-                          (list
-                            (if suffix
-                              "\nUse "
-                              ", use ")
-                            [:bold tool-name " help"]
-                            " to list commands"))]
-        (abort
-          (compose
-            [:bold tool-name ": " [:red command-name]] " "
-            body suffix help-suffix)))
       :else
-      (let [command-var (get-in commands [(first matching-names) :var])]
-        (apply command-var command-args)))
-      nil))
+      (loop [prefix            []
+             term              command-name
+             remaining-args    command-args
+             possible-commands commands]
+        (cond-let
+          (nil? term)
+          (abort (compose [:bold tool-name]
+                          ": "
+                          [:yellow (str/join " " prefix)]
+                          " is incomplete, a sub-command name should follow"
+                          ;; TODO: Get the list of sub-commands?
+                          (use-help-message tool-name help-command)))
+
+          ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
+          :let [matchable-terms (filter string? (keys possible-commands))
+                matched-terms (find-matches term matchable-terms)
+                match-count (count matched-terms)]
+
+          (not= 1 match-count)
+          (let [body        (if (pos? match-count)
+                              (format "matches %d possible commands" match-count)
+                              "is not a command")
+                fuzzy-match (first (fuzzy-matches term matchable-terms))
+                suffix      (when fuzzy-match
+                              (list ", did you mean "
+                                    [:bold.green fuzzy-match]
+                                    "?"))
+                help-suffix (when help-command
+                              (list
+                                (if suffix
+                                  "\nUse "
+                                  ", use ")
+                                [:bold tool-name " help"]
+                                " to list commands"))]
+            (abort
+              (compose
+                [:bold tool-name ": " [:red
+                                       (string/join " " (conj prefix term))]] " "
+                body suffix help-suffix)))
+
+          :let [matched-term (first matched-terms)
+                matched-command (get possible-commands matched-term)]
+
+          (:var matched-command)
+          (invoke-command matched-command remaining-args)
+
+          ;; Otherwise, it was a command group.
+          ;; The map for a group contains string keys for nested commands, as well as keyword keys
+          ;; not used here.
+          :else
+          (recur (conj prefix term)
+                 (first remaining-args)
+                 (rest remaining-args)
+                 matched-command))))
+    nil))
 
 (defn command-map?
   [arguments]
@@ -755,3 +826,4 @@
        (partition 2)
        (mapcat (fn [[test expr]]
                  [(list not test) expr]))))
+
