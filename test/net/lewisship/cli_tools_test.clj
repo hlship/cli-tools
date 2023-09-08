@@ -265,8 +265,7 @@
                                        :command-group "group"
                                        :label         "Grouped commands"
                                        :ns            group-ns
-                                       :order         0}
-                      :sub-commands   ["edit" "echo"]}
+                                       :order         0}}
              "help"  {:category     'net.lewisship.cli-tools
                       :command-name "help"
                       :command-path ["help"]
@@ -302,7 +301,7 @@
 
 (defmacro with-abort
   [& body]
-  `(with-redefs [impl/abort #(throw (Exception. %))]
+  `(with-redefs [impl/abort (fn [& inputs#] (throw (Exception. (apply ansi/compose inputs#))))]
      (binding [ansi/*color-enabled* false]
        (when-let [e# (is (~'thrown? Exception (do ~@body)))]
          (ex-message e#)))))

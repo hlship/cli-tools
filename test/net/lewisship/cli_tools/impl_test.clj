@@ -160,7 +160,8 @@
 
 (deftest command-not-provided
   (let [*message* (atom nil)]
-    (with-redefs [impl/abort #(reset! *message* %)]
+    (with-redefs [impl/abort (fn [& inputs]
+                               (reset! *message* (apply ansi/compose inputs)))]
       (impl/dispatch {:tool-name "loco"
                       :commands  {"help" {:var ::placeholder}}
                       :arguments ["-no-such-option"]})

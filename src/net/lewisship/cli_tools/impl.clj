@@ -392,8 +392,8 @@
                  (assoc state' :specs more-specs)))))))
 
 (defn abort
-  [s]
-  (println-err s)
+  [& compose-inputs]
+  (println-err (apply compose compose-inputs))
   (exit 1))
 
 (defn- fail
@@ -743,7 +743,7 @@
 
       (or (nil? command-name)
           (str/starts-with? command-name "-"))
-      (abort (compose [:bold tool-name] ": no command provided" (use-help-message tool-name help-command)))
+      (abort [:bold tool-name] ": no command provided" (use-help-message tool-name help-command))
 
       :else
       (loop [prefix            []
@@ -752,12 +752,11 @@
              possible-commands commands]
         (cond-let
           (nil? term)
-          (abort (compose [:bold tool-name]
-                          ": "
-                          [:yellow (str/join " " prefix)]
-                          " is incomplete, a sub-command name should follow"
-                          ;; TODO: Get the list of sub-commands?
-                          (use-help-message tool-name help-command)))
+          (abort [:bold tool-name]
+                 ": "
+                 [:yellow (str/join " " prefix)]
+                 " is incomplete, a sub-command name should follow"
+                 (use-help-message tool-name help-command))
 
           ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
           :let [matchable-terms (filter string? (keys possible-commands))
@@ -781,10 +780,12 @@
                                 [:bold tool-name " help"]
                                 " to list commands"))]
             (abort
-              (compose
-                [:bold tool-name ": " [:red
-                                       (string/join " " (conj prefix term))]] " "
-                body suffix help-suffix)))
+              [:bold tool-name ": " [:red
+                                     (string/join " " (conj prefix term))]]
+              " "
+              body
+              suffix
+              help-suffix))
 
           :let [matched-term (first matched-terms)
                 matched-command (get possible-commands matched-term)]

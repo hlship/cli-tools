@@ -178,8 +178,7 @@
                                         ;; within a group. This is the first place that would change if we allowed groups
                                         ;; within groups.
                                         (assoc m command-group {:command-path   [command-group]
-                                                                :group-category category-map
-                                                                :sub-commands   []})))
+                                                                :group-category category-map})))
                                     {}))
         f              (fn [m category-map]
                          (let [{:keys [category command-group ns]} category-map
@@ -211,14 +210,10 @@
                                                                                   (source-of v)
                                                                                   where))))
                                               :else
-                                              (cond-> (assoc-in m command-path {:category     category
-                                                                                :command-name command-name ; name within group
-                                                                                :command-path command-path ; needed?
-                                                                                :var          v})
-                                                      ;; When there's a command-group, the base-path identifies the psuedo-command
-                                                      ;; for the containing group. We need to identify this new command as a sub-command
-                                                      ;; in the group.
-                                                      command-group (update-in base-path update :sub-commands conj command-name)))))
+                                              (assoc-in m command-path {:category     category
+                                                                        :command-name command-name ; name within group
+                                                                        :command-path command-path
+                                                                        :var          v}))))
                                         m))))
         commands       (reduce f group-commands categories)]
     [categories commands]))
@@ -234,8 +229,8 @@
   - :tool-name - used in command summary and errors
   - :tool-doc - used in command summary
   - :arguments - seq of strings; first is name of command, rest passed to command
-  - :categories - seq of maps describing the command categories
-  - :commands - set of command maps (see [[locate-commands]])
+  - :categories - seq of maps describing the command categories (see [[locate-commands]])
+  - :commands - seq of command maps (see [[locate-commands]])
 
   Each namespace forms a command category, represented as a map with keys:
   - :category - symbol identifying the namespace
