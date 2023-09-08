@@ -13,13 +13,15 @@ At the core, you define local symbols and instructions for how those symbols map
 or positional arguments; `cli-tools` takes care of the majority of command line parsing and validation
 for you.
 
-`cli-tools` is generally used to create tools that contain individual commands; each of these commands
-has its own unique options and arguments; `cli-tools` identifies the command from the first command line
-argument, then passes the remaining arguments to the selected command.  In this case,
-a built-in `help` command lists out what commands are available.
+`cli-tools` is intended to create three types of command lines tools:
+ 
+- A simple tool simply parses its command line arguments and executes some code using those arguments (think: `ls` or `cat`)
+- A proper tool is composed of multiple commands, across multiple namespaces. The first command line argument
+  will select the specific sub-command to execute. (think: `git`)
+- A complex tool organizes some commands into command groups which share an initial name (think: `k8s`)
 
-`cli-tools` can be used for tools that simply have options and arguments but not commands.  
-It isn't intended for tools that have more deeply nested levels of sub-commands.
+For tools with multiple commands, `cli-tools` automatically adds 
+a built-in `help` command to list out what commands are available.
 
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
 for the kind of low-ceremony tools that `cli-tools` is intended for.
@@ -367,6 +369,16 @@ a sort order of 100, so that it will generally be last.
 If you want to see the list of commands without categories, use the `-f` / `--flat` option to `help`.
 If you want to use multiple namespaces for your commands without using categories,
 add the `:flat` option to the map passed to `dispatch`.
+
+## Command Groups
+
+A category can also have a `:command-group` metadata value, a short string that acts like a command name.
+All commands in the same namespace/category are accessible via that group command.  The built-in `help`
+command will identify the command group when listing the commands in the category.
+
+Command groups are useful for the largest tools with the most commands; it allows for shorter command names,
+as the name only have to be unique within command group, not globally.
+
 
 ## Testing
 

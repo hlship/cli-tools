@@ -1,6 +1,9 @@
 (ns net.lewisship.cli-tools-test
-  (:require [clojure.test :refer [deftest is use-fixtures are]]
+  (:require [clj-commons.ansi :as ansi]
+            [clojure.test :refer [deftest is use-fixtures are]]
             [net.lewisship.cli-tools :as cli :refer [defcommand dispatch]]
+            net.lewisship.group-ns
+            net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
             [clojure.repl :as repl]
             [clojure.string :as str]))
@@ -75,25 +78,32 @@
   (with-exit 999
              (cli/exit 999)))
 
+
+(defn invoke-command
+  [& args]
+  (dispatch {:tool-name "harness"
+             :namespaces ['net.lewisship.cli-tools-test]
+             :arguments args}))
+
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
-         (with-exit 0 (configure "-h")))))
+         (with-exit 0 (invoke-command "configure" "-h")))))
 
 (deftest unknown-option
   (is (= (slurp "test-resources/unknown-option.txt")
-         (with-exit 1 (configure "--debug")))))
+         (with-exit 1 (invoke-command "configure" "--debug")))))
 
 (deftest pos-arg-validation-failure
   (is (= (slurp "test-resources/pos-arg-validation-failure.txt")
-         (with-exit 1 (configure "myhost.com" "fred=flinstone")))))
+         (with-exit 1 (invoke-command "configure" "myhost.com" "fred=flinstone")))))
 
 (deftest insuffient-values
   (is (= (slurp "test-resources/insufficient-values.txt")
-         (with-exit 1 (collect "just-key")))))
+         (with-exit 1 (invoke-command "collect" "just-key")))))
 
 (deftest excess-values
   (is (= (slurp "test-resources/excess-values.txt")
-         (with-exit 1 (collect "the-key" "the-value" "the-extra")))))
+         (with-exit 1 (invoke-command "collect" "the-key" "the-value" "the-extra")))))
 
 
 (defcommand default-variants
@@ -105,7 +115,7 @@
 
 (deftest option-defaults
   (is (= (slurp "test-resources/option-defaults.txt")
-        (with-exit 0 (default-variants "-h")))))
+        (with-exit 0 (invoke-command "default-variants" "-h")))))
 
 (defcommand in-order
   ""
@@ -125,15 +135,11 @@
          ;; Without :in-order true, the -lR is flagged as an error
          (in-order "-v" "ls" "-lR"))))
 
-(defcommand help
-           "Conflicts with built-in help"
-  [])
-
 (deftest detects-command-name-conflicts
   (when-let [e (is (thrown? RuntimeException
                             (cli/locate-commands ['net.lewisship.cli-tools
-                                                  'net.lewisship.cli-tools-test])))]
-    (is (= "command help defined by net.lewisship.cli-tools-test/help conflicts with net.lewisship.cli-tools/help"
+                                                  'net.lewisship.conflict])))]
+    (is (= "command help defined by net.lewisship.conflict/help conflicts with net.lewisship.cli-tools/help"
            (ex-message e)))))
 
 (deftest rejects-undefined-namespace
@@ -169,7 +175,7 @@
 (deftest let-directive
   (is (= (slurp "test-resources/let-directive.txt")
          (with-exit 1
-                    (set-mode "-m" "unknown")))))
+                    (invoke-command "set-mode" "-m" "unknown")))))
 
 (defcommand validate
   "validate command"
@@ -231,3 +237,78 @@
 (deftest sorted-name-list
   (is (= "foxtrot, tango, whiskey"
          (cli/sorted-name-list [:whiskey :tango :foxtrot]))))
+
+(deftest group-namespace
+  (let [group-ns (find-ns 'net.lewisship.group-ns)
+        cli-ns   (find-ns 'net.lewisship.cli-tools)]
+    (is (= [[{:category      'net.lewisship.group-ns
+              :command-group "group"
+              :label         "Grouped commands"
+              :ns            group-ns
+              :order         0}
+             {:category      'net.lewisship.cli-tools
+              :command-group nil
+              :label         "Built-in"
+              :ns            cli-ns
+              :order         100}]
+            {"group" {"echo"          {:category     'net.lewisship.group-ns
+                                       :command-name "echo"
+                                       :command-path ["group" "echo"]
+                                       :var          #'net.lewisship.group-ns/echo}
+                      "edit"          {:category     'net.lewisship.group-ns
+                                       :command-name "edit"
+                                       :command-path ["group"
+                                                      "edit"]
+                                       :var          #'net.lewisship.group-ns/edit}
+                      :command-path   ["group"]
+                      :group-category {:category      'net.lewisship.group-ns
+                                       :command-group "group"
+                                       :label         "Grouped commands"
+                                       :ns            group-ns
+                                       :order         0}}
+             "help"  {:category     'net.lewisship.cli-tools
+                      :command-name "help"
+                      :command-path ["help"]
+                      :var          #'net.lewisship.cli-tools/help}}]
+           (cli/locate-commands '[net.lewisship.group-ns
+                                  net.lewisship.cli-tools])))))
+
+(defn exec-group [& args]
+  (dispatch {:tool-name  "group-test"
+             :namespaces '[net.lewisship.group-ns
+                           net.lewisship.example-ns]
+             :arguments  args}))
+
+(deftest help-with-default-and-explicit-summary-grouped
+  (is (= (slurp "test-resources/tool-help-grouped.txt")
+         (with-exit 0
+                    (exec-group "help")))))
+
+(deftest help-with-default-and-explicit-summary-flat-grouped
+  (is (= (slurp "test-resources/tool-help-grouped-flat.txt")
+         (with-exit 0
+                    (exec-group "help" "-f")))))
+
+(deftest can-find-a-grouped-command
+  (is (= "echo: fancy\n"
+         (with-out-str
+           (exec-group "group" "echo" "fancy")))))
+
+(deftest can-use-group-abbreviations
+  (is (= "echo: abbreviated\n"
+         (with-out-str
+           (exec-group "g" "ec" "abbreviated")))))
+
+(defmacro with-abort
+  [& body]
+  `(with-redefs [impl/abort (fn [& inputs#] (throw (Exception. (apply ansi/compose inputs#))))]
+     (binding [ansi/*color-enabled* false]
+       (when-let [e# (is (~'thrown? Exception (do ~@body)))]
+         (ex-message e#)))))
+
+(deftest reports-group-match-failure
+  (is (= "group-test: g e matches 2 possible commands, use group-test help to list commands"
+         (with-abort (exec-group "g" "e" "multiple"))))
+
+  (is (= "group-test: echo is not a command, use group-test help to list commands"
+         (with-abort (exec-group "echo" "wrong-level")))))

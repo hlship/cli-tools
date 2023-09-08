@@ -1,5 +1,9 @@
 (ns {{ns}}
   "Command group {{ns}}"
+  {:command-category "{{category}}"
+{% if group %}
+   :command-group "{{group}}"
+{% endif %}}
   (:require [net.lewisship.cli-tools :refer [defcommand]]))
 
 {% for command-name in command-names %}

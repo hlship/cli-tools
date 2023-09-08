@@ -3,7 +3,7 @@
   {:command-category       "Built-in"
    :command-category-order 100}
   (:require [clojure.spec.alpha :as s]
-            [net.lewisship.cli-tools.impl :as impl]
+            [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
             [clojure.string :as str]))
 
 (defn exit
@@ -93,7 +93,7 @@
   (assert (simple-symbol? command-name)
           "defcommand expects a symbol for command name")
   (assert (string? docstring)
-          (throw "defcommand requires a docstring"))
+          "defcommand requires a docstring")
   (assert (vector? interface)
           "defcommand expects a vector to define the interface")
   (let [symbol-meta (meta command-name)
@@ -149,37 +149,74 @@
     ns-object
     (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
 
+(defn- namespace->category
+  [ns-symbol]
+  (let [ns      (resolve-ns ns-symbol)
+        ns-meta (meta ns)]
+    {:category      ns-symbol
+     :ns            ns
+     :command-group (:command-group ns-meta)
+     :label         (:command-category ns-meta (name ns-symbol))
+     :order         (:command-category-order ns-meta 0)}))
+
 (defn locate-commands
   "Passed a seq of symbols identifying *loaded* namespaces, this function
   locates commands, functions defined by [[defcommand]].
 
   Normally, this is called from [[dispatch]] and is only needed when calling [[dispatch*]] directly.
 
-  Returns a map from string command name to a map of :category (the namespace symbol)
-  and :var (the Var containing the command function)."
+  Returns a tuple: the command categories map, and the command map."
   [namespace-symbols]
-  (let [f (fn [m namespace-symbol]
-            (->> (resolve-ns namespace-symbol)
-                 ns-publics
-                 vals
-                 (reduce (fn [m v]
-                           (let [command-name (-> v meta ::impl/command-name)]
-                             (cond
-                               (nil? command-name)
-                               m
+  (let [categories     (map namespace->category namespace-symbols)
+        ;; Each category that is a command group gets a psuedo command
+        group-commands (->> categories
+                            (filter :command-group)
+                            (reduce (fn [m category-map]
+                                      (let [{:keys [command-group]} category-map]
+                                        ;; TODO: Check for conflicts
+                                        ;; Currently, we only allow two levels of nesting: top level, and directly
+                                        ;; within a group. This is the first place that would change if we allowed groups
+                                        ;; within groups.
+                                        (assoc m command-group {:command-path   [command-group]
+                                                                :group-category category-map})))
+                                    {}))
+        f              (fn [m category-map]
+                         (let [{:keys [category command-group ns]} category-map
+                               base-path (cond-> []
+                                                 command-group (conj command-group))]
+                           (->> ns
+                                ns-publics
+                                ;; Iterate over the public vars of the namespace
+                                vals
+                                (reduce (fn [m v]
+                                          (let [command-name (-> v meta ::impl/command-name)]
+                                            (cond-let
+                                              :let [command-name (-> v meta ::impl/command-name)]
 
-                               (contains? m command-name)
-                               (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
-                                                                 command-name
-                                                                 (source-of v)
-                                                                 (source-of (get-in m [command-name :var])))))
+                                              ;; Not a defcommand?
+                                              (nil? command-name)
+                                              m
 
-                               :else
-                               (assoc m command-name {:category     namespace-symbol
-                                                      :command-name command-name
-                                                      :var          v}))))
-                         m)))]
-    (reduce f {} namespace-symbols)))
+                                              :let [command-path (conj base-path command-name)
+                                                    conflict (get-in m command-path)]
+
+                                              conflict
+                                              (let [command-var (:var conflict)
+                                                    where       (if command-var
+                                                                  (source-of command-var)
+                                                                  (str "namespace " (name (get-in conflict [:group-category :category]))))]
+                                                (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
+                                                                                  (str/join " " command-path)
+                                                                                  (source-of v)
+                                                                                  where))))
+                                              :else
+                                              (assoc-in m command-path {:category     category
+                                                                        :command-name command-name ; name within group
+                                                                        :command-path command-path
+                                                                        :var          v}))))
+                                        m))))
+        commands       (reduce f group-commands categories)]
+    [categories commands]))
 
 (defn dispatch*
   "Invoked by [[dispatch]] after namespace and command resolution.
@@ -192,13 +229,14 @@
   - :tool-name - used in command summary and errors
   - :tool-doc - used in command summary
   - :arguments - seq of strings; first is name of command, rest passed to command
-  - :categories - seq of maps describing the command categories
-  - :commands - map from string command name to a map of var and command category (see [[locate-commands]])
+  - :categories - seq of maps describing the command categories (see [[locate-commands]])
+  - :commands - seq of command maps (see [[locate-commands]])
 
   Each namespace forms a command category, represented as a map with keys:
   - :category - symbol identifying the namespace
+  - :command-group string - optional, from :command-group metadata on namespace, groups commands with a prefix name
   - :label - string (from :command-category metadata on namespace), defaults to the namespace name
-  - :order - number (from :command-category-order metadata), defaults to 0
+  - :order - number (from :command-category-order metadata on namespace), defaults to 0
 
   In the `help` command summary, the categories are sorted into ascending order by :order,
   then by :label. Individual commands are listed under each category, in ascending alphabetic order.
@@ -209,32 +247,19 @@
   [options]
   (impl/dispatch options))
 
-(defn- namespace->category
-  [ns-symbol]
-  (let [ns-meta (-> ns-symbol find-ns meta)]
-    {:category ns-symbol
-     :label    (:command-category ns-meta (name ns-symbol))
-     :order    (:command-category-order ns-meta 0)}))
-
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
   Some applications may call this instead of `dispatch`, modify the results, and then
   invoke `dispatch*`."
   [options]
   (let [{:keys [namespaces arguments tool-name tool-doc flat]} options
-        tool-name'         (or tool-name
-                               (impl/default-tool-name)
-                               (throw (ex-info "No :tool-name specified" {:options options})))
-        _                  (when-not (seq namespaces)
-                             (throw (ex-info "No :namespaces specified" {:options options})))
-        ;; Add this namespace, to include the help command by default
-        all-namespaces     (cons 'net.lewisship.cli-tools namespaces)
-        commands           (do
-                             ;; Load all the other namespaces first
-                             (run! require namespaces)
-                             ;; Ensure built-in help command is first
-                             (locate-commands all-namespaces))
-        command-categories (map namespace->category all-namespaces)]
+        tool-name' (or tool-name
+                       (impl/default-tool-name)
+                       (throw (ex-info "No :tool-name specified" {:options options})))
+        _          (when-not (seq namespaces)
+                     (throw (ex-info "No :namespaces specified" {:options options})))
+        _          (run! require namespaces)
+        [command-categories commands] (locate-commands (cons 'net.lewisship.cli-tools namespaces))]
     {:tool-name  tool-name'
      :tool-doc   (or tool-doc
                      (some-> namespaces first find-ns meta :doc))
