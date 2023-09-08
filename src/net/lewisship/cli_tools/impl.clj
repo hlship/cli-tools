@@ -27,13 +27,6 @@
   ;; If in testing mode ...
   (throw (ex-info "Exit" {:status status})))
 
-(defn- padding
-  [value-length field-width]
-  (let [x (- field-width value-length)]
-    (if (pos? x)
-      (apply str (repeat x " "))
-      "")))
-
 ;; better-cond is a better implementation, but has some dependencies
 (defmacro cond-let
   "An alternative to `clojure.core/cond` where instead of a test/expression pair, it is possible
@@ -159,7 +152,7 @@
     (println summary)
 
     (when (seq positional-specs)
-      (let [label-width (->> positional-specs
+      (let [max-label-width (->> positional-specs
                           (map :label)
                              (map count)
                              (reduce max)
@@ -167,25 +160,24 @@
                              (+ 2))
             lines (for [{:keys [label doc]} positional-specs]
                     (list
-                      (padding (.length label) label-width)
-                      [:bold label]
+                      [{:width max-label-width}
+                       [:bold label]]
                       ": "
                       doc))]
         (println "\nArguments:")
-        (println (compose (interpose \newline lines)))))
+        (pcompose (interpose \newline lines))))
     (print-errors errors)))
 
 (defn- format-option-summary
   [max-option-width max-default-width summary-part]
-  (let [{:keys [opt-label opt-width default default-width opt-desc]} summary-part]
+  (let [{:keys [opt-label default opt-desc]} summary-part]
     (list
       "  "
-      opt-label
-      (padding opt-width max-option-width)
+      [{:width max-option-width
+        :pad   :right} opt-label]
       " "
-      default
-      (padding default-width max-default-width)
-
+      [{:width max-default-width
+        :pad   :right} default]
       (when (pos? max-default-width)
         " ")
       opt-desc)))
@@ -678,8 +670,8 @@
     (println "\nCommands:")
     (let [grouped-commands   (collect-commands commands)
           all-commands       (cond->> (reduce into [] (vals grouped-commands))
-                                      ;; For a flat view, each command's name is it's path (i.e., prefixed with the command group).
-                                     flat (map (fn [command]
+                                      ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
+                                      flat (map (fn [command]
                                                  (assoc command :command-name (str/join " " (:command-path command))))))
           command-name-width (->> all-commands
                                   (map :command-name)
