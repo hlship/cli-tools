@@ -1,4 +1,4 @@
-# 0.9 -- UNRELEASED
+# 0.9 -- 11 Sep 2023
 
 Testing was simplified; command functions can be tested by passing them a single map of option and
 argument values (previously values map was nested in another map).
