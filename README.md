@@ -26,6 +26,15 @@ a built-in `help` command to list out what commands are available.
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
 for the kind of low-ceremony tools that `cli-tools` is intended for.
 
+Although `cli-tools` can be used to build shared tools, it is also fully intended for developers to create a personal
+toolkit of commands specific to their personal workflows, as an alternative to a collection of shell aliases and one-off shell scripts.
+
+Below is an example of the author's personal toolkit, `flow`:
+
+![Example](images/example-usage.png)
+
+Building on `cli-tools` provides discoverability and feedback, as the tool and every command inside the tool, will provide detailed help.
+
 ## defcommand
 
 The core utility is the `net.lewisship.cli-tools/defcommand` macro, which defines a command in
@@ -81,7 +90,7 @@ and the option description; these are positional, and a nil may be supplied.
 
 A namespace with commands is only part of the solution, to get from a terminal command line
 to the body of the `configure` function, we need to add Babashka script, `bin/app-admin`, which 
-sets up the classpath and invokes `cli/dispatch`.
+invokes the `cli/dispatch` function.
 
 
 **bin/app-admin**:
@@ -217,7 +226,7 @@ by the argument
 For repeatable arguments, the default update function will construct a vector of values.
 For non-repeatable arguments, the default update function simply sets the value.
 
-Only the final command line argument may be repeatable.
+Only the final positional parameter may be repeatable.
 
 Also note that all command line arguments _must be_ consumed, either as options or as positional arguments.
 Any additional command line arguments will be reported as a validation error.
