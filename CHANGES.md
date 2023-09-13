@@ -1,3 +1,8 @@
+# 0.10 -- UNRELEASED
+
+Added new function `select-option`, used to build the option spec for an option
+selected from a list of possible values.
+
 # 0.9 -- 11 Sep 2023
 
 Testing was simplified; command functions can be tested by passing them a single map of option and

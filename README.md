@@ -314,6 +314,9 @@ and arguments definitions; the `:let` keyword is followed by a vector of binding
   ...)
 ```
 
+> Note that the `select-option` function is an easier way to create such
+> an option.
+
 In the expanded code, the bindings are moved to the top, before the option and argument
 definitions.  Further, if there are multiple `:let` blocks, they are concatinated.
 

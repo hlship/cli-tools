@@ -1,7 +1,7 @@
 (ns net.lewisship.cli-tools-test
   (:require [clj-commons.ansi :as ansi]
             [clojure.test :refer [deftest is use-fixtures are]]
-            [net.lewisship.cli-tools :as cli :refer [defcommand dispatch]]
+            [net.lewisship.cli-tools :as cli :refer [defcommand dispatch select-option]]
             net.lewisship.group-ns
             net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
@@ -312,3 +312,38 @@
 
   (is (= "group-test: echo is not a command, use group-test help to list commands"
          (with-abort (exec-group "echo" "wrong-level")))))
+
+(deftest select-option-no-default
+  (let [input-values #{:csv :json :yaml :edn}
+        [short long desc & {:keys [parse-fn validate]}]
+        (select-option "-f" "--format FORMAT" "Output format:" input-values)
+        [validate-fn validate-msg] validate]
+    (is (= "-f" short))
+    (is (= "--format FORMAT" long))
+    (is (= "Output format: csv, edn, json, yaml"
+           desc))
+
+    (is (= :yaml (parse-fn "y")))
+    (is (= nil (parse-fn "x")))
+
+    (is (= some? validate-fn))
+    (is (= "Must be one of csv, edn, json, yaml" validate-msg))))
+
+(deftest select-option-with-default
+  (let [[_ _ _ & {:keys [default default-desc]}]
+        (select-option "-f" "--format FORMAT" "Output format:"
+                       #{:csv :json :yaml :edn}
+                       :default :json)]
+    (is (= :json default))
+    (is (= "json" default-desc))))
+
+(deftest select-option-passes-through-other-key-values
+  (let [[_ _ _ & {:as kvs}]
+        (select-option "-f" "--format FORMAT" "Output format:"
+                       #{:csv :json :yaml :edn}
+                       :default :json
+                       :k1 :value-1
+                       :k2 :value-2)]
+    (is (= {:k1 :value-1
+            :k2 :value-2}
+           (dissoc kvs :parse-fn :validate :default :default-desc)))))
