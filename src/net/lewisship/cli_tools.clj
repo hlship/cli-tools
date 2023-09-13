@@ -314,3 +314,33 @@
 ;; dispatch doesn't actually return
 (s/fdef dispatch :args (s/cat :options ::dispatch-options))
 
+(defn select-option
+  "Builds a standard option spec for selecting from a list of possible values.
+  Uses [[best-match]] to parse the user-supplied value (allowing for
+  reasonable abbeviations).
+
+  Following the input values is a list of key value pairs; the :default
+  key, if non-nil, should be a member of input-values and will generate
+  :default and :default-desc keys in the option spec.
+
+  Adds :parse-fn and :validate keys to the returned option spec,
+  as well as :default and :default-desc.
+  Additional key/value pairs are passed through as-is.
+
+  Usage (as part of a command's interface):
+
+  ```
+  ... format (select-option
+                 \"-f\" \"--format FORMAT\" \"Output format:\"
+                 #{:plain :csv :tsv :json :edn}) ...
+  "
+  {:added "0.10"}
+  [short-opt long-opt desc-prefix input-values & {:keys [default] :as kvs}]
+  (let [input-values-list (sorted-name-list input-values)
+        extra-kvs         (reduce into [] (dissoc kvs :default))]
+    (cond-> [short-opt long-opt (str desc-prefix " " input-values-list)
+             :parse-fn #(best-match % input-values)
+             :validate [some? (str "Must be one of " input-values-list)]]
+            default (conj :default default
+                          :default-desc (name default))
+            (seq extra-kvs) (into extra-kvs))))
