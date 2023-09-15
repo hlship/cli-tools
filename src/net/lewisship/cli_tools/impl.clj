@@ -4,7 +4,8 @@
             [clojure.string :as str]
             [clj-commons.ansi :refer [compose pcompose]]
             [clojure.tools.cli :as cli]
-            [clj-fuzzy.metrics :as m]
+            [clj-commons.humanize :as h]
+            [clj-commons.humanize.inflect :as inflect]
             [clojure.java.io :as io])
   (:import (java.util.regex Pattern)))
 
@@ -49,6 +50,53 @@
                ~expr-or-binding-form
                (cond-let ~@more-clauses))))))
 
+(defn- inject-commas
+  [terms]
+  (interpose ", " terms))
+
+(defn compose-list
+  [terms opts]
+  (let [{:keys [conjuction max-terms noun font]
+         :or   {conjuction "and"
+                font       :green
+                max-terms  3
+                noun       "command"}} opts
+        n    (count terms)
+        wrap (fn [term]
+               [font term])]
+    (cond
+      ;; First two cases are for correctness
+      (zero? n)
+      nil
+
+      (= 1 n)
+      (-> terms first wrap)
+
+      (= 2 n)
+      (list
+        (-> terms first wrap)
+        (str " " conjuction " ")
+        (-> terms second wrap))
+
+      (<= n max-terms)
+      (let [n'            (dec n)
+            leading-terms (take n' terms)
+            final-term    (nth terms n')]
+        (concat
+          (inject-commas (map wrap leading-terms))
+          [(str ", " conjuction " ") (wrap final-term)]))
+
+      :else
+      (let [listed-terms (take max-terms terms)
+            n-unlisted   (- n max-terms)]
+        (concat
+          (inject-commas (map wrap listed-terms))
+          [(str (when (> max-terms 1) ",")
+                " " conjuction " "
+                (h/numberword n-unlisted)
+                " other "
+                (inflect/pluralize-noun n-unlisted noun))])))))
+
 (defn- println-err
   [s]
   (binding [*out* *err*] (println s)))
@@ -60,17 +108,6 @@
     (pcompose [:red (if (= 1 (count errors)) "Error:" "Errors:")])
     (doseq [e errors]
       (pcompose "  " [:red e]))))
-
-(defn fuzzy-matches
-  [s values]
-  (->> values
-       (map (fn [v]
-              (assoc (m/mra-comparison s v)
-                     :word v)))
-       (filter :match)
-       (sort-by :simularity)
-       reverse
-       (map :word)))
 
 (defn- arg-spec->str
   [arg-spec]
@@ -711,7 +748,7 @@
     (if (contains? values' s)
       [s]
       ;; Otherwise, treat s as a match string and find any values that loosely match it.
-      (filter (to-matcher s) values'))))
+      (sort (filter (to-matcher s) values')))))
 
 (defn use-help-message
   [tool-name help?]
@@ -765,18 +802,12 @@
 
           (not= 1 match-count)
           (let [body        (if (pos? match-count)
-                              (format "matches %d possible commands" match-count)
+                              (list "matches "
+                                    (compose-list matched-terms {:font :bold.green}))
                               "is not a command")
-                fuzzy-match (first (fuzzy-matches term matchable-terms))
-                suffix      (when fuzzy-match
-                              (list ", did you mean "
-                                    [:bold.green fuzzy-match]
-                                    "?"))
                 help-suffix (when help-command
                               (list
-                                (if suffix
-                                  "\nUse "
-                                  ", use ")
+                                "; use "
                                 [:bold tool-name " help"]
                                 " to list commands"))]
             (abort
@@ -784,7 +815,6 @@
                                      (string/join " " (conj prefix term))]]
               " "
               body
-              suffix
               help-suffix))
 
           :let [matched-term (first matched-terms)

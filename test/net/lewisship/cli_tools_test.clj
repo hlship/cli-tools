@@ -307,10 +307,10 @@
          (ex-message e#)))))
 
 (deftest reports-group-match-failure
-  (is (= "group-test: g e matches 2 possible commands, use group-test help to list commands"
+  (is (= "group-test: g e matches echo and edit; use group-test help to list commands"
          (with-abort (exec-group "g" "e" "multiple"))))
 
-  (is (= "group-test: echo is not a command, use group-test help to list commands"
+  (is (= "group-test: echo is not a command; use group-test help to list commands"
          (with-abort (exec-group "echo" "wrong-level")))))
 
 (deftest select-option-no-default
