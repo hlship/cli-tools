@@ -86,7 +86,7 @@
 
    The returned function is variadic, accepting a number of strings, much
    like a `-main` function. For testing purposes, it may instead be passed a single map,
-   a command map, which bypasses parsing and validation of the arguments, and is used only for testing.
+   a map of options, which bypasses parsing and validation of the arguments, and is used only for testing.
 
    Finally, the body is evaluated inside a let that destructures the options and positional arguments into local symbols."
   [command-name docstring interface & body]
