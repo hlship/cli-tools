@@ -1,5 +1,5 @@
 (ns net.lewisship.cli-tools.impl-test
-  (:require [clojure.test :refer [deftest is use-fixtures]]
+  (:require [clojure.test :refer [deftest is are use-fixtures]]
             [clj-commons.ansi :as ansi]
             [net.lewisship.cli-tools.impl :refer [compile-interface]]
             [net.lewisship.cli-tools.impl :as impl]))
@@ -174,5 +174,52 @@
                       :commands  {"help" {:var ::placeholder}}
                       :arguments ["no-such-command"]})
 
-      (is (= "bravo: no-such-command is not a command, use bravo help to list commands"
+      (is (= "bravo: no-such-command is not a command; use bravo help to list commands"
              @*message*)))))
+
+(deftest compose-list-tests
+  (let [base-terms ["alpha" "bravo" "charlie" "delta" "echo" "foxtrot"]]
+    (are [terms opts expected]
+      (= expected
+         (impl/compose-list terms opts))
+
+      base-terms
+      nil
+      '([:green "alpha"] ", "
+        [:green "bravo"] ", "
+        [:green "charlie"] ", and three other commands")
+
+      nil
+      nil
+      nil
+
+      (take 1 base-terms)
+      nil
+      [:green "alpha"]
+
+      (take 2 base-terms)
+      nil
+      '([:green "alpha"] " and "
+        [:green "bravo"])
+
+      (take 3 base-terms)
+      nil
+      '([:green "alpha"] ", "
+        [:green "bravo"] ", and "
+        [:green "charlie"])
+
+      base-terms
+      {:max-terms  1
+       :noun       "thing"
+       :conjuction "or"
+       :font       :cyan}
+      '([:cyan "alpha"]
+        " or five other things")
+
+      (take 4 base-terms)
+      {:noun       "thing"
+       :conjuction "or"
+       :font       :cyan}
+      '([:cyan "alpha"] ", "
+        [:cyan "bravo"] ", "
+        [:cyan "charlie"] ", or one other thing"))))
