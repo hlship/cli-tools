@@ -2,7 +2,7 @@
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
             [clojure.string :as str]
-            [clj-commons.ansi :refer [compose pcompose]]
+            [clj-commons.ansi :refer [compose pcompose *color-enabled*]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -700,16 +700,20 @@
 (defn show-tool-help
   [options]
   (let [{:keys [tool-name tool-doc commands categories flat]} options]
-    (pcompose "Usage: " [:bold tool-name] " COMMAND ...")
+    (pcompose "Usage: " [:bold tool-name] " [TOOL OPTIONS] COMMAND ...")
     (when tool-doc
       (println)
       (-> tool-doc cleanup-docstring println))
+    (println "\nTool options:")
+    (pcompose [:bold "  -C / --color"] "    Enable ANSI color output")
+    (pcompose [:bold "  -N / --no-color"] " Disable ANSI color output")
+    (pcompose [:bold "  -h / --help"] "     This tool summary")
     (println "\nCommands:")
     (let [grouped-commands   (collect-commands commands)
           all-commands       (cond->> (reduce into [] (vals grouped-commands))
                                       ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
                                       flat (map (fn [command]
-                                                 (assoc command :command-name (str/join " " (:command-path command))))))
+                                                  (assoc command :command-name (str/join " " (:command-path command))))))
           command-name-width (->> all-commands
                                   (map :command-name)
                                   (map count)
@@ -751,41 +755,23 @@
       (sort (filter (to-matcher s) values')))))
 
 (defn use-help-message
-  [tool-name help?]
-  (if help?
-    (list ", use " [:bold tool-name " help"] " to list commands")
-    nil))
+  [tool-name]
+  (list ", use " [:bold tool-name " help"] " to list commands"))
 
 (defn- invoke-command
   [command-map args]
   (binding [*command* command-map]
     (apply (:var command-map) args)))
 
-(defn dispatch
-  [{:keys [tool-name commands arguments] :as options}]
-  ;; Capture these options for use by help command or when printing usage
-  (binding [*options* options]
-    (cond-let
-      (str/blank? tool-name)
-      (throw (ex-info "must specify :tool-name" {:options options}))
-
-      :let [[command-name & command-args] arguments
-            help-command (get commands "help")]
-
-      ;; In the normal case, when help is available, treat -h or --help the same as help
-      (and (#{"-h" "--help"} command-name)
-           help-command)
-      ;; help calls exit
-      (invoke-command help-command command-args)
-
-      (or (nil? command-name)
-          (str/starts-with? command-name "-"))
-      (abort [:bold tool-name] ": no command provided" (use-help-message tool-name help-command))
-
-      :else
+(defn- inner-dispatch
+  [tool-name arguments commands]
+  (let [command-name (first arguments)]
+    (if (or (nil? command-name)
+            (str/starts-with? command-name "-"))
+      (abort [:bold tool-name] ": no command provided" (use-help-message tool-name))
       (loop [prefix            []
              term              command-name
-             remaining-args    command-args
+             remaining-args    (next arguments)
              possible-commands commands]
         (cond-let
           (nil? term)
@@ -793,7 +779,7 @@
                  ": "
                  [:yellow (str/join " " prefix)]
                  " is incomplete, a sub-command name should follow"
-                 (use-help-message tool-name help-command))
+                 (use-help-message tool-name))
 
           ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
           :let [matchable-terms (filter string? (keys possible-commands))
@@ -805,11 +791,10 @@
                               (list "matches "
                                     (compose-list matched-terms {:font :bold.green}))
                               "is not a command")
-                help-suffix (when help-command
-                              (list
-                                "; use "
-                                [:bold tool-name " help"]
-                                " to list commands"))]
+                help-suffix (list
+                              "; use "
+                              [:bold tool-name " help"]
+                              " to list commands")]
             (abort
               [:bold tool-name ": " [:red
                                      (string/join " " (conj prefix term))]]
@@ -830,7 +815,35 @@
           (recur (conj prefix term)
                  (first remaining-args)
                  (rest remaining-args)
-                 matched-command))))
+                 matched-command))))))
+
+(defn dispatch-options-parser
+  [tool-name arguments commands]
+  (let [[first-arg & remaining-args] arguments]
+    (cond
+      ;; In the normal case, when help is available, treat -h or --help the same as help
+      (#{"-h" "--help"} first-arg)
+      (inner-dispatch tool-name (cons "help" remaining-args) commands)
+
+      (#{"-C" "--color"} first-arg)
+      (binding [*color-enabled* true]
+        ;; Can't use recur, due to binding
+        (dispatch-options-parser tool-name remaining-args commands))
+
+      (#{"-N" "--no-color"} first-arg)
+      (binding [*color-enabled* false]
+        (dispatch-options-parser tool-name remaining-args commands))
+
+      :else
+      (inner-dispatch tool-name arguments commands))))
+
+(defn dispatch
+  [{:keys [tool-name commands arguments] :as options}]
+  ;; Capture these options for use by help command or when printing usage
+  (binding [*options* options]
+    (if (str/blank? tool-name)
+      (throw (ex-info "must specify :tool-name" {:options options}))
+      (dispatch-options-parser tool-name arguments commands))
     nil))
 
 (defn command-map?

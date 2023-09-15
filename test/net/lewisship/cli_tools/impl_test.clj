@@ -132,19 +132,9 @@
                             (compile-interface nil '[:in-order in-order])))]
     (is (= "Expected boolean after :in-order" (ex-message e)))))
 
-(deftest can-override-command-name
+(deftest can-override-command-nameD
   (is (= "overridden"
          (:command-name (compile-interface nil '[:command "overridden"])))))
-
-(deftest omits-tool-help-when-help-not-available
-  (is (= '(", use "
-            [:bold
-             "this-tool"
-             " help"]
-            " to list commands")
-        (impl/use-help-message "this-tool" true)))
-  (is (= nil
-         (impl/use-help-message "this-tool" nil))))
 
 (deftest provides-help-with-h-or-help
   (let [*help-args* (atom nil)

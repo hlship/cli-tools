@@ -1,6 +1,11 @@
-Usage: [1mgroup-test[22m COMMAND ...[m
+Usage: [1mgroup-test[22m [TOOL OPTIONS] COMMAND ...[m
 
 Group example namespace
+
+Tool options:
+[1m  -C / --color[22m    Enable ANSI color output[m
+[1m  -N / --no-color[22m Disable ANSI color output[m
+[1m  -h / --help[22m     This tool summary[m
 
 Commands:
      [32;1mdefault[39;22m: Default command summary[m
