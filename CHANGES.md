@@ -3,6 +3,13 @@
 Added new function `select-option`, used to build the option spec for an option
 selected from a list of possible values.
 
+Improved the output of command mis-matches (where the input is not sufficient to
+uniquely identify a command), and removed the fuzzy match ("did you mean?")
+that did not seem to provide any real benefit.
+
+[Closed Issues](https://github.com/hlship/cli-tools/issues?q=is%3Aclosed+milestone%3A0.10)
+
+
 # 0.9 -- 11 Sep 2023
 
 Testing was simplified; command functions can be tested by passing them a single map of option and
