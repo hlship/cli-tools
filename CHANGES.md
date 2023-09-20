@@ -1,9 +1,9 @@
-# 0.10 -- UNRELEASED
+# 0.10 -- 20 Sep 2023
 
 Added new function `select-option`, used to build the option spec for an option
 selected from a list of possible values.
 
-Improved the output of command mis-matches (where the input is not sufficient to
+Improved the output of command mismatches (where the input is not sufficient to
 uniquely identify a command), and removed the fuzzy match ("did you mean?")
 that did not seem to provide any real benefit.
 
