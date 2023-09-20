@@ -1,7 +1,5 @@
 (ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
-  {:command-category       "Built-in"
-   :command-category-order 100}
   (:require [clojure.spec.alpha :as s]
             [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
             [clojure.string :as str]))
@@ -133,12 +131,6 @@
            ~validations)
          ~@body))))
 
-(defcommand help
-  "List available commands"
-  [flat ["-f" "--flat" "Ignore categories and show a simple list of commands"]]
-  ;; dispatch binds *options* for us
-  (impl/show-tool-help (cond-> impl/*options*
-                               flat (assoc :flat true))))
 (defn- source-of
   [v]
   (str (-> v meta :ns ns-name) "/" (-> v meta :name)))
@@ -253,13 +245,14 @@
   invoke `dispatch*`."
   [options]
   (let [{:keys [namespaces arguments tool-name tool-doc flat]} options
-        tool-name' (or tool-name
-                       (impl/default-tool-name)
-                       (throw (ex-info "No :tool-name specified" {:options options})))
-        _          (when-not (seq namespaces)
-                     (throw (ex-info "No :namespaces specified" {:options options})))
-        _          (run! require namespaces)
-        [command-categories commands] (locate-commands (cons 'net.lewisship.cli-tools namespaces))]
+        tool-name'  (or tool-name
+                        (impl/default-tool-name)
+                        (throw (ex-info "No :tool-name specified" {:options options})))
+        _           (when-not (seq namespaces)
+                      (throw (ex-info "No :namespaces specified" {:options options})))
+        namespaces' (cons 'net.lewisship.cli-tools.builtins namespaces)
+        _           (run! require namespaces')
+        [command-categories commands] (locate-commands namespaces')]
     {:tool-name  tool-name'
      :tool-doc   (or tool-doc
                      (some-> namespaces first find-ns meta :doc))
