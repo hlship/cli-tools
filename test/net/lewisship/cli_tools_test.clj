@@ -2,6 +2,7 @@
   (:require [clj-commons.ansi :as ansi]
             [clojure.test :refer [deftest is use-fixtures are]]
             [net.lewisship.cli-tools :as cli :refer [defcommand dispatch select-option]]
+            net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
             net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
@@ -137,9 +138,9 @@
 
 (deftest detects-command-name-conflicts
   (when-let [e (is (thrown? RuntimeException
-                            (cli/locate-commands ['net.lewisship.cli-tools
+                            (cli/locate-commands ['net.lewisship.cli-tools.builtins
                                                   'net.lewisship.conflict])))]
-    (is (= "command help defined by net.lewisship.conflict/help conflicts with net.lewisship.cli-tools/help"
+    (is (= "command help defined by net.lewisship.conflict/help conflicts with net.lewisship.cli-tools.builtins/help"
            (ex-message e)))))
 
 (deftest rejects-undefined-namespace
@@ -240,16 +241,16 @@
 
 (deftest group-namespace
   (let [group-ns (find-ns 'net.lewisship.group-ns)
-        cli-ns   (find-ns 'net.lewisship.cli-tools)]
+        builtin-ns   (find-ns 'net.lewisship.cli-tools.builtins)]
     (is (= [[{:category      'net.lewisship.group-ns
               :command-group "group"
               :label         "Grouped commands"
               :ns            group-ns
               :order         0}
-             {:category      'net.lewisship.cli-tools
+             {:category      'net.lewisship.cli-tools.builtins
               :command-group nil
               :label         "Built-in"
-              :ns            cli-ns
+              :ns            builtin-ns
               :order         100}]
             {"group" {"echo"          {:category     'net.lewisship.group-ns
                                        :command-name "echo"
@@ -266,12 +267,12 @@
                                        :label         "Grouped commands"
                                        :ns            group-ns
                                        :order         0}}
-             "help"  {:category     'net.lewisship.cli-tools
+             "help"  {:category     'net.lewisship.cli-tools.builtins
                       :command-name "help"
                       :command-path ["help"]
-                      :var          #'net.lewisship.cli-tools/help}}]
+                      :var          #'net.lewisship.cli-tools.builtins/help}}]
            (cli/locate-commands '[net.lewisship.group-ns
-                                  net.lewisship.cli-tools])))))
+                                  net.lewisship.cli-tools.builtins])))))
 
 (defn exec-group [& args]
   (dispatch {:tool-name  "group-test"
