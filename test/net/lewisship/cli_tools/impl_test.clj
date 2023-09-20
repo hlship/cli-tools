@@ -164,7 +164,7 @@
                       :commands  {"help" {:var ::placeholder}}
                       :arguments ["no-such-command"]})
 
-      (is (= "bravo: no-such-command is not a command; use bravo help to list commands"
+      (is (= "bravo: no-such-command is not a command, expected help; use bravo help to list commands"
              @*message*)))))
 
 (deftest compose-list-tests
@@ -175,9 +175,9 @@
 
       base-terms
       nil
-      '([:green "alpha"] ", "
-        [:green "bravo"] ", "
-        [:green "charlie"] ", and three other commands")
+      '([:bold.green "alpha"] ", "
+        [:bold.green "bravo"] ", "
+        [:bold.green "charlie"] ", and three other commands")
 
       nil
       nil
@@ -185,18 +185,18 @@
 
       (take 1 base-terms)
       nil
-      [:green "alpha"]
+      [:bold.green "alpha"]
 
       (take 2 base-terms)
       nil
-      '([:green "alpha"] " and "
-        [:green "bravo"])
+      '([:bold.green "alpha"] " and "
+        [:bold.green "bravo"])
 
       (take 3 base-terms)
       nil
-      '([:green "alpha"] ", "
-        [:green "bravo"] ", and "
-        [:green "charlie"])
+      '([:bold.green "alpha"] ", "
+        [:bold.green "bravo"] ", and "
+        [:bold.green "charlie"])
 
       base-terms
       {:max-terms  1

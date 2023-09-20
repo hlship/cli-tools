@@ -55,47 +55,49 @@
   (interpose ", " terms))
 
 (defn compose-list
-  [terms opts]
-  (let [{:keys [conjuction max-terms noun font]
-         :or   {conjuction "and"
-                font       :green
-                max-terms  3
-                noun       "command"}} opts
-        n    (count terms)
-        wrap (fn [term]
-               [font term])]
-    (cond
-      ;; First two cases are for correctness
-      (zero? n)
-      nil
+  ([terms]
+   (compose-list terms nil))
+  ([terms opts]
+   (let [{:keys [conjuction max-terms noun font]
+          :or   {conjuction "and"
+                 font       :bold.green
+                 max-terms  3
+                 noun       "command"}} opts
+         n    (count terms)
+         wrap (fn [term]
+                [font term])]
+     (cond
+       ;; First two cases are for correctness
+       (zero? n)
+       nil
 
-      (= 1 n)
-      (-> terms first wrap)
+       (= 1 n)
+       (-> terms first wrap)
 
-      (= 2 n)
-      (list
-        (-> terms first wrap)
-        (str " " conjuction " ")
-        (-> terms second wrap))
+       (= 2 n)
+       (list
+         (-> terms first wrap)
+         (str " " conjuction " ")
+         (-> terms second wrap))
 
-      (<= n max-terms)
-      (let [n'            (dec n)
-            leading-terms (take n' terms)
-            final-term    (nth terms n')]
-        (concat
-          (inject-commas (map wrap leading-terms))
-          [(str ", " conjuction " ") (wrap final-term)]))
+       (<= n max-terms)
+       (let [n'            (dec n)
+             leading-terms (take n' terms)
+             final-term    (nth terms n')]
+         (concat
+           (inject-commas (map wrap leading-terms))
+           [(str ", " conjuction " ") (wrap final-term)]))
 
-      :else
-      (let [listed-terms (take max-terms terms)
-            n-unlisted   (- n max-terms)]
-        (concat
-          (inject-commas (map wrap listed-terms))
-          [(str (when (> max-terms 1) ",")
-                " " conjuction " "
-                (h/numberword n-unlisted)
-                " other "
-                (inflect/pluralize-noun n-unlisted noun))])))))
+       :else
+       (let [listed-terms (take max-terms terms)
+             n-unlisted   (- n max-terms)]
+         (concat
+           (inject-commas (map wrap listed-terms))
+           [(str (when (> max-terms 1) ",")
+                 " " conjuction " "
+                 (h/numberword n-unlisted)
+                 " other "
+                 (inflect/pluralize-noun n-unlisted noun))]))))))
 
 (defn- println-err
   [s]
@@ -777,20 +779,32 @@
           (nil? term)
           (abort [:bold tool-name]
                  ": "
-                 [:yellow (str/join " " prefix)]
+                 [:bold.red (str/join " " prefix)]
                  " is incomplete, a sub-command name should follow"
                  (use-help-message tool-name))
 
+          :let [matchable-terms (filter string? (keys possible-commands))]
+
+          ;; Options start with a '-', but we're still looking for commands
+          (str/starts-with? term "-")
+          (abort
+            [:bold tool-name ": " [:red (str/join " " prefix)]]
+            " is incomplete; "
+            (compose-list matchable-terms)
+            " could follow; use "
+            [:bold tool-name " help"]
+            " to list commands")
+
           ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
-          :let [matchable-terms (filter string? (keys possible-commands))
-                matched-terms (find-matches term matchable-terms)
+          :let [matched-terms (find-matches term matchable-terms)
                 match-count (count matched-terms)]
 
           (not= 1 match-count)
           (let [body        (if (pos? match-count)
                               (list "matches "
-                                    (compose-list matched-terms {:font :bold.green}))
-                              "is not a command")
+                                    (compose-list matched-terms))
+                              (list "is not a command, expected "
+                                    (compose-list matchable-terms {:conjuction "or"})))
                 help-suffix (list
                               "; use "
                               [:bold tool-name " help"]
