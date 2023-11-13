@@ -1,3 +1,7 @@
+# 0.11 -- UNRELEASED
+
+Use the same separator (`,`, not `/`) for tool options as for command options.
+
 # 0.10 -- 20 Sep 2023
 
 Added new function `select-option`, used to build the option spec for an option
@@ -8,10 +12,10 @@ uniquely identify a command), and removed the fuzzy match ("did you mean?")
 that did not seem to provide any real benefit.
 
 Tools that make use of `dispatch` now add two new leading switches:
-- `-C` / `--color`: enables ANSI colors, even if otherwise disabled
-- `-N` / `--no-color`: disables ANSI colors, even if otherwise enabled
+- `-C`, `--color`: enables ANSI colors, even if otherwise disabled
+- `-N`, `--no-color`: disables ANSI colors, even if otherwise enabled
 
-Like `-h` / `--help`, these must precede any command names.
+Like `-h`, `--help`, these must precede any command names.
 
 See [org.clj-commons/pretty](https://cljdoc.org/d/org.clj-commons/pretty/2.0/api/clj-commons.ansi#*color-enabled*) for details
 on when ANSI is enabled or disabled normally.

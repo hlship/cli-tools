@@ -5,9 +5,9 @@ Example commands as part of unit test suite.
 Even this docstring is part of the test.
 
 Tool options:
-[1m  -C / --color[22m    Enable ANSI color output[m
-[1m  -N / --no-color[22m Disable ANSI color output[m
-[1m  -h / --help[22m     This tool summary[m
+[1m  -C, --color[22m    Enable ANSI color output[m
+[1m  -N, --no-color[22m Disable ANSI color output[m
+[1m  -h, --help[22m     This tool summary[m
 
 Commands:
 
