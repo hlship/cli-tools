@@ -3,8 +3,8 @@
             [net.lewisship.cli-tools.progress :as p]))
 
 (deftest bar-at-zero
-  (is (= "░░░░"
-         (p/bar 4 0.0))))
+         (is (= "░░░░"
+                (p/bar 4 0.0))))
 
 (deftest bar-defaults-to-30-wide
   (is (= "▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░░░░░░░░░░░░░"

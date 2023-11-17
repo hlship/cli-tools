@@ -6,7 +6,7 @@
 
 (def ^:private char-bar
   (memoize (fn [c n]
-             (let [b (StringBuffer. (int n))]
+             (let [b (StringBuilder. (int n))]
                (dotimes [_ n]
                  (.append b c))
                (str b)))))
