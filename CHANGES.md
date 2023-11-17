@@ -2,6 +2,9 @@
 
 Use the same separator (`,`, not `/`) for tool options as for command options.
 
+Added `net.lewisship.cli-tools.job-status` namespace, which provides dynamic feedback
+for multiple long-running jobs.
+
 # 0.10 -- 20 Sep 2023
 
 Added new function `select-option`, used to build the option spec for an option
@@ -26,7 +29,7 @@ on when ANSI is enabled or disabled normally.
 # 0.9 -- 11 Sep 2023
 
 Testing was simplified; command functions can be tested by passing them a single map of option and
-argument values (previously values map was nested in another map).
+argument values (previously the values map was nested in another map).
 
 Namespaces now represent _categories_ of related commands; this changes the output from the `help` command.
 Further, categories may also be command groups, which applies a prefix to all commands within the category
