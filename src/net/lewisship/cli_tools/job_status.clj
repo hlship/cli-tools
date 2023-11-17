@@ -30,13 +30,14 @@
 (defn default-layout
   "Default layout for a job's data. Formats the summary, then (if :progress-target
   is non-nil), uses the progress-formatter to format a progress bar."
-  [active? complete? {:keys [prefix progress-value progress-target progress-formatter summary status]}]
-  (let [inner-font (cond
+  [active? complete? job-data]
+  (let [{:keys [prefix progress-value progress-target progress-formatter summary status]} job-data
+        inner-font (cond
                      active?
                      :bold
 
                      complete?
-                     :italic)]
+                     :faint)]
     (list
       [{:font (status->font status)}
        [{:font inner-font}
@@ -49,7 +50,7 @@
 
 (def default-config
   {:update-ms          100                                  ; update interval for the display
-   :dim-ms             1000                                 ; dims job after inactivity
+   :dim-ms             500                                  ; dims job after inactivity
    ;; Can be overridden by a job:
    :layout             default-layout                       ; formats the job, including progress
    :progress-formatter progress/block-progress-formatter})
@@ -58,14 +59,14 @@
   [_config job-data]
   (if (::dirty? job-data)
     (let [{:keys  [layout]
-           ::keys [line active?]} job-data
+           ::keys [line active? complete?]} job-data
           ;; There is definitely interference between rlwrap (used by clj) and some of these codes.
           ;; Works fine with clojure (not clj) and Babashka.
           line-content (compose
                          (tput "sc")                        ; save cursor position
                          (tput "cuu" line)                  ; cursor up
                          (tput "hpa" 0)                     ; leftmost column
-                         (layout active? false job-data)
+                         (layout active? complete? job-data)
                          (tput "el")                        ; erase to end of line
                          (tput "rc"))]                      ; restore cursor position
       (print line-content)
@@ -78,41 +79,66 @@
   Marks active jobs that have been inactive too long as inactive."
   [config jobs]
   (let [active-cutoff-ms (- (now-ms) (:dim-ms config))]
-    (update-vals jobs
-                 (fn [{::keys [active? last-active-ms] :as job-data}]
-                   (cond
-                     (and (not active?)
-                          (<= active-cutoff-ms last-active-ms))
-                     (assoc job-data ::active? true
-                            ::dirty? true)
+    (map (fn [{::keys [active? last-active-ms] :as job-data}]
+           (cond
+             (and (not active?)
+                  (<= active-cutoff-ms last-active-ms))
+             (assoc job-data ::active? true
+                    ::dirty? true)
 
-                     (and active?
-                          (< last-active-ms active-cutoff-ms))
-                     (assoc job-data ::active? false
-                            ::dirty? true)
+             (and active?
+                  (< last-active-ms active-cutoff-ms))
+             (assoc job-data ::active? false
+                    ::dirty? true)
 
-                     :else
-                     job-data)))))
+             :else
+             job-data))
+         jobs)))
+
+(defn- move-and-purge-inactive-completed-jobs
+  [jobs]
+  (let [pred      (fn [{::keys [complete? active?]}]
+                    (boolean
+                      (and complete? (not active?))))
+        {purgable  true
+         remaining false} (->> jobs
+                               (sort-by ::line)
+                               (group-by pred))
+        reordered (-> []
+                      (into remaining)
+                      (into (map #(assoc % ::purge? true ::dirty? true) purgable)))]
+    (map (fn [{::keys [line] :as job-data} new-line]
+           (cond-> job-data
+                   (not= line new-line) (assoc
+                                          ::line new-line
+                                          ::dirty? true)))
+         reordered
+         (iterate inc 1))))
+
+(defn- index-by
+  [f coll]
+  (reduce (fn [m v]
+            (assoc m (f v) v))
+          {}
+          coll))
 
 (defn- refresh-job-lines
   []
-  ;; TODO: Dimming
-  (let [jobs   @*jobs
-        config @*config
-        jobs'  (->> jobs
-                    (mark-active-jobs config))
-        dirty? (->> jobs'
-                    vals
-                    (some ::dirty?))]
-    (when dirty?
+  (let [jobs     @*jobs
+        config   @*config
+        job-list (->> jobs
+                      vals
+                      (mark-active-jobs config))]
+    (when (some ::dirty? job-list)
       (print (tput "civis"))                                ; make cursor invisible
-      (let [new-jobs (reduce-kv (fn [m k v]
-                                  (assoc m k (output-job-line! config v)))
-                                {}
-                                jobs')]
+      (let [jobs' (->> job-list
+                       (map #(output-job-line! config %))
+                       (remove ::purge?)
+                       move-and-purge-inactive-completed-jobs
+                       (index-by ::id))]
         (print (tput "cnorm"))                              ; normal cursor
         (flush)
-        (when-not (compare-and-set! *jobs jobs new-jobs)
+        (when-not (compare-and-set! *jobs jobs jobs')
           (recur))))))
 
 (defn- job-loop
@@ -144,6 +170,7 @@
        (.start)))))
 
 (defn- kick-thread
+
   []
   (when-let [thread @*thread]
     (.interrupt thread)))
@@ -170,11 +197,13 @@
      ;; Inform existing lines they've been moved up one.
      ;; There's a tiny race condition here if there's a visual update
      ;; after the println and before the line numbers are updated.
-     (swap! *jobs update-vals #(-> %
-                                   (update ::line inc)
-                                   ;; dirty ... but not active.
-                                   (assoc ::dirty? true)))
-     (swap! *jobs assoc job-id job-data)
+     (swap! *jobs (fn [jobs]
+                    (-> jobs
+                        (update-vals #(-> %
+                                          (update ::line inc)
+                                          ;; dirty ... but not active.
+                                          (assoc ::dirty? true)))
+                        (assoc job-id job-data))))
      job-id)))
 
 (defn- update-job
@@ -243,7 +272,7 @@
 (defn complete
   "Marks the job as complete; completed jobs are moved to the top of the list of jobs."
   [job-id]
-  job-id)
+  (assoc-job job-id ::complete? true))
 
 
 
