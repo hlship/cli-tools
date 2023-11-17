@@ -1,9 +1,11 @@
-# 0.11 -- UNRELEASED
+# 0.11 -- 17 Nov 2023
 
 Use the same separator (`,`, not `/`) for tool options as for command options.
 
 Added `net.lewisship.cli-tools.job-status` namespace, which provides dynamic feedback
 for multiple long-running jobs.
+
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/3?closed=1)
 
 # 0.10 -- 20 Sep 2023
 
