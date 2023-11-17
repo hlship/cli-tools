@@ -416,6 +416,19 @@ throw an exception, which can be caught by tests.
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
 rather than `System/exit`, for the same reasons.
 
+## Job Board
+
+For tools that run for a while, visual feedback can be provided to the user using the job board
+in the `net.lewisship.cli-tools.job-status` namespace.
+
+![Job Board Demo](images/job-board-demo.gif)
+
+Background processes can provide feedback on status and progress through a simple API. 
+The job board updates status lines as they change, and highlights lines that have recently changed.
+
+This is built on the `tput` command line tool, so it works on OS X and Linux, but not on Windows.
+
+
 ## License
 
 `io.github.hlship/cli-tools` is (c) 2022-present Howard M. Lewis Ship.

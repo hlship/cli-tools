@@ -1,4 +1,52 @@
 (ns net.lewisship.cli-tools.job-status
+  "Utilities for providing users with visual feedback about long-running processes.
+  This is based on the `tput` command, so is expected to operate on OS X or Linux (but not
+  Windows).
+
+  Jobs operate in the context of a job status board. The board is started with [[start-board]].
+
+  Jobs are created with [[new-job]].
+
+  Jobs are allocated a line within the job board, which expands vertically as needed; when the properties
+  of the job are modified, the job's line within the board is redrawn.
+
+  A Job has the following :
+  - :status (:normal, :success, :failure, or :warning), defaults to :normal
+  - :prefix - optional composed string (used to identify the job)
+  - :summary - optional composed string (short text description of what the job is currently doing)
+  - :progress-target - number, when present, a progress bar is printed
+  - :progress-value - number, representing current amount of progress
+  - :layout - function to render a job's state as a composed string; defaults to [[default-layout]]
+  - :progress-formatter - function to render the job's progress value and target to a composed string
+
+  A composed string is a value that works with `clj-commons.ansi/compose`, a data structure for
+  creating strings with ANSI color and formatting codes. A composed string may also just be a simple
+  string.
+
+  Once a job is created, its properties can be modified with other functions in this
+  namespace, such as [[summary]], [[status]], or [[start-progress]].
+
+  When job properties change, the job's line is redrawn in bold; after a short period
+  (default 500ms), the job's line is redrawn in normal font. This is to draw a user's
+  attention to the change.
+
+  When a job is [[complete]], it will highlight as normal, but when it dims, it is moved
+  to the top of the status bar and then no longer updates.  For very long-running processes
+  that start and complete many jobs, this ensures that completed jobs are free to scroll up
+  and ultimately into the terminal's scrollback, and running jobs are visible at the bottom.
+
+  Programs that make use of the job status board should be careful not to produce any
+  output while the status board is operating; such output will conflict with the in-place
+  updates made by the status board.
+
+  This is obviously intended for command line tools, rather than background processes such
+  as servers. This doesn't work well in the REPL, as there is a direct conflict between
+  the user executing commands and the job board thread making updates.
+
+  Further, the `rlwrap` command used by `clj` interferes with cursor positioning; the job
+  board does work with Babashka and the `clojure` command, or when running an uberjar via `java -jar`.
+  "
+  {:added "0.11"}
   (:require [net.lewisship.cli-tools.progress :as progress]
             [clj-commons.ansi :refer [compose]]
             [net.lewisship.cli-tools.terminal :refer [tput]]))
@@ -11,13 +59,12 @@
 
 (def ^:private *thread (atom nil))
 
-(defn ^long now-ms
+(defn- now-ms
   []
   (System/currentTimeMillis))
 
 (defmacro ^:private with-err
   [& body]
-  #_`(do ~@body)
   `(binding [*out* *err*]
      (do ~@body)))
 
@@ -25,10 +72,10 @@
   {:normal  nil
    :success :green
    :failure :red
-   :warning :yellow})
+   :warning :bright-yellow})
 
 (defn default-layout
-  "Default layout for a job's data. Formats the summary, then (if :progress-target
+  "Default layout for a job's data. Formats the prefix and summary, then (if :progress-target
   is non-nil), uses the progress-formatter to format a progress bar."
   [active? complete? job-data]
   (let [{:keys [prefix progress-value progress-target progress-formatter summary status]} job-data
@@ -52,11 +99,12 @@
   {:update-ms          100                                  ; update interval for the display
    :dim-ms             500                                  ; dims job after inactivity
    ;; Can be overridden by a job:
+   :status             :normal
    :layout             default-layout                       ; formats the job, including progress
    :progress-formatter progress/block-progress-formatter})
 
 (defn- output-job-line!
-  [_config job-data]
+  [job-data]
   (if (::dirty? job-data)
     (let [{:keys  [layout]
            ::keys [line active? complete?]} job-data
@@ -132,7 +180,7 @@
     (when (some ::dirty? job-list)
       (print (tput "civis"))                                ; make cursor invisible
       (let [jobs' (->> job-list
-                       (map #(output-job-line! config %))
+                       (map output-job-line!)
                        (remove ::purge?)
                        move-and-purge-inactive-completed-jobs
                        (index-by ::id))]
@@ -151,32 +199,36 @@
       (Thread/sleep (:update-ms @*config))
       ;; When interrupted, loop back to top.
       (catch InterruptedException _)))
-  (println)
   (reset! *thread nil)
   (reset! *jobs nil))
 
 (defn start-board
-  "Starts the job board, which will dynamically update to show new and updated jobs."
+  "Starts the job board, which will dynamically update to show new and updated jobs.
+  This starts a daemon thread named \"job-board-updater\".
+
+  Overrides are applied on top of [[default-config]]."
   ([] (start-board nil))
   ([overrides]
    (when @*config
      (throw (IllegalStateException. "Job board is already started")))
    (reset! *config (merge default-config overrides))
-   (let [thread (Thread. job-loop)]
+   (let [thread (Thread. job-loop "job-board-updater")]
      (reset! *thread thread)
      (doto thread
-       (.setName "job-status-update")
        (.setDaemon true)
        (.start)))))
 
 (defn- kick-thread
-
   []
   (when-let [thread @*thread]
     (.interrupt thread)))
 
-(defn stop
-  "Stops the job status update thread."
+(defn stop-board
+  "Stops the job board updater thread, and resets all internal state. Pending job changes, if any,
+  are discarded.
+
+  Generally, this isn't called; the program's main entry point simply exits; the thread started
+  by [[start-board]] is a daemon thread and doesn't prevent exitting."
   []
   (reset! *config nil)
   (kick-thread))
@@ -185,6 +237,9 @@
   ([]
    (new-job nil))
   ([job-data]
+   (when-not @*thread
+     (throw (IllegalStateException. "Can't create a job before starting the job board")))
+
    (let [job-id   (swap! *job-id inc)
          job-data (-> (select-keys @*config [:layout :progress-formatter])
                       (merge job-data)
@@ -196,7 +251,8 @@
      (with-err (println))
      ;; Inform existing lines they've been moved up one.
      ;; There's a tiny race condition here if there's a visual update
-     ;; after the println and before the line numbers are updated.
+     ;; after the println and before the line numbers are updated, but
+     ;; that should be rectified by the next update.
      (swap! *jobs (fn [jobs]
                     (-> jobs
                         (update-vals #(-> %
@@ -210,6 +266,9 @@
   [job-id f & args]
   (swap! *jobs update job-id
          (fn [job-data]
+           (when (nil? job-data)
+             (throw (ex-info (str "No job with id " job-id)
+                             {:job-ids (-> @*jobs keys sort)})))
            (-> (apply f job-data args)
                (assoc ::dirty? true
                       ::last-active-ms (now-ms)))))
@@ -222,32 +281,45 @@
 (defn prefix
   "Sets the prefix for the job; the prefix immeditately precedes the summary
   in the default layout, and usually ends with a space, or other punctuation, as
-  a seperator.  May be a composed string."
+  a seperator.
+
+  Returns the job id."
   [job-id prefix]
   (assoc-job job-id :prefix prefix))
 
 (defn summary
   "Sets the job summary, a short bit of text (or composed text) that identifies the
   current activity of the job.  The job's status and activity may affect the font
-  used when displaying the job summary."
+  used when displaying the job summary.
+
+  Returns the job id."
   [job-id summary]
   (assoc-job job-id :summary summary))
 
 (defn start-progress
   "Adds progress output for the job; target is a number that is the value to be reached
   (for example, a number of files to read, or pages to output). This enables
-  a progress bar (by default, following the summary), that is initally at 0%."
-  [job-id target]
-  (assoc-job job-id :progress-target target))
+  a progress bar (by default, following the summary), that is initally at 0%.
+
+  Returns the job id."
+  ([job-id target]
+   (assoc-job job-id :progress-target target))
+  ([job-id target progress-formatter]
+   (update-job job-id assoc :progress-target target
+               :progress-formatter progress-formatter)))
 
 (defn complete-progress
-  "Sets the progress value to the progress target, such that progress is displayed at 100%."
+  "Sets the progress value to the progress target, such that progress is displayed at 100%.
+
+  Returns the job id."
   [job-id]
   (update-job job-id
               (fn [{:keys [progress-target] :as job-data}]
                 (assoc job-data :progress-value progress-target))))
 (defn tick
-  "Called after [[start-progress]] to advance the progress by 1 (or by a specified value)."
+  "Called after [[start-progress]] to advance the progress by 1 (or by a specified value).
+
+  Returns the job id."
   ([job-id]
    (tick job-id 1))
   ([job-id increment]
@@ -259,20 +331,27 @@
                                           increment))))))
 
 (defn set-progress
-  "Sets the progress value to a specific value."
+  "Sets the progress value to a specific value.
+
+  Returns the job id."
   [job-id progress-value]
   (assoc-job job-id :progress-value progress-value))
 
 (defn status
   "Changes the job's status to one of :normal (default), :success, :failure, or :warning.
-  This affects the font used when displaying the job's prefix and summary (in the default layout)."
+  This affects the font used when displaying the job's prefix and summary (in the default layout).
+
+  Returns the job id."
   [job-id status]
   (assoc-job job-id :status status))
 
 (defn complete
-  "Marks the job as complete; completed jobs are moved to the top of the list of jobs."
+  "Marks the job as complete; completed jobs are moved to the top of the list of jobs.
+
+  Returns nil."
   [job-id]
-  (assoc-job job-id ::complete? true))
+  (assoc-job job-id ::complete? true)
+  nil)
 
 
 

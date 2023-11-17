@@ -1,7 +1,7 @@
 (ns net.lewisship.cli-tools.progress
   "Part of the job status subsystem, progress reporting converts a progress state into a progress message, which can be
   a simple string, or a composable string."
-  (:require [clojure.math :as math]))
+  {:added "0.11"})
 
 
 (def ^:private char-bar
