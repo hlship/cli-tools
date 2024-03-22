@@ -166,46 +166,47 @@
 
 (defn print-summary
   [command-map errors]
-  (let [{:keys [tool-name]} *options*
-        {:keys [command-path]} *command*
-        {:keys [command-name positional-specs command-doc summary]} command-map
-        arg-strs (map arg-spec->str positional-specs)]
-    (pcompose
-      "Usage: "
-      ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
-      (when tool-name
-        [:bold tool-name " "])
-      ;; A stand-alone tool will use its command-name, a command within
-      ;; a multi-command tool will have a command-path.
-      [:bold (if command-path
-               (str/join " " command-path)
-               command-name)]
-      " [OPTIONS]"
-      (map list (repeat " ")
-                arg-strs))
-    (when command-doc
-      (-> command-doc cleanup-docstring println))
+  (binding [*out* *err*]
+    (let [{:keys [tool-name]} *options*
+          {:keys [command-path]} *command*
+          {:keys [command-name positional-specs command-doc summary]} command-map
+          arg-strs (map arg-spec->str positional-specs)]
+      (pcompose
+        "Usage: "
+        ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
+        (when tool-name
+          [:bold tool-name " "])
+        ;; A stand-alone tool will use its command-name, a command within
+        ;; a multi-command tool will have a command-path.
+        [:bold (if command-path
+                 (str/join " " command-path)
+                 command-name)]
+        " [OPTIONS]"
+        (map list (repeat " ")
+             arg-strs))
+      (when command-doc
+        (-> command-doc cleanup-docstring println))
 
-    ;; There's always at least -h/--help:
-    (println "\nOptions:")
-    (println summary)
+      ;; There's always at least -h/--help:
+      (println "\nOptions:")
+      (println summary)
 
-    (when (seq positional-specs)
-      (let [max-label-width (->> positional-specs
-                          (map :label)
-                             (map count)
-                             (reduce max)
-                             ;; For indentation
-                             (+ 2))
-            lines (for [{:keys [label doc]} positional-specs]
-                    (list
-                      [{:width max-label-width}
-                       [:bold label]]
-                      ": "
-                      doc))]
-        (println "\nArguments:")
-        (pcompose (interpose \newline lines))))
-    (print-errors errors)))
+      (when (seq positional-specs)
+        (let [max-label-width (->> positional-specs
+                                   (map :label)
+                                   (map count)
+                                   (reduce max)
+                                   ;; For indentation
+                                   (+ 2))
+              lines           (for [{:keys [label doc]} positional-specs]
+                                (list
+                                  [{:width max-label-width}
+                                   [:bold label]]
+                                  ": "
+                                  doc))]
+          (println "\nArguments:")
+          (pcompose (interpose \newline lines))))
+      (print-errors errors))))
 
 (defn- format-option-summary
   [max-option-width max-default-width summary-part]
@@ -701,37 +702,38 @@
 
 (defn show-tool-help
   [options]
-  (let [{:keys [tool-name tool-doc commands categories flat]} options]
-    (pcompose "Usage: " [:bold tool-name] " [TOOL OPTIONS] COMMAND ...")
-    (when tool-doc
-      (println)
-      (-> tool-doc cleanup-docstring println))
-    (println "\nTool options:")
-    (pcompose [:bold "  -C, --color"] "    Enable ANSI color output")
-    (pcompose [:bold "  -N, --no-color"] " Disable ANSI color output")
-    (pcompose [:bold "  -h, --help"] "     This tool summary")
-    (println "\nCommands:")
-    (let [grouped-commands   (collect-commands commands)
-          all-commands       (cond->> (reduce into [] (vals grouped-commands))
-                                      ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
-                                      flat (map (fn [command]
-                                                  (assoc command :command-name (str/join " " (:command-path command))))))
-          command-name-width (->> all-commands
-                                  (map :command-name)
-                                  (map count)
-                                  (apply max))]
-      (if flat
-        (print-commands command-name-width all-commands)
-        ;; TODO: Adjust ordering based on the command-group
-        (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)]
-          (println)
-          (pcompose [:bold
-                     (when command-group
-                       (list
-                         [:green command-group]
-                         " - "))
-                     label])
-          (print-commands command-name-width (get grouped-commands category))))))
+  (binding [*out* *err*]
+    (let [{:keys [tool-name tool-doc commands categories flat]} options]
+      (pcompose "Usage: " [:bold tool-name] " [TOOL OPTIONS] COMMAND ...")
+      (when tool-doc
+        (println)
+        (-> tool-doc cleanup-docstring println))
+      (println "\nTool options:")
+      (pcompose [:bold "  -C, --color"] "    Enable ANSI color output")
+      (pcompose [:bold "  -N, --no-color"] " Disable ANSI color output")
+      (pcompose [:bold "  -h, --help"] "     This tool summary")
+      (println "\nCommands:")
+      (let [grouped-commands   (collect-commands commands)
+            all-commands       (cond->> (reduce into [] (vals grouped-commands))
+                                        ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
+                                        flat (map (fn [command]
+                                                    (assoc command :command-name (str/join " " (:command-path command))))))
+            command-name-width (->> all-commands
+                                    (map :command-name)
+                                    (map count)
+                                    (apply max))]
+        (if flat
+          (print-commands command-name-width all-commands)
+          ;; TODO: Adjust ordering based on the command-group
+          (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)]
+            (println)
+            (pcompose [:bold
+                       (when command-group
+                         (list
+                           [:green command-group]
+                           " - "))
+                       label])
+            (print-commands command-name-width (get grouped-commands category)))))))
   (exit 0))
 
 (defn- to-matcher

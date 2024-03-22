@@ -1,3 +1,9 @@
+# 0.12 -- UNRELEASED
+
+Moves specs to their own namespace.
+
+Ensured that most output (such as command summaries) goes to *err*, not *out*.
+
 # 0.11 -- 17 Nov 2023
 
 Use the same separator (`,`, not `/`) for tool options as for command options.
