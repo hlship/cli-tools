@@ -1,13 +1,14 @@
 {:paths ["src"]
  ;; Needed to build and test w/ clojure
- :deps  {org.clojure/clojure      {:mvn/version "1.11.1"}
-         org.clojure/tools.cli    {:mvn/version "1.0.219"}
-         babashka/process         {:mvn/version "0.5.21"}
-         org.clj-commons/pretty   {:mvn/version "2.2.1"}
+ :deps  {org.clojure/clojure      {:mvn/version "1.11.2"}
+         org.clojure/tools.cli    {:mvn/version "1.1.230"}
+         babashka/process         {:mvn/version "0.5.22"}
+         org.clj-commons/pretty   {:mvn/version "2.3.0"}
          org.clj-commons/humanize {:mvn/version "1.0"}}
 
  :net.lewisship.build/scm
- {:url "https://github.com/hlship/cli-tools"}
+ {:url     "https://github.com/hlship/cli-tools"
+  :license :asl}
 
  :aliases
  {
@@ -22,5 +23,5 @@
    {:patterns [".*-tests?$"]}}
 
   :build
-  {:deps       {io.github.hlship/build-tools {:git/tag "0.9" :git/sha "4efa3c9"}}
+  {:deps       {io.github.hlship/build-tools {:git/tag "0.10.1" :git/sha "7ecff5b"}}
    :ns-default build}}}
