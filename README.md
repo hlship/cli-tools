@@ -422,7 +422,7 @@ In order to operate, `cli-tools/dispatch` has to load all namespaces, to execute
 and collect meta-data from all the namespaces and command functions.  Thanks to Babashka, this is extremely fast,
 but is made faster using caching.
 
-`dispatch` builds a cache based on the contents of the classpath (and the options passed to it); it can then 
+`dispatch` builds a cache based on the options passed to it, and the contents of the classpath; it can then 
 load the data it needs to operate from the cache if present.
 
 When executing from the cache, `dispatch` will ultimately load only a single command namespace, to invoke the single
@@ -430,6 +430,8 @@ function.  This allows a complex tool, one with potentially hundreds of commands
 of the `defcommand` within milliseconds.
 
 This may have an even more significant impact for a tool that is built on top of Clojure, rather than Babashka.
+Our mockup of 1500 commands across 250 namespaces executes approximately 
+twice as fast using the cache (approximately 8 seconds with the cache, vs. 17 seconds without).
 
 By default, `dispatch` will store its cache in the `~/.tools-cli-cache` directory; the environment variable
 `TOOLS_CLI_CACHE_DIR` can override this default.

@@ -49,6 +49,7 @@
   [opts]
   (fs/delete-tree root-dir)
   (fs/create-dirs (str root-dir "/src/commands"))
+  (fs/create-dirs (str root-dir "/src/uber"))
   (let [{:keys [commands namespaces group]
          :or   {commands   6
                 namespaces 250
@@ -58,7 +59,9 @@
                              (take namespaces))
         ns-names        (doall (map-indexed (partial write-ns group) commands-per-ns))]
     (render "bb.edn" "bb.edn" {})
+    (render "deps.edn" "deps.edn" {})
     (render "app.edn" "app" {:ns-names ns-names})
+    (render "main.edn" "src/uber/main.clj" {:ns-names ns-names})
     (fs/set-posix-file-permissions (str root-dir "/app") "rwxrwxrwx")
     (printf "%,d namespaces, %,d commands/namespace, %,d total command%n"
             namespaces commands (* namespaces commands))))
