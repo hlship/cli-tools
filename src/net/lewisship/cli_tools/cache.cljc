@@ -28,26 +28,22 @@
 
 ;; Bababashka does not have DigestOutputStream
 
-(defn- update-digest-from-file-contents
-  [^MessageDigest digest f]
-  (let [f'     (fs/file f)
-        buffer (byte-array 8192)]
-    (with-open [is (io/input-stream f')]
-      (loop []
-        (let [n (.read is buffer)]
-          (when-not (= -1 n)
-            (.update digest buffer 0 n)
-            (recur)))))))
-
-(defn update-digest-recursively
-  [digest ^File root]
-  (let [paths (fs/glob root "**.clj*")]
-    (run! #(update-digest-from-file-contents digest %) paths)))
-
 (defn- update-digest-from-string
   [^MessageDigest digest ^String value]
   (let [bytes (.getBytes value "UTF-8")]
     (.update digest bytes)))
+
+(defn- update-digest-from-file-contents
+  [^MessageDigest digest f]
+  (let [f'     (fs/file f)]
+    (update-digest-from-string digest (.getCanonicalPath f'))
+    ;; Would be better to digest the 8 raw bytes, but this is easier.
+    (update-digest-from-string digest (Long/toHexString (.lastModified f')))))
+
+(defn- update-digest-recursively
+  [digest ^File root]
+  (let [paths (fs/glob root "**.clj*")]
+    (run! #(update-digest-from-file-contents digest %) paths)))
 
 (defn- update-digest
   [digest source]
@@ -55,7 +51,7 @@
     (if (.isFile f)
       ;; The assumption is that files are .jar files and the name will change if
       ;; the contents change.
-      (update-digest-from-string digest (str f))
+      (update-digest-from-string digest (.getCanonicalPath f))
       ;; But for a source directory, find all the sources (and digest their contents).
       (update-digest-recursively digest f))))
 
