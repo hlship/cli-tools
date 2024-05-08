@@ -433,8 +433,8 @@ This may have an even more significant impact for a tool that is built on top of
 Our mockup of 1500 commands across 250 namespaces executes approximately 
 twice as fast using the cache (approximately 8 seconds with the cache, vs. 17 seconds without).
 
-By default, `dispatch` will store its cache in the `~/.tools-cli-cache` directory; the environment variable
-`TOOLS_CLI_CACHE_DIR` can override this default.
+By default, `dispatch` will store its cache in the `~/.cli-tools-cache` directory; the environment variable
+`CLI_TOOLS_CACHE_DIR` can override this default.
 
 ## Job Board
 

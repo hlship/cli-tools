@@ -278,8 +278,8 @@
     (assoc result :arguments (or arguments *command-line-args*))))
 
 (def ^:private default-options
-  {:cache-dir (or (System/getenv "TOOLS_CLI_CACHE_DIR")
-                  "~/.tools-cli-cache")})
+  {:cache-dir (or (System/getenv "CLI_TOOLS_CACHE_DIR")
+                  "~/.cli-tools-cache")})
 
 (defn dispatch
   "Locates commands in namespaces, finds the current command
