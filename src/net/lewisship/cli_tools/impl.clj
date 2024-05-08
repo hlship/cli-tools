@@ -667,9 +667,9 @@
     ;; option and positional argument are verified to have unique symbols, so merge it all together
     (update command-map' :options merge positional-arguments)))
 
-(defn- command-summary
-  [v]
-  (let [v-meta (meta v)
+(defn extract-command-summary
+  [command-var]
+  (let [v-meta (meta command-var)
         {:keys [::command-summary]} v-meta]
     (or command-summary
         (-> v-meta :doc first-sentence))))
@@ -677,12 +677,12 @@
 (defn- print-commands
   [command-name-width commands]
   (doseq [{:keys       [command-name]
-           command-var :var} (sort-by :command-name commands)]
+           :as command-map} (sort-by :command-name commands)]
     (pcompose
       "  "
       [{:width command-name-width} [:bold.green command-name]]
       ": "
-      (command-summary command-var))))
+      (:command-summary command-map))))
 
 (defn- collect-commands
   "Walks the commands tree, to produce a map from command category to seq of command map."
@@ -765,7 +765,7 @@
 (defn- invoke-command
   [command-map args]
   (binding [*command* command-map]
-    (apply (:var command-map) args)))
+    (apply (-> command-map :var requiring-resolve) args)))
 
 (defn- inner-dispatch
   [tool-name arguments commands]

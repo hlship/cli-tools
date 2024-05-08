@@ -1,5 +1,6 @@
 (ns net.lewisship.cli-tools.specs
   (:require [clojure.spec.alpha :as s]
+            [clojure.string :as str]
             [net.lewisship.cli-tools :as cli-tools]))
 
 (s/def ::dispatch-options (s/keys :req-un [::namespaces]
