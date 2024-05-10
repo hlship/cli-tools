@@ -192,11 +192,11 @@
                                             conflict
                                             (let [command-var (:var conflict)
                                                   where       (if command-var
-                                                                (str command-var)
+                                                                (str (symbol command-var))
                                                                 (str "namespace " (name (get-in conflict [:group-category :category]))))]
                                               (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
                                                                                 (str/join " " command-path)
-                                                                                (str v)
+                                                                                (str (symbol v))
                                                                                 where))))
                                             :else
                                             (assoc-in m command-path {:category     category

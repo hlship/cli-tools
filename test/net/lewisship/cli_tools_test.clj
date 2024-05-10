@@ -254,35 +254,36 @@
 (deftest group-namespace
   (let [group-ns   (find-ns 'net.lewisship.group-ns)
         builtin-ns (find-ns 'net.lewisship.cli-tools.builtins)]
-    (is (= [[{:category      'net.lewisship.group-ns
-              :command-group "group"
-              :label         "Grouped commands"
-              :ns            group-ns
-              :order         0}
-             {:category      'net.lewisship.cli-tools.builtins
-              :command-group nil
-              :label         "Built-in"
-              :ns            builtin-ns
-              :order         100}]
-            {"group" {"echo"          {:category     'net.lewisship.group-ns
-                                       :command-name "echo"
-                                       :command-path ["group" "echo"]
-                                       :var          #'net.lewisship.group-ns/echo}
-                      "edit"          {:category     'net.lewisship.group-ns
-                                       :command-name "edit"
-                                       :command-path ["group"
-                                                      "edit"]
-                                       :var          #'net.lewisship.group-ns/edit}
-                      :command-path   ["group"]
-                      :group-category {:category      'net.lewisship.group-ns
-                                       :command-group "group"
-                                       :label         "Grouped commands"
-                                       :ns            group-ns
-                                       :order         0}}
-             "help"  {:category     'net.lewisship.cli-tools.builtins
-                      :command-name "help"
-                      :command-path ["help"]
-                      :var          #'net.lewisship.cli-tools.builtins/help}}]
+    (is (= '[[{:category      net.lewisship.group-ns
+               :command-group "group"
+               :label         "Grouped commands"
+               :order         0}
+              {:category      net.lewisship.cli-tools.builtins
+               :command-group nil
+               :label         "Built-in"
+               :order         100}]
+             {"group" {"echo"          {:category        net.lewisship.group-ns
+                                        :command-name    "echo"
+                                        :command-path    ["group" "echo"]
+                                        :command-summary "Echo a string"
+                                        :var             net.lewisship.group-ns/echo}
+                       "edit"          {:category        net.lewisship.group-ns
+                                        :command-summary "Edit a whatever"
+
+                                        :command-name    "edit"
+                                        :command-path    ["group"
+                                                          "edit"]
+                                        :var             net.lewisship.group-ns/edit}
+                       :command-path   ["group"]
+                       :group-category {:category      net.lewisship.group-ns
+                                        :command-group "group"
+                                        :label         "Grouped commands"
+                                        :order         0}}
+              "help"  {:category        net.lewisship.cli-tools.builtins
+                       :command-name    "help"
+                       :command-path    ["help"]
+                       :command-summary "List available commands"
+                       :var             net.lewisship.cli-tools.builtins/help}}]
            (cli/locate-commands '[net.lewisship.group-ns
                                   net.lewisship.cli-tools.builtins])))))
 
