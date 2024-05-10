@@ -1,0 +1,8 @@
+(ns uber.main
+  (:require [net.lewisship.cli-tools :as cli]))
+
+(defn -main
+  [& args]
+  (cli/dispatch {:namespaces '[{{ns-names|join:" "}}]
+                 :tool-name "uber"
+                 :arguments  args}))

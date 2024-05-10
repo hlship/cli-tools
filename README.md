@@ -16,7 +16,7 @@ for you.
 `cli-tools` is intended to create three types of command lines tools:
  
 - A simple tool simply parses its command line arguments and executes some code using those arguments (think: `ls` or `cat`)
-- A proper tool is composed of multiple commands, across multiple namespaces. The first command line argument
+- A common tool is composed of multiple commands, across multiple namespaces. The first command line argument
   will select the specific sub-command to execute. (think: `git`)
 - A complex tool organizes some commands into command groups that share an initial name (think `kubectl`)
 
@@ -415,6 +415,26 @@ throw an exception, which can be caught by tests.
 
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
 rather than `System/exit`, for the same reasons.
+
+## Caching
+
+In order to operate, `cli-tools/dispatch` has to load all namespaces, to execute the `defcommand` macros in each, 
+and collect meta-data from all the namespaces and command functions.  Thanks to Babashka, this is extremely fast,
+but is made faster using caching.
+
+`dispatch` builds a cache based on the options passed to it, and the contents of the classpath; it can then 
+load the data it needs to operate from the cache if present.
+
+When executing from the cache, `dispatch` will ultimately load only a single command namespace, to invoke the single
+function.  This allows a complex tool, one with potentially hundreds of commands, to still execute the body
+of the `defcommand` within milliseconds.
+
+This may have an even more significant impact for a tool that is built on top of Clojure, rather than Babashka.
+Our mockup of 1500 commands across 250 namespaces executes approximately 
+twice as fast using the cache (approximately 8 seconds with the cache, vs. 17 seconds without).
+
+By default, `dispatch` will store its cache in the `~/.cli-tools-cache` directory; the environment variable
+`CLI_TOOLS_CACHE_DIR` can override this default.
 
 ## Job Board
 

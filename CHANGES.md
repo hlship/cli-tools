@@ -4,6 +4,8 @@ Moves specs to their own namespace.
 
 Ensured that most output (such as command summaries) goes to *err*, not *out*.
 
+Added an on-disk caching mechanism to avoid loading most namespaces when dispatching to commands.
+
 # 0.11 -- 17 Nov 2023
 
 Use the same separator (`,`, not `/`) for tool options as for command options.

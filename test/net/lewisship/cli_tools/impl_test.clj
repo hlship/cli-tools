@@ -33,7 +33,7 @@
 
 (deftest let-requires-even-vector
   (is (thrown-with-msg? Exception #"Expected a vector of symbol/expression pairs"
-               (compile-interface nil '[:let [:a :b :c]]))))
+                        (compile-interface nil '[:let [:a :b :c]]))))
 
 (deftest let-success
   (is (= '[a :a
@@ -60,7 +60,7 @@
 (deftest validate-forms-collect
   (is (= '[1 2 a b]
          (-> (compile-interface nil '[:validate [1 2]
-                                     :validate [a b]])
+                                      :validate [a b]])
              :validate-cases))))
 
 (deftest docstring-becomes-doc
@@ -136,17 +136,22 @@
   (is (= "overridden"
          (:command-name (compile-interface nil '[:command "overridden"])))))
 
+(def *help-args (atom nil))
+
+(defn capture-help
+  [& args]
+  (reset! *help-args args))
+
 (deftest provides-help-with-h-or-help
-  (let [*help-args* (atom nil)
-        commands    {"help" {:var (fn [& args] (reset! *help-args* args))}}
-        options     {:tool-name "test-tool"
-                     :commands  commands}]
+  (let [commands {"help" {:var `capture-help}}
+        options  {:tool-name "test-tool"
+                  :commands  commands}]
     (doseq [arg ["-h" "--help"]
             :let [extra-arg (str "extra" arg)]]
-      (reset! *help-args* ::unset)
+      (reset! *help-args ::unset)
       (impl/dispatch (assoc options :arguments [arg extra-arg]))
       (is (= [extra-arg]
-             @*help-args*)))))
+             @*help-args)))))
 
 (deftest command-not-provided
   (let [*message* (atom nil)]

@@ -1,6 +1,8 @@
 (ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
-  (:require [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
+  (:require [babashka.fs :as fs]
+            [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
+            [net.lewisship.cli-tools.cache :as cache]
             [clojure.string :as str]))
 
 (defn exit
@@ -56,10 +58,10 @@
 
   Expects symbols and keywords to be unqualified."
   [input values]
-  (let [m (reduce (fn [m v]
-                    (assoc m (name v) v))
-                  {}
-                  values)
+  (let [m       (reduce (fn [m v]
+                          (assoc m (name v) v))
+                        {}
+                        values)
         matches (impl/find-matches input (keys m))]
     (when (= 1 (count matches))
       (get m (first matches)))))
@@ -93,26 +95,26 @@
           "defcommand requires a docstring")
   (assert (vector? interface)
           "defcommand expects a vector to define the interface")
-  (let [symbol-meta (meta command-name)
-        parsed-interface (impl/compile-interface docstring interface)
+  (let [symbol-meta        (meta command-name)
+        parsed-interface   (impl/compile-interface docstring interface)
         {:keys [option-symbols command-map-symbol command-summary let-forms validate-cases]
-         :or {command-map-symbol (gensym "command-map-")}} parsed-interface
-        command-name' (or (:command-name parsed-interface)
-                          (name command-name))
+         :or   {command-map-symbol (gensym "command-map-")}} parsed-interface
+        command-name'      (or (:command-name parsed-interface)
+                               (name command-name))
         let-option-symbols (cond-> []
                              (seq option-symbols)
                              (into `[{:keys ~option-symbols} (:options ~command-map-symbol)]))
-        symbol-with-meta (cond-> (assoc symbol-meta
-                                        :doc docstring
-                                        :arglists '[['& 'args]]
-                                        ::impl/command-name command-name')
-                           command-summary (assoc ::impl/command-summary command-summary))
+        symbol-with-meta   (cond-> (assoc symbol-meta
+                                          :doc docstring
+                                          :arglists '[['& 'args]]
+                                          ::impl/command-name command-name')
+                             command-summary (assoc ::impl/command-summary command-summary))
         ;; Keys actually used by parse-cli and print-summary
-        parse-cli-keys [:command-args :command-options :parse-opts-options :command-doc :summary]
-        validations (when (seq validate-cases)
-                      `(when-let [message# (cond ~@(impl/invert-tests-in-validate-cases validate-cases))]
-                         (print-summary ~command-map-symbol [message#])
-                         (exit 1)))]
+        parse-cli-keys     [:command-args :command-options :parse-opts-options :command-doc :summary]
+        validations        (when (seq validate-cases)
+                             `(when-let [message# (cond ~@(impl/invert-tests-in-validate-cases validate-cases))]
+                                (print-summary ~command-map-symbol [message#])
+                                (exit 1)))]
     `(defn ~command-name
        ~symbol-with-meta
        [~'& args#]
@@ -130,10 +132,6 @@
            ~validations)
          ~@body))))
 
-(defn- source-of
-  [v]
-  (str (-> v meta :ns ns-name) "/" (-> v meta :name)))
-
 (defn- resolve-ns
   [ns-symbol]
   (if-let [ns-object (find-ns ns-symbol)]
@@ -145,6 +143,7 @@
   (let [ns      (resolve-ns ns-symbol)
         ns-meta (meta ns)]
     {:category      ns-symbol
+     ;; :ns is removed before being written to cache
      :ns            ns
      :command-group (:command-group ns-meta)
      :label         (:command-category ns-meta (name ns-symbol))
@@ -164,50 +163,52 @@
                             (filter :command-group)
                             (reduce (fn [m category-map]
                                       (let [{:keys [command-group]} category-map]
-                                        ;; TODO: Check for conflicts
                                         ;; Currently, we only allow two levels of nesting: top level, and directly
                                         ;; within a group. This is the first place that would change if we allowed groups
                                         ;; within groups.
                                         (assoc m command-group {:command-path   [command-group]
-                                                                :group-category category-map})))
+                                                                :group-category (dissoc category-map :ns)})))
                                     {}))
         f              (fn [m category-map]
                          (let [{:keys [category command-group ns]} category-map
                                base-path (cond-> []
-                                                 command-group (conj command-group))]
+                                           command-group (conj command-group))]
                            (->> ns
                                 ns-publics
                                 ;; Iterate over the public vars of the namespace
                                 vals
                                 (reduce (fn [m v]
-                                          (let [command-name (-> v meta ::impl/command-name)]
-                                            (cond-let
-                                              :let [command-name (-> v meta ::impl/command-name)]
+                                          (cond-let
 
-                                              ;; Not a defcommand?
-                                              (nil? command-name)
-                                              m
+                                            :let [command-name (-> v meta ::impl/command-name)]
 
-                                              :let [command-path (conj base-path command-name)
-                                                    conflict (get-in m command-path)]
+                                            ;; Not a defcommand?
+                                            (nil? command-name)
+                                            m
 
-                                              conflict
-                                              (let [command-var (:var conflict)
-                                                    where       (if command-var
-                                                                  (source-of command-var)
-                                                                  (str "namespace " (name (get-in conflict [:group-category :category]))))]
-                                                (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
-                                                                                  (str/join " " command-path)
-                                                                                  (source-of v)
-                                                                                  where))))
-                                              :else
-                                              (assoc-in m command-path {:category     category
-                                                                        :command-name command-name ; name within group
-                                                                        :command-path command-path
-                                                                        :var          v}))))
+                                            :let [command-path (conj base-path command-name)
+                                                  conflict (get-in m command-path)]
+
+                                            conflict
+                                            (let [command-var (:var conflict)
+                                                  where       (if command-var
+                                                                (str (symbol command-var))
+                                                                (str "namespace " (name (get-in conflict [:group-category :category]))))]
+                                              (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
+                                                                                (str/join " " command-path)
+                                                                                (str (symbol v))
+                                                                                where))))
+                                            :else
+                                            (assoc-in m command-path {:category     category
+                                                                      :command-name command-name ; name within group
+                                                                      :command-path command-path
+                                                                      :command-summary
+                                                                      (impl/extract-command-summary v)
+                                                                      :var          (symbol v)})))
                                         m))))
-        commands       (reduce f group-commands categories)]
-    [categories commands]))
+        commands       (reduce f group-commands categories)
+        categories'    (map #(dissoc % :ns) categories)]
+    [categories' commands]))
 
 (defn dispatch*
   "Invoked by [[dispatch]] after namespace and command resolution.
@@ -238,12 +239,9 @@
   [options]
   (impl/dispatch options))
 
-(defn expand-dispatch-options
-  "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
-  Some applications may call this instead of `dispatch`, modify the results, and then
-  invoke `dispatch*`."
+(defn- expand-dispatch-options*
   [options]
-  (let [{:keys [namespaces arguments tool-name tool-doc flat]} options
+  (let [{:keys [namespaces tool-name tool-doc flat]} options
         tool-name'  (or tool-name
                         (impl/default-tool-name)
                         (throw (ex-info "No :tool-name specified" {:options options})))
@@ -257,8 +255,31 @@
                      (some-> namespaces first find-ns meta :doc))
      :flat       (boolean flat)
      :categories command-categories
-     :commands   commands
-     :arguments  (or arguments *command-line-args*)}))
+     :commands   commands}))
+
+(defn expand-dispatch-options
+  "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
+  Some applications may call this instead of `dispatch`, modify the results, and then
+  invoke `dispatch*`."
+  [options]
+  (let [{:keys [cache-dir arguments]} options
+        ;; Don't include everything when building the digest, especially the command line arguments@
+        options' (dissoc options :arguments :cache-dir)
+        result   (if-not cache-dir
+                   (expand-dispatch-options* options')
+                   (let [cache-dir' (fs/expand-home cache-dir)
+                         digest (cache/classpath-digest options')
+                         cached (cache/read-from-cache cache-dir' digest)]
+                     (if cached
+                       cached
+                       (let [full (expand-dispatch-options* options)]
+                         (cache/write-to-cache cache-dir' digest full)
+                         full))))]
+    (assoc result :arguments (or arguments *command-line-args*))))
+
+(def ^:private default-options
+  {:cache-dir (or (System/getenv "CLI_TOOLS_CACHE_DIR")
+                  "~/.cli-tools-cache")})
 
 (defn dispatch
   "Locates commands in namespaces, finds the current command
@@ -279,17 +300,18 @@
   The default for :tool-doc is the docstring of the first namespace.
 
   dispatch will load any namespaces specified, then scan those namespaces to identify commands.
-  It also adds a `help` command from this namespace.
+  It also adds a `help` command from the net.lewisship.cli-tools namespace.
 
   If option and argument parsing is unsuccessful, then
   a command usage summary is printed, along with errors, and the program exits
   with error code 1.
 
-  dispatch simply loads and scans the namespaces, adds the `help` command, then calls [[dispatch*]].
+  dispatch simply loads and scans the namespaces (or obtains the necessary data from the
+  cache), adds the `help` command, and finally calls [[dispatch*]].
 
   Returns nil."
   [options]
-  (-> options
+  (-> (merge default-options options)
       expand-dispatch-options
       dispatch*))
 
@@ -320,6 +342,6 @@
     (cond-> [short-opt long-opt (str desc-prefix " " input-values-list)
              :parse-fn #(best-match % input-values)
              :validate [some? (str "Must be one of " input-values-list)]]
-            default (conj :default default
-                          :default-desc (name default))
-            (seq extra-kvs) (into extra-kvs))))
+      default (conj :default default
+                    :default-desc (name default))
+      (seq extra-kvs) (into extra-kvs))))
