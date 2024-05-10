@@ -7,7 +7,8 @@
             net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
             [clojure.repl :as repl]
-            [clojure.string :as str]))
+            [clojure.string :as str])
+  (:import (java.io StringWriter)))
 
 (cli/set-prevent-exit! true)
 
@@ -48,9 +49,20 @@
    v ["VAL" "Value to set"]]
   [k v])
 
+(defn with-err-str*
+  [f]
+  (let [w (StringWriter.)]
+    (binding [*err* w]
+      (f))
+    (str w)))
+
+(defmacro with-err-str
+  [& body]
+  `(with-err-str* (fn [] ~@body)))
+
 (defmacro with-exit
   [expected & body]
-  `(with-out-str
+  `(with-err-str
      (when-let [e# (is (~'thrown? Exception ~@body))]
        (is (= "Exit" (ex-message e#)))
        (is (= {:status ~expected} (ex-data e#))))))
@@ -65,13 +77,13 @@
 
 (deftest success
   (is (= (configure "-v" "http://myhost.com" "fred=flintstone")
-         {:verbose true
-          :host "http://myhost.com"
+         {:verbose    true
+          :host       "http://myhost.com"
           :key-values {:fred "flintstone"}}))
 
-  (is (= {:verbose nil
-          :host "http://myhost.com"
-          :key-values {:fred "flintstone"
+  (is (= {:verbose    nil
+          :host       "http://myhost.com"
+          :key-values {:fred   "flintstone"
                        :barney "rubble"}}
          (configure "http://myhost.com" "fred=flintstone" "barney=rubble"))))
 
@@ -82,9 +94,9 @@
 
 (defn invoke-command
   [& args]
-  (dispatch {:tool-name "harness"
+  (dispatch {:tool-name  "harness"
              :namespaces ['net.lewisship.cli-tools-test]
-             :arguments args}))
+             :arguments  args}))
 
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
@@ -116,7 +128,7 @@
 
 (deftest option-defaults
   (is (= (slurp "test-resources/option-defaults.txt")
-        (with-exit 0 (invoke-command "default-variants" "-h")))))
+         (with-exit 0 (invoke-command "default-variants" "-h")))))
 
 (defcommand in-order
   ""
@@ -129,7 +141,7 @@
    :in-order true
    :summary "Execute remote command"]
   {:command command
-   :args args})
+   :args    args})
 
 (deftest in-order-arguments
   (is (= {:command "ls", :args ["-lR"]}
@@ -152,16 +164,16 @@
 (deftest help-with-default-and-explicit-summary
   (is (= (slurp "test-resources/tool-help.txt")
          (with-exit 0
-                    (dispatch {:tool-name "test-harness"
+                    (dispatch {:tool-name  "test-harness"
                                :namespaces '[net.lewisship.example-ns]
-                               :arguments ["help"]})))))
+                               :arguments  ["help"]})))))
 
 (deftest help-with-default-and-explicit-summary-flat
   (is (= (slurp "test-resources/tool-help-flat.txt")
          (with-exit 0
-                    (dispatch {:tool-name "test-harness"
+                    (dispatch {:tool-name  "test-harness"
                                :namespaces '[net.lewisship.example-ns]
-                               :arguments ["help" "-f"]})))))
+                               :arguments  ["help" "-f"]})))))
 
 (defcommand set-mode
   "Sets the execution mode"
@@ -185,7 +197,7 @@
    :validate [(some? a) "--alpha is required"
               (some? n) "--numeric is required"
               (not (and a n)) "--alpha and --numeric are exclusive"]]
-  {:alpha a
+  {:alpha   a
    :numeric n})
 
 (deftest validate-directive
@@ -214,34 +226,34 @@
            (repl/doc set-mode)))))
 
 (deftest best-match
-  (let [colors #{:red :green :blue}
+  (let [colors   #{:red :green :blue}
         commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}]
     (are [input values expected] (= expected (cli/best-match input values))
 
-                                 "r" colors nil             ; multiple matches
-                                 "red" colors :red          ; exact match
-                                 "b" colors :blue           ; partial match
-                                 "z" colors nil             ; no match
+      "r" colors nil                                        ; multiple matches
+      "red" colors :red                                     ; exact match
+      "b" colors :blue                                      ; partial match
+      "z" colors nil                                        ; no match
 
-                                 "Red" colors :red          ; caseless
+      "Red" colors :red                                     ; caseless
 
-                                 "exact" #{:exact :exact-is-prefix} :exact
+      "exact" #{:exact :exact-is-prefix} :exact
 
-                                 "h" commands :help
-                                 "g" commands nil
-                                 "g-g" commands :gnip-gnop
-                                 "frob-wg" commands nil
-                                 "f-g" commands :frob-widget
-                                 "t-t" commands nil
-                                 "ti-t" commands :tip-top)))
+      "h" commands :help
+      "g" commands nil
+      "g-g" commands :gnip-gnop
+      "frob-wg" commands nil
+      "f-g" commands :frob-widget
+      "t-t" commands nil
+      "ti-t" commands :tip-top)))
 
 (deftest sorted-name-list
   (is (= "foxtrot, tango, whiskey"
          (cli/sorted-name-list [:whiskey :tango :foxtrot]))))
 
 (deftest group-namespace
-  (let [group-ns (find-ns 'net.lewisship.group-ns)
-        builtin-ns   (find-ns 'net.lewisship.cli-tools.builtins)]
+  (let [group-ns   (find-ns 'net.lewisship.group-ns)
+        builtin-ns (find-ns 'net.lewisship.cli-tools.builtins)]
     (is (= [[{:category      'net.lewisship.group-ns
               :command-group "group"
               :label         "Grouped commands"
