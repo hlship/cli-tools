@@ -53,7 +53,7 @@
   (let [{:keys [commands namespaces group]
          :or   {commands   6
                 namespaces 250
-                group      false}} opts
+                group      true}} opts
         commands-per-ns (->> command-names
                              (partition commands)
                              (take namespaces))
