@@ -443,7 +443,7 @@
   Key    | Type   | Value
   ---    |---     |---
   :label | String | Response entered by user, e.g., \"yes\"
-  :value | any    | Value to returned by `ask`, e.g., true
+  :value | any    | Value to be returned by `ask`, e.g., true
 
   A response may be a keyword; the :value will be the keyword, and the label
   will simply be the name of the keyword.
