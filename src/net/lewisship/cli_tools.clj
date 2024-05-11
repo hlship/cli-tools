@@ -1,6 +1,8 @@
 (ns net.lewisship.cli-tools
   "Utilities for create CLIs around functions, and creating tools with multiple sub-commands."
   (:require [babashka.fs :as fs]
+            [clj-commons.ansi :as ansi]
+            [clojure.string :as string]
             [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
             [net.lewisship.cli-tools.cache :as cache]
             [clojure.string :as str]))
@@ -268,8 +270,8 @@
         result   (if-not cache-dir
                    (expand-dispatch-options* options')
                    (let [cache-dir' (fs/expand-home cache-dir)
-                         digest (cache/classpath-digest options')
-                         cached (cache/read-from-cache cache-dir' digest)]
+                         digest     (cache/classpath-digest options')
+                         cached     (cache/read-from-cache cache-dir' digest)]
                      (if cached
                        cached
                        (let [full (expand-dispatch-options* options)]
@@ -345,3 +347,162 @@
       default (conj :default default
                     :default-desc (name default))
       (seq extra-kvs) (into extra-kvs))))
+
+(defn- expand-response
+  [response]
+  (cond
+
+    (keyword? response)
+    {:value response
+     :label (name response)}
+
+    (map? response)
+    response
+
+    :else
+    (throw (ex-info "unexpected response value" {:response response}))))
+
+(defn- ask-prompt
+  [prompt response-maps default]
+  (let [label->value  (reduce (fn [m {:keys [label value]}]
+                                (assoc m label value))
+                              {}
+                              response-maps)
+        all-labels    (map :label response-maps)
+        ;; When there's a default that corresponds to multiple labels, use the longest
+        ;; one.
+        default-label (when default
+                        (->> response-maps
+                             (keep #(when (= default (:value %))
+                                      (:label %)))
+                             (sort-by #(-> % .length))
+                             last))
+        n             (-> response-maps count dec)
+        full-prompt   (ansi/compose
+                        prompt
+                        " ("
+                        (map-indexed
+                          (fn [i label]
+                            (list
+                              (when (pos? i)
+                                "/")
+                              [(when (= label default-label) :bold)
+                               label]))
+                          all-labels)
+                        ") ")]
+    (binding [*out* *err*]
+      (loop []
+        (print full-prompt)
+        (flush)
+        (let [input (read-line)]
+          (cond-let
+            (and (string/blank? input)
+                 default)
+            default
+
+            :let [match (best-match input all-labels)]
+
+            match
+            (get label->value match)
+
+            :else
+            (do
+              (ansi/perr "Input '" [:yellow input] "' not recognized; enter "
+                         (map-indexed
+                           (fn [i {:keys [label]}]
+                             (list
+                               (cond
+                                 (zero? i)
+                                 nil
+
+                                 default
+                                 ", "
+
+                                 (< i n)
+                                 ", "
+
+                                 :else
+                                 " or ")
+                               [:italic label]))
+                           response-maps)
+                         (when default
+                           (list
+                             ", or just enter for the default ("
+                             [:bold default-label]
+                             ")")))
+              (recur))))))))
+
+(defn ^{:added "0.12.0"} ask
+  "Ask the user a quesion with a fixed number of possible responses.
+
+  The prompt is a string (possibly, a composed string) and should
+  usually end with a question mark.
+
+  Each response is a map with
+
+  Key    | Type   | Value
+  ---    |---     |---
+  :label | String | Response entered by user, e.g., \"yes\"
+  :value | any    | Value to be returned by `ask`, e.g., true
+
+  A response may be a keyword; the :value will be the keyword, and the label
+  will simply be the name of the keyword.
+
+  Ex:
+
+      (ask \"Are you sure?\" cli/yes-or-no {:default true})
+
+  Will prompt with:
+
+      Are you sure? (yes/no)
+
+  With \"yes\" in bold.
+
+
+  The prompt is written to `*err*`.
+
+  The :value is typically unique, but this is not enforced, and it can be
+  useful to have distinct labels map to the same output value.
+
+  The user is allowed to enter a shorter input, if that shorter input
+  (via [[best-match]]) uniquely identifies a label.
+
+  Options:
+
+  :default - the default value which must correspond to one value
+  :force? - if true, then the user is not prompted and the default (which must be non-nil)
+    is returned
+
+  The default, if any, is returned when the user simply hits enter (enters a blank string).
+
+  The user input must correspond to a label; if not, a warning is printed and the user
+  is again prompted.
+
+  Once a label is identified, `ask` returns the corresponding value."
+  ([prompt responses]
+   (ask prompt responses nil))
+  ([prompt responses opts]
+   (let [response-maps (map expand-response responses)
+         {:keys [default force?]} opts]
+     (cond
+       (and force? (nil? default))
+       (throw (ex-info ":force is set, but no :default" {:opts opts}))
+
+       (and default (not (contains? (->> response-maps (map :value) set) default)))
+       (throw (ex-info ":default does not correspond to any value"
+                       {:opts      opts
+                        :responses response-maps}))
+
+       force?
+       default
+
+       :else
+       (ask-prompt prompt
+                   response-maps default)))))
+
+(def ^{:added "0.12.0"} yes-or-no
+  "For use with [[ask]], provides responses 'yes' (true) and 'no' (false)."
+  [{:label "yes"
+    :value true}
+   {:label "no"
+    :value false}])

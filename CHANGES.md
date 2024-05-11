@@ -2,9 +2,15 @@
 
 Moves specs to their own namespace.
 
-Ensured that most output (such as command summaries) goes to *err*, not *out*.
+Ensured that most output (such as command summaries, prompts, help text)
+goes to `*err*`, not `*out*`.
 
 Added an on-disk caching mechanism to avoid loading most namespaces when dispatching to commands.
+
+Added function `net.lewisship.cli-tools/ask`, which prompts the user
+for input (such as "yes" or "no").
+ 
+[Closed Issues](https://github.com/hlship/cli-tools/issues?q=is%3Aclosed+milestone%3A0.12)
 
 # 0.11 -- 17 Nov 2023
 
