@@ -381,15 +381,14 @@
         full-prompt   (ansi/compose
                         prompt
                         " ("
-
                         (map-indexed
-                          (fn [i {:keys [label value]}]
+                          (fn [i label]
                             (list
                               (when (pos? i)
                                 "/")
                               [(when (= label default-label) :bold)
                                label]))
-                          response-maps)
+                          all-labels)
                         ") ")]
     (binding [*out* *err*]
       (loop []
@@ -400,9 +399,6 @@
             (and (string/blank? input)
                  default)
             default
-
-            (str/blank? input)
-            (recur)
 
             :let [match (best-match input all-labels)]
 
@@ -426,7 +422,7 @@
                                  ", "
 
                                  :else
-                                 "or ")
+                                 " or ")
                                [:italic label]))
                            response-maps)
                          (when default
