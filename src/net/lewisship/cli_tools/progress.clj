@@ -3,7 +3,6 @@
   a simple string, or a composable string."
   {:added "0.11"})
 
-
 (def ^:private char-bar
   (memoize (fn [c n]
              (let [b (StringBuilder. (int n))]
@@ -30,7 +29,7 @@
        (str completed (char-bar \u2591 remaining-length))))))
 
 (defn block-progress-formatter
-  "Basic function for displaying progress. Shows a 30 character bar,
+  "Basic function for displaying progress. Returns a 30 character bar,
   followed by the completion ratio, and the current/target values
   (which must be integers)."
   {:added "0.1.7"}
