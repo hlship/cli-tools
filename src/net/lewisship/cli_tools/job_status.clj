@@ -10,14 +10,17 @@
   Jobs are allocated a line within the job board, which expands vertically as needed; when the properties
   of the job are modified, the job's line within the board is redrawn.
 
-  A Job has the following :
-  - :status (:normal, :success, :failure, or :warning), defaults to :normal
-  - :prefix - optional composed string (used to identify the job)
-  - :summary - optional composed string (short text description of what the job is currently doing)
-  - :progress-target - number, when present, a progress bar is printed
-  - :progress-value - number, representing current amount of progress
-  - :layout - function to render a job's state as a composed string; defaults to [[default-layout]]
-  - :progress-formatter - function to render the job's progress value and target to a composed string
+  A Job is a map with the following keys:
+
+  Key                 | Type                                  | Description
+  ----                |----                                   |----
+  :status             | :normal, :success, :failure, :warning | Defaults to :normal, affects fonts
+  :prefix             | (composed) string                     | Optional, used to identify the job
+  :summary            | (composed) string                     | Optional, short text description of that the job is currently doing
+  :progress-target    | number                                | When present, a progress bar is output
+  :progress-value     | number                                | The current amount of progress towards the target
+  :layout             | function                              | Renders the job's state as a composed string, defaults to [[default-layout]]
+  :progress-formatter | function                              | Renders the job's progress value and target to a composed string
 
   A composed string is a value that works with `clj-commons.ansi/compose`, a data structure for
   creating strings with ANSI color and formatting codes. A composed string may also just be a simple
