@@ -1,8 +1,8 @@
-# 0.12 -- UNRELEASED
+# 0.12 -- 17 May 2024
 
 Moves specs to their own namespace.
 
-Ensured that most output (such as command summaries, prompts, help text)
+Ensure that most output (such as command summaries, prompts, help text)
 goes to `*err*`, not `*out*`.
 
 Added an on-disk caching mechanism to avoid loading most namespaces when dispatching to commands.
