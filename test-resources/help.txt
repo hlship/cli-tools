@@ -1,4 +1,4 @@
-Usage: [0;1mharness configure[m [OPTIONS] HOST KV-DATA+
+Usage: [0;32;1mharness configure[m [OPTIONS] HOST KV-DATA+
 Configures the system for some thing.
 
 This is more detail.

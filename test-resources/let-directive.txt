@@ -1,9 +1,1 @@
-Usage: [0;1mharness set-mode[m [OPTIONS]
-Sets the execution mode
-
-Options:
-  [0;1m-m, --mode MODE[m Execution mode, one of async, batch, real-time
-  [0;1m-h, --help[m      This command summary
-
-[0;31mError:[m
-  [0;31mFailed to validate "-m unknown": Must be one of async, batch, real-time[m
+[0;31mError in [0;32;1mharness set-mode[0;31m: Failed to validate "-m unknown": Must be one of async, batch, real-time[m

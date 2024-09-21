@@ -2,7 +2,7 @@
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
             [clojure.string :as str]
-            [clj-commons.ansi :refer [compose pcompose *color-enabled*]]
+            [clj-commons.ansi :refer [compose pout perr *color-enabled*]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -107,9 +107,9 @@
   [errors]
   (when (seq errors)
     (println)
-    (pcompose [:red (if (= 1 (count errors)) "Error:" "Errors:")])
+    (pout [:red (if (= 1 (count errors)) "Error:" "Errors:")])
     (doseq [e errors]
-      (pcompose "  " [:red e]))))
+      (pout "  " [:red e]))))
 
 (defn- arg-spec->str
   [arg-spec]
@@ -150,10 +150,10 @@
 
 (defn- cleanup-docstring
   [docstring]
-  (let [docstring' (str/trim docstring)
-        lines (->> docstring'
-                   str/split-lines
-                   (map indentation-of-line))
+  (let [docstring'       (str/trim docstring)
+        lines            (->> docstring'
+                              str/split-lines
+                              (map indentation-of-line))
         non-zero-indents (->> lines
                               (map first)
                               (remove zero?))]
@@ -165,25 +165,24 @@
              (str/join "\n"))))))
 
 (defn print-summary
-  [command-map errors]
+  [command-map]
   (binding [*out* *err*]
     (let [{:keys [tool-name]} *options*
           {:keys [command-path]} *command*
           {:keys [command-name positional-specs command-doc summary]} command-map
           arg-strs (map arg-spec->str positional-specs)]
-      (pcompose
+      (pout
         "Usage: "
         ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
         (when tool-name
-          [:bold tool-name " "])
+          [:bold.green tool-name " "])
         ;; A stand-alone tool will use its command-name, a command within
         ;; a multi-command tool will have a command-path.
-        [:bold (if command-path
+        [:bold.green (if command-path
                  (str/join " " command-path)
                  command-name)]
         " [OPTIONS]"
-        (map list (repeat " ")
-             arg-strs))
+        (map list (repeat " ") arg-strs))
       (when command-doc
         (-> command-doc cleanup-docstring println))
 
@@ -205,8 +204,28 @@
                                   ": "
                                   doc))]
           (println "\nArguments:")
-          (pcompose (interpose \newline lines))))
-      (print-errors errors))))
+          (pout (interpose \newline lines)))))))
+
+(defn print-errors
+  [command-map errors]
+  (let [{:keys [tool-name]} *options*
+        {:keys [command-path]} *command*
+        {:keys [command-name]} command-map]
+    (perr
+      [:red
+       (inflect/pluralize-noun (count errors) "Error")
+       " in "
+       [:bold.green
+        tool-name
+        (when tool-name " ")
+
+        (if command-path
+          (str/join " " command-path)
+          command-name)]
+       ":"
+       (if (= 1 (count errors))
+         (list " " (first errors))
+         (map list (repeat "\n  ") errors))])))
 
 (defn- format-option-summary
   [max-option-width max-default-width summary-part]
@@ -256,12 +275,12 @@
                                        (contains? % :default-fn)) specs)
           parts             (map #(make-summary-part show-defaults? %) specs)
           max-of            (fn [k] (->> parts
-                                      (map k)
-                                      (reduce max)))
+                                         (map k)
+                                         (reduce max)))
           max-opt-width     (max-of :opt-width)             ; Indent by two
           max-default-width (max-of :default-width)
           lines             (interpose \newline
-                              (map #(format-option-summary max-opt-width max-default-width %) parts))]
+                                       (map #(format-option-summary max-opt-width max-default-width %) parts))]
       (compose lines))
     ""))
 
@@ -274,7 +293,7 @@
       (recur command-name
              (into [label :doc (first more)]
                    (rest more)))
-      (let [spec-map (apply hash-map more)
+      (let [spec-map     (apply hash-map more)
             {:keys [id]} spec-map
             invalid-keys (-> spec-map
                              ;; :id is actually set from the local symbol
@@ -282,44 +301,44 @@
                              keys
                              sort)
             {:keys [validate update-fn repeatable doc optional parse-fn assoc-fn]} spec-map
-            _ (when (and update-fn assoc-fn)
-                (throw (ex-info "May only specify one of :update-fn and :assoc-fn"
-                                {:command-name command-name
-                                 :spec spec-map})))
-            assoc-fn' (cond
-                        assoc-fn
-                        assoc-fn
+            _            (when (and update-fn assoc-fn)
+                           (throw (ex-info "May only specify one of :update-fn and :assoc-fn"
+                                           {:command-name command-name
+                                            :spec         spec-map})))
+            assoc-fn'    (cond
+                           assoc-fn
+                           assoc-fn
 
-                        update-fn
-                        (fn [m k v]
-                          (update m k update-fn v))
+                           update-fn
+                           (fn [m k v]
+                             (update m k update-fn v))
 
-                        repeatable
-                        (fn [m k v]
-                          (update m k (fnil conj []) v))
+                           repeatable
+                           (fn [m k v]
+                             (update m k (fnil conj []) v))
 
-                        :else
-                        assoc)]
+                           :else
+                           assoc)]
         (when (seq invalid-keys)
           (println-err (format "Warning: command %s, argument %s contains invalid key(s): %s"
                                command-name
                                id
                                (str/join ", " invalid-keys))))
-        {:label label
-         :id id
-         :doc doc
-         :optional optional
+        {:label      label
+         :id         id
+         :doc        doc
+         :optional   optional
          :repeatable repeatable
-         :assoc-fn assoc-fn'
-         :parse-fn (or parse-fn identity)
-         :validate validate}))))
+         :assoc-fn   assoc-fn'
+         :parse-fn   (or parse-fn identity)
+         :validate   validate}))))
 
 (defn- compile-positional-specs
   [command-name specs]
   (let [compiled (map #(compile-positional-spec command-name %) specs)]
     (loop [[this-spec & more-specs] compiled
-           ids #{}
-           optional-id nil
+           ids           #{}
+           optional-id   nil
            repeatable-id nil]
       ;; Do some validation before returning the seq of positional specs (each a map)
       (cond-let
@@ -331,7 +350,7 @@
         (contains? ids this-id)
         (throw (ex-info (str "Argument " this-id " of command " command-name " is not unique")
                         {:command-name command-name
-                         :spec this-spec}))
+                         :spec         this-spec}))
 
         ;; Use the keyword ids, not the labels, since these are programmer errors, not a runtime error
 
@@ -339,12 +358,12 @@
              (not (:optional this-spec)))
         (throw (ex-info (str "Argument " this-id " of command " command-name " is not optional but follows optional argument " optional-id)
                         {:command-name command-name
-                         :spec this-spec}))
+                         :spec         this-spec}))
 
         (some? repeatable-id)
         (throw (ex-info (str "Argument " this-id " of command " command-name " follows repeatable argument " repeatable-id ", but only the final argument may be repeatable")
                         {:command-name command-name
-                         :spec this-spec}))
+                         :spec         this-spec}))
 
         :else
         (recur more-specs
@@ -373,10 +392,10 @@
   "Parses the remaining command line arguments based on the positional specs.
   Returns [map errors] where map is keyed on argument id, and errors is a seq of strings."
   [positional-specs arguments]
-  (loop [state {:specs positional-specs
-                :remaining arguments
-                :argument-map {}
-                :errors []
+  (loop [state {:specs           positional-specs
+                :remaining       arguments
+                :argument-map    {}
+                :errors          []
                 :ignore-required false}]
     (cond-let
       :let [{:keys [specs remaining argument-map errors ignore-required]} state
@@ -440,12 +459,12 @@
   [message state form]
   (throw (ex-info message
                   {:state state
-                   :form form})))
+                   :form  form})))
 
 (defmulti consumer (fn [state _form]
                      ; Dispatch on the type of value to be consumed
                      (:consuming state))
-                   :default ::default)
+          :default ::default)
 
 (defmethod consumer ::default
   [state form]
@@ -496,7 +515,7 @@
   (let [option-symbol (:symbol state)
         ;; Explicitly add an :id to the option def to ensure that the value can be extracted
         ;; from the parsed :options map correctly via a keyword destructure
-        option-def' (append-id option-def option-symbol)]
+        option-def'   (append-id option-def option-symbol)]
     (-> state
         (update :command-options conj option-def')
         (update :option-symbols conj option-symbol)
@@ -511,7 +530,7 @@
     (fail "Expected argument definition" state arg-def))
 
   (let [arg-symbol (:symbol state)
-        arg-def' (append-id arg-def arg-symbol)]
+        arg-def'   (append-id arg-def arg-symbol)]
     (-> state
         (update :command-args conj arg-def')
         (update :option-symbols conj arg-symbol)
@@ -615,15 +634,15 @@
   "Parses the interface forms of a `defcommand` into a base command map; the interface
    defines the options and positional arguments that will be parsed."
   [command-doc forms]
-  (let [initial-state {:consuming :options
-                       :option-symbols []
+  (let [initial-state {:consuming       :options
+                       :option-symbols  []
                        :command-options []
-                       :command-args []
-                       :let-forms []
-                       :validate-cases []
-                       :command-doc command-doc}
-        final-state (reduce consumer
-                            initial-state forms)]
+                       :command-args    []
+                       :let-forms       []
+                       :validate-cases  []
+                       :command-doc     command-doc}
+        final-state   (reduce consumer
+                              initial-state forms)]
     (when (:pending final-state)
       (throw (ex-info "Missing data in interface definitions"
                       {:state final-state
@@ -637,21 +656,21 @@
   (cond-let
     :let [{:keys [command-args command-options parse-opts-options]} command-map
           {:keys [in-order summary-fn]
-           :or {in-order false
-                summary-fn summarize-specs}} parse-opts-options
+           :or   {in-order   false
+                  summary-fn summarize-specs}} parse-opts-options
           positional-specs (compile-positional-specs command-name command-args)
           command-map' (merge command-map
-                              {:command-name command-name
+                              {:command-name     command-name
                                :positional-specs positional-specs}
                               (cli/parse-opts command-line-arguments command-options
-                                :in-order in-order
-                                :summary-fn summary-fn))
+                                              :in-order in-order
+                                              :summary-fn summary-fn))
           {:keys [arguments options]} command-map']
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.
     (:help options)
     (do
-      (print-summary command-map' nil)
+      (print-summary command-map')
       (exit 0))
 
     :let [[positional-arguments arg-errors] (parse-positional-arguments positional-specs arguments)
@@ -660,7 +679,7 @@
 
     (seq errors)
     (do
-      (print-summary command-map' errors)
+      (print-errors command-map' errors)
       (exit 1))
 
     :else
@@ -676,9 +695,9 @@
 
 (defn- print-commands
   [command-name-width commands]
-  (doseq [{:keys       [command-name]
-           :as command-map} (sort-by :command-name commands)]
-    (pcompose
+  (doseq [{:keys [command-name]
+           :as   command-map} (sort-by :command-name commands)]
+    (pout
       "  "
       [{:width command-name-width} [:bold.green command-name]]
       ": "
@@ -704,14 +723,14 @@
   [options]
   (binding [*out* *err*]
     (let [{:keys [tool-name tool-doc commands categories flat]} options]
-      (pcompose "Usage: " [:bold tool-name] " [TOOL OPTIONS] COMMAND ...")
+      (pout "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
       (when tool-doc
         (println)
         (-> tool-doc cleanup-docstring println))
       (println "\nTool options:")
-      (pcompose [:bold "  -C, --color"] "    Enable ANSI color output")
-      (pcompose [:bold "  -N, --no-color"] " Disable ANSI color output")
-      (pcompose [:bold "  -h, --help"] "     This tool summary")
+      (pout [:bold "  -C, --color"] "    Enable ANSI color output")
+      (pout [:bold "  -N, --no-color"] " Disable ANSI color output")
+      (pout [:bold "  -h, --help"] "     This tool summary")
       (println "\nCommands:")
       (let [grouped-commands   (collect-commands commands)
             all-commands       (cond->> (reduce into [] (vals grouped-commands))
@@ -727,25 +746,25 @@
           ;; TODO: Adjust ordering based on the command-group
           (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)]
             (println)
-            (pcompose [:bold
-                       (when command-group
-                         (list
-                           [:green command-group]
-                           " - "))
-                       label])
+            (pout [:bold
+                   (when command-group
+                     (list
+                       [:green command-group]
+                       " - "))
+                   label])
             (print-commands command-name-width (get grouped-commands category)))))))
   (exit 0))
 
 (defn- to-matcher
   [s]
-  (let [terms (str/split s #"\-")
+  (let [terms      (str/split s #"\-")
         re-pattern (apply str "(?i)"
                           (map-indexed (fn [i term]
                                          (str
                                            (when (pos? i) "\\-")
                                            ".*\\Q" term "\\E.*"))
                                        terms))
-        re (Pattern/compile re-pattern)]
+        re         (Pattern/compile re-pattern)]
     (fn [input]
       (re-matches re input))))
 
@@ -760,7 +779,7 @@
 
 (defn use-help-message
   [tool-name]
-  (list ", use " [:bold tool-name " help"] " to list commands"))
+  (list ", use " [:bold.green tool-name " help"] " to list commands"))
 
 (defn- invoke-command
   [command-map args]
@@ -779,7 +798,7 @@
              possible-commands commands]
         (cond-let
           (nil? term)
-          (abort [:bold tool-name]
+          (abort [:bold.green tool-name]
                  ": "
                  [:bold.red (str/join " " prefix)]
                  " is incomplete, a sub-command name should follow"
@@ -790,11 +809,11 @@
           ;; Options start with a '-', but we're still looking for commands
           (str/starts-with? term "-")
           (abort
-            [:bold tool-name ": " [:red (str/join " " prefix)]]
+            [:bold.green tool-name ": " [:red (str/join " " prefix)]]
             " is incomplete; "
             (compose-list matchable-terms)
             " could follow; use "
-            [:bold tool-name " help"]
+            [:bold [:green tool-name] " help"]
             " to list commands")
 
           ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
@@ -809,7 +828,7 @@
                                     (compose-list matchable-terms {:conjuction "or"})))
                 help-suffix (list
                               "; use "
-                              [:bold tool-name " help"]
+                              [:bold [:green tool-name " help"]]
                               " to list commands")]
             (abort
               [:bold tool-name ": " [:red

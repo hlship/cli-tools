@@ -1,3 +1,14 @@
+# 0.13 -- UNRELEASED
+
+*BREAKING CHANGES*
+
+The `print-summary` command was removed, and replaced with `print-errors`.  When a command has input
+errors, only a brief summary of the command name is printed (previously, it was the entire command summary
+including options and arguments).
+
+The tool and command name, when printed in summaries and errors, is now consistently in bold green.
+
+
 # 0.12 -- 17 May 2024
 
 Moves specs to their own namespace.
