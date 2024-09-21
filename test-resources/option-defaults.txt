@@ -1,8 +1,8 @@
-Usage: [1mharness default-variants[22m [OPTIONS][m
+Usage: [0;1mharness default-variants[m [OPTIONS]
 Different option defaults.
 
 Options:
-  [1m    --foo FOO[22m   [3mabc[23m        Foo option
-  [1m    --bar BAR[22m   [3m<computed>[23m Bar option
-  [1m    --bazz BAZZ[22m [3mBazzy[23m      Bazz option
-  [1m-h, --help[22m                 This command summary[m
+  [0;1m    --foo FOO[m   [0;3mabc[m        Foo option
+  [0;1m    --bar BAR[m   [0;3m<computed>[m Bar option
+  [0;1m    --bazz BAZZ[m [0;3mBazzy[m      Bazz option
+  [0;1m-h, --help[m                 This command summary

@@ -1,15 +1,15 @@
-Usage: [1mtest-harness[22m [TOOL OPTIONS] COMMAND ...[m
+Usage: [0;1mtest-harness[m [TOOL OPTIONS] COMMAND ...
 
 Example commands as part of unit test suite.
 
 Even this docstring is part of the test.
 
 Tool options:
-[1m  -C, --color[22m    Enable ANSI color output[m
-[1m  -N, --no-color[22m Disable ANSI color output[m
-[1m  -h, --help[22m     This tool summary[m
+[0;1m  -C, --color[m    Enable ANSI color output
+[0;1m  -N, --no-color[m Disable ANSI color output
+[0;1m  -h, --help[m     This tool summary
 
 Commands:
-   [32;1mdefault[39;22m: Default command summary[m
-  [32;1mexplicit[39;22m: Explicit command summary[m
-      [32;1mhelp[39;22m: List available commands[m
+   [0;32;1mdefault[m: Default command summary
+  [0;32;1mexplicit[m: Explicit command summary
+      [0;32;1mhelp[m: List available commands
