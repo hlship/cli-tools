@@ -1,4 +1,4 @@
-Usage: [1mharness configure[22m [OPTIONS] HOST KV-DATA+[m
+Usage: [0;1mharness configure[m [OPTIONS] HOST KV-DATA+
 Configures the system for some thing.
 
 This is more detail.
@@ -8,9 +8,9 @@ This is more detail.
 This is not indented.
 
 Options:
-  [1m-v, --verbose[22m Enable verbose logging
-  [1m-h, --help[22m    This command summary[m
+  [0;1m-v, --verbose[m Enable verbose logging
+  [0;1m-h, --help[m    This command summary
 
 Arguments:
-     [1mHOST[22m: System configuration URL
-  [1mKV-DATA[22m: Data to configure as KEY=VALUE[m
+     [0;1mHOST[m: System configuration URL
+  [0;1mKV-DATA[m: Data to configure as KEY=VALUE

@@ -27,13 +27,15 @@ a built-in `help` command to list out what commands are available.
 for the kind of low-ceremony tools that `cli-tools` is intended for.
 
 Although `cli-tools` can be used to build shared tools, it is also fully intended for developers to create a personal
-toolkit of commands specific to their personal workflows, as an alternative to a collection of shell aliases and one-off shell scripts.
+toolkit of commands specific to their individual workflows, as an alternative to a collection of shell aliases and one-off shell scripts.
 
 Below is an example of the author's personal toolkit, `flow`:
 
 ![Example](images/example-usage.png)
 
-Building on `cli-tools` provides discoverability and feedback, as the tool and every command inside the tool, will provide detailed help.
+Building on `cli-tools` provides discoverability and feedback, as the tool (and every command inside the tool) will provide detailed help.
+
+A more complete example is [dialog-tool](https://github.com/hlship/dialog-tool).
 
 ## defcommand
 
@@ -128,6 +130,10 @@ Babashka looks for the `bb.edn` file in the same directory as the script, and us
 The final step is to add that `bin` directory to the shell `$PATH` environment variable; this is done in your
 `~/.zshrc` file, or equivalent.
 
+Alternately, if you already have a location for commands, such as `~/bin`, you can create a symbolic link there
+that points to your `bin/app-admin` script; Babashka will follow links and find the neighboring `bb.edn` file 
+at the final location of the script.  Handy!
+
 With all that in place, we can now run `app-admin configure` through its paces:
 
 ```
@@ -180,7 +186,8 @@ Unless there are errors, the body of the command is invoked:
 > 
 ```
 
-The body here just prints out the values passed in.
+The body here just prints out the values passed in.  That's not a bad starting point when creating new scripts.
+I like to get all the command line parsing concerns out of the way before working on the _meat_ of the command.
 
 ## Abbreviated Commands
 
@@ -189,11 +196,10 @@ from the provided name on the command line, it will
 find any commands whose name contains the provided name; so `app-admin conf` would work, as would `app-admin c` ... 
 as long as there aren't multiple matches for the substring.
 
-When there are multiple matches, `dispatch` will abort and the error message will identify which commands matched the provided
-string.
+When there are multiple matches, `dispatch` will abort and the error message will identify which commands matched the provided string.
 
-Exception: when the provided command name _exactly_ matches a command's name, then that command will be used even if 
-that command name is itself a prefix or substring of some other command name.
+Exception: when the provided name _exactly_ matches a command's name, then that command will be used even if 
+the provided name is also a prefix or substring of some other command name.
 
 ## Positional Arguments
 
@@ -219,14 +225,14 @@ by the argument
 
 * `:update-fn` - optional function used to update the (initially nil) entry for the argument in the arguments map
  
-* `:assoc-fn` - optional function used to update the arguments map; passed the map, the id, and the parsed value
+* `:assoc-fn` - optional function used to update the arguments map; passed the map, the argument id, and the parsed value
 
 * `:update-fn` and `:assoc-fn` are mutually exclusive.
 
 For repeatable arguments, the default update function will construct a vector of values.
 For non-repeatable arguments, the default update function simply sets the value.
 
-Only the final positional parameter may be repeatable.
+Only the final positional argument may be repeatable.
 
 Also note that all command line arguments _must be_ consumed, either as options or as positional arguments.
 Any additional command line arguments will be reported as a validation error.
@@ -281,9 +287,9 @@ option-like string that isn't declared.
   [verbose ["-v" "--verbose"]
    :args
    command ["COMMAND" "Remote command to execute"]
-   args ["ARGS" "Arguments to remote command"
-         :optional true
-         :repeatable true]]
+   remote-args ["ARGS" "Arguments to remote command"
+                :optional true
+                :repeatable true]]
      ...)
 ```
 
@@ -295,7 +301,7 @@ but is clumsy.
 
 Instead, add `:in-order true` to the end of the interface, and any
 unrecognized options will be parsed as positional arguments instead,
-so `app-admin remote ls -lR` will work, and `-lR` will be provided as a string in the `args`
+so `app-admin remote ls -lR` will work, and `-lR` will be provided as a string in the `remote-args`
 seq.
 
 ### :let \<bindings\>
@@ -310,11 +316,11 @@ and arguments definitions; the `:let` keyword is followed by a vector of binding
          :parse-fn keyword
          :validate [allowed-modes (str "Must be one of " mode-names)]]
    :let [allowed-modes #{:batch :async :real-time}
-         mode-names (->> allowed-modes (map name) sort (str/join ", "))]]
+         mode-names (->> allowed-modes (map name) sort (string/join ", "))]]
   ...)
 ```
 
-> Note that the `select-option` function is an easier way to create such
+> Note that the `new.lewisship.cli-tools/select-option` function is an easier way to create such
 > an option.
 
 In the expanded code, the bindings are moved to the top, before the option and argument
@@ -388,7 +394,7 @@ A category can also have a `:command-group` metadata value, a short string that 
 All commands in the same namespace/category are accessible via that group command.  The built-in `help`
 command will identify the command group when listing the commands in the category.
 
-Command groups are useful for the largest tools with the most commands; it allows for shorter command names,
+Command groups are useful when creating the largest tools with the most commands; it allows for shorter command names,
 as the name only have to be unique within command group, not globally.
 
 
@@ -433,8 +439,54 @@ This may have an even more significant impact for a tool that is built on top of
 Our mockup of 1500 commands across 250 namespaces executes approximately 
 twice as fast using the cache (approximately 8 seconds with the cache, vs. 17 seconds without).
 
+Babashka is amazingly fast for these purposes; the same test executes in 0.23 seconds.
+
 By default, `dispatch` will store its cache in the `~/.cli-tools-cache` directory; the environment variable
 `CLI_TOOLS_CACHE_DIR` can override this default.
+
+## Tips and Tricks
+
+### Parsing Numbers
+
+When an input is numeric, you can use Clojure's `parse-long` function to parse a number; it returns nil if
+the string is not a number.  You can then check using `some?` within :validate:
+
+```
+(defcommand kill-port
+  "Kills the listening process locking a port."
+  [force ["-f" "--force" "Kill process without asking for confirmation"]
+   :args
+   port ["PORT" "Port number to kill"
+         :parse-fn parse-long
+         :validate [some? "Not a number"
+                    pos? "Must be at least 1"]]]
+  ...)                    
+```
+
+This handles invalid input gracefully:
+
+```
+> flow kill-port abc
+Usage: flow kill-port [OPTIONS] PORT
+Kills the listening process locking a port.
+
+Options:
+  -f, --force Kill process without asking for confirmation
+  -h, --help  This command summary
+
+Arguments:
+  PORT: Port number to kill
+
+Error:
+  PORT: Not a number
+ ```
+
+You might be tempted to use `#(Long/parseLong %)` as the parse function; this works, but the message produced comes from the exception message, and is not very friendly:
+
+```
+Error:
+  PORT: Error in PORT: For input string: "abc"
+```
 
 ## Job Board
 

@@ -1,12 +1,12 @@
-Usage: [1mharness collect[22m [OPTIONS] KEY VAL[m
+Usage: [0;1mharness collect[m [OPTIONS] KEY VAL
 Collect key and value.
 
 Options:
-  [1m-h, --help[22m This command summary[m
+  [0;1m-h, --help[m This command summary
 
 Arguments:
-  [1mKEY[22m: Key to set
-  [1mVAL[22m: Value to set[m
+  [0;1mKEY[m: Key to set
+  [0;1mVAL[m: Value to set
 
-[31mError:[m
-  [31mUnexpected argument 'the-extra'[m
+[0;31mError:[m
+  [0;31mUnexpected argument 'the-extra'[m
