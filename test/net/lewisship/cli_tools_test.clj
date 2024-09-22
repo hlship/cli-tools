@@ -70,7 +70,7 @@
 (defmacro with-exit-errors
   [expected-errors & body]
   `(let [*errors# (atom nil)]
-     (with-redefs [cli/print-summary (fn [_command-map# errors#]
+     (with-redefs [cli/print-errors (fn [_command-map# errors#]
                                        (reset! *errors# errors#))]
        (with-exit 1 ~@body))
      (is (= @*errors# ~expected-errors))))

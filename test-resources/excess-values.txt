@@ -1,12 +1,1 @@
-Usage: [0;1mharness collect[m [OPTIONS] KEY VAL
-Collect key and value.
-
-Options:
-  [0;1m-h, --help[m This command summary
-
-Arguments:
-  [0;1mKEY[m: Key to set
-  [0;1mVAL[m: Value to set
-
-[0;31mError:[m
-  [0;31mUnexpected argument 'the-extra'[m
+[0;31mError in [0;32;1mharness collect[0;31m: Unexpected argument 'the-extra'[m

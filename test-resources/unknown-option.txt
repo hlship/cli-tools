@@ -1,20 +1,3 @@
-Usage: [0;1mharness configure[m [OPTIONS] HOST KV-DATA+
-Configures the system for some thing.
-
-This is more detail.
-
-  This is indented.
-
-This is not indented.
-
-Options:
-  [0;1m-v, --verbose[m Enable verbose logging
-  [0;1m-h, --help[m    This command summary
-
-Arguments:
-     [0;1mHOST[m: System configuration URL
-  [0;1mKV-DATA[m: Data to configure as KEY=VALUE
-
-[0;31mErrors:[m
-  [0;31mUnknown option: "--debug"[m
-  [0;31mNo value for required argument HOST[m
+[0;31mErrors in [0;32;1mharness configure[0;31m:
+  Unknown option: "--debug"
+  No value for required argument HOST[m

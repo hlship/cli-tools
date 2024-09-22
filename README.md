@@ -136,55 +136,24 @@ at the final location of the script.  Handy!
 
 With all that in place, we can now run `app-admin configure` through its paces:
 
-```
-> app-admin configure -h
-Usage: app-admin configure [OPTIONS] HOST DATA+
-Configures the system with keys and values
+![app-admin](images/app-admin-help.png)
 
-Options:
-  -v, --verbose  Enable verbose logging
-  -h, --help     This command summary
-
-Arguments:
-  HOST: System configuration URL
-  DATA: Data to configure as KEY=VALUE
-> 
-```
-
-> You may see a short delay the first time your script is executed as dependencies are determined and downloaded;
+> You may see a short delay the first time your script is executed as dependencies are resolved and downloaded;
 > Subsequent executions are lightning fast.
 
 
 Help is provided automatically, and builds its content from the interface and the docstring
 of each command function.  The docstring is required.
 
-Validations are reported as the command summary with errors at the end:
+Validations are reported with the  tool name and command name:
 
-```
-> app-admin configure example.org
-Usage: app-admin configure [OPTIONS] HOST DATA+
-Configures the system with keys and values
+![app-admin error](images/app-admin-error.png)
 
-Options:
-  -v, --verbose  Enable verbose logging
-  -h, --help     This command summary
-
-Arguments:
-  HOST: System configuration URL
-  DATA: Data to configure as KEY=VALUE
-
-Error:
-  HOST: must be a URL
->
-```
+The text above is written to standard error, and the command exit status is 1 (where 0 would mean success).
 
 Unless there are errors, the body of the command is invoked:
 
-```
-> app-admin configure http://example.org/conf pages=10 skip=true
-:verbose nil :host "http://example.org/conf" :key-values {:pages "10", :skip "true"}
-> 
-```
+![app-admin success](images/app-admin-success.png)
 
 The body here just prints out the values passed in.  That's not a bad starting point when creating new scripts.
 I like to get all the command line parsing concerns out of the way before working on the _meat_ of the command.
@@ -200,6 +169,8 @@ When there are multiple matches, `dispatch` will abort and the error message wil
 
 Exception: when the provided name _exactly_ matches a command's name, then that command will be used even if 
 the provided name is also a prefix or substring of some other command name.
+
+![ambiguous command](images/flow-ambiguous.png)
 
 ## Positional Arguments
 
@@ -256,7 +227,7 @@ Indicates that any following terms define positional arguments.
 
 Inside the interface, you can request the _command map_ using `:as`.
 This map captures information about the command, command line arguments,
-and any parsed information; it is used when invoking `net.lewisship.cli-tools/print-summary`, 
+and any parsed information; it is used when invoking `net.lewisship.cli-tools/print-errors`, 
 which a command may wish to do to present errors to the user.
 
 ### :command \<string\>
@@ -334,7 +305,7 @@ has occurred, but before executing the body of the function.
 
 It is a vector of tests and messages.
 Each test expression is evaluated in turn; if the result is falsey, then the message
-is passed to `print-summary` as an error, and `exit` is called with the value 1.
+is passed to `print-errors` as an error, and `exit` is called with the value 1.
 
 A common case is to handle mutually exclusive arguments:
 
@@ -408,7 +379,7 @@ For testing purposes, you can bypass the parsing and validation, and just pass a
 The map must provide a keyword key for each option or positional argument; the keys match the option or argument symbols,
 even for options that normally have a default value. All normal option or argument validation is skipped.
 
-You may need to mock out `net.lewisship.cli-tools/print-summary` if your command
+You may need to mock out `net.lewisship.cli-tools/print-errors` if your command
 invokes it, as that relies on some additional non-documented keys to
 be present in the command map. Fortunately, it is quite rare for a command to need to invoke this function.
 
@@ -467,38 +438,28 @@ This handles invalid input gracefully:
 
 ```
 > flow kill-port abc
-Usage: flow kill-port [OPTIONS] PORT
-Kills the listening process locking a port.
-
-Options:
-  -f, --force Kill process without asking for confirmation
-  -h, --help  This command summary
-
-Arguments:
-  PORT: Port number to kill
-
-Error:
-  PORT: Not a number
- ```
+Error in flow kill-port: PORT: Not a number
+```
 
 You might be tempted to use `#(Long/parseLong %)` as the parse function; this works, but the message produced comes from the exception message, and is not very friendly:
 
 ```
-Error:
-  PORT: Error in PORT: For input string: "abc"
+> flow kill-port abc
+Error in flow kill-port: PORT: Error in PORT: For input string: "abc"
 ```
 
 ## Job Board
 
-For tools that run for a while, visual feedback can be provided to the user using the job board
+For tools that run for a while, visual feedback can be provided to the user using the _job board_
 in the `net.lewisship.cli-tools.job-status` namespace.
 
 ![Job Board Demo](images/job-board-demo.gif)
 
-Background processes can provide feedback on status and progress through a simple API. 
+Background processes (typically, running as individual threads, or core.async processes) 
+can provide feedback on status and progress through a simple API. 
 The job board updates status lines as they change, and highlights lines that have recently changed.
 
-This is built on the `tput` command line tool, so it works on OS X and Linux, but not on Windows.
+This is built on the `tput` command line tool, so it works on OS X and Linux, but **not on Windows**.
 
 
 ## License
