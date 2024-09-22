@@ -1,4 +1,4 @@
-# 0.13 -- UNRELEASED
+# 0.13 -- 22 Sep 2024
 
 *BREAKING CHANGES*
 
@@ -8,6 +8,7 @@ including options and arguments).
 
 The tool and command name, when printed in summaries and errors, is now consistently in bold green.
 
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/5?closed=1)
 
 # 0.12 -- 17 May 2024
 
