@@ -359,14 +359,17 @@ If you want to see the list of commands without categories, use the `-f` / `--fl
 If you want to use multiple namespaces for your commands without using categories,
 add the `:flat` option to the map passed to `dispatch`.
 
+The help command itself accept a single search term; it will filter the commands and categories it outputs to only
+those that contain the search term in either the command name, or command summary. This search is caseless.
+
 ## Command Groups
 
 A category can also have a `:command-group` metadata value, a short string that acts like a command name.
-All commands in the same namespace/category are accessible via that group command.  The built-in `help`
+All commands in the same namespace/category are only accessible via that group command.  The built-in `help`
 command will identify the command group when listing the commands in the category.
 
 Command groups are useful when creating the largest tools with the most commands; it allows for shorter command names,
-as the name only have to be unique within command group, not globally.
+as each commands' name will only have to be unique within it's command group, not globally.
 
 
 ## Testing
