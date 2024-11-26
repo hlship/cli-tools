@@ -17,11 +17,9 @@
   (impl/exit status))
 
 (defn set-prevent-exit!
-  "Normally, after displaying a command summary, `System/exit` is called (with 0 if for --help,
-   or 1 if a validation error).
-
-   For testing purposes, this can be prevented; instead, an exception is thrown,
-   with message \"Exit\" and ex-data {:status <status>}."
+  "cli-tools will call [[exit]] when help is requested (with a 0 exit status, or 1 for
+  a input validation error).  Normally, that results in a call to System/exit, but this function,
+  used for testing, allow [[exit]] to throw an exception instead."
   [flag]
   (alter-var-root #'impl/prevent-exit (constantly flag)))
 
@@ -237,7 +235,7 @@
 
   All options are required.
 
-  Returns nil."
+  Returns nil (if it returns at all, as most command will ultimately invoke [[exit]])."
   [options]
   (impl/dispatch options))
 
@@ -305,7 +303,7 @@
   It also adds a `help` command from the net.lewisship.cli-tools namespace.
 
   If option and argument parsing is unsuccessful, then
-  a command usage summary is printed, along with errors, and the program exits
+  an error message is written to \\*err\\*, and the program exits
   with error code 1.
 
   dispatch simply loads and scans the namespaces (or obtains the necessary data from the

@@ -179,8 +179,8 @@
         ;; A stand-alone tool will use its command-name, a command within
         ;; a multi-command tool will have a command-path.
         [:bold.green (if command-path
-                 (str/join " " command-path)
-                 command-name)]
+                       (str/join " " command-path)
+                       command-name)]
         " [OPTIONS]"
         (map list (repeat " ") arg-strs))
       (when command-doc
@@ -703,24 +703,41 @@
       ": "
       (:command-summary command-map))))
 
+(defn- command-match?
+  [command search-term]
+  (or (nil? search-term)
+      (let [{:keys [command-name command-summary]} command]
+        (or (string/includes? (string/lower-case command-name) search-term)
+            (string/includes? (string/lower-case command-summary) search-term)))))
+
+(defn- prune-empty-values
+  [m]
+  (reduce-kv (fn [m k v]
+               (cond-> m
+                 (seq v) (assoc k v)))
+             {}
+             m))
+
 (defn- collect-commands
   "Walks the commands tree, to produce a map from command category to seq of command map."
-  ([commands] (collect-commands {} commands))
-  ([category->command commands]
-   (reduce-kv (fn [m k v]
-                (if (string? k)
-                  (let [{:keys [category]} v]
-                    (if category
-                      (update m category conj v)
-                      ;; It's a group psuedo-command, a container of nested commands; recurse in
-                      ;; (this is where non-string keys come in)
-                      (collect-commands m v)))
-                  m))
-              category->command
-              commands)))
+  ([commands search-term] (collect-commands {} commands search-term))
+  ([category->command commands search-term]
+   (->> commands
+        (reduce-kv (fn [m k v]
+                     (if (string? k)
+                       (let [{:keys [category]} v]
+                         (if category
+                           (cond-> m
+                             (command-match? v search-term) (update category conj v))
+                           ;; It's a group psuedo-command, a container of nested commands; recurse in
+                           ;; (this is where non-string keys come in)
+                           (collect-commands m v search-term)))
+                       m))
+                   category->command)
+        prune-empty-values)))
 
 (defn show-tool-help
-  [options]
+  [options search-term]
   (binding [*out* *err*]
     (let [{:keys [tool-name tool-doc commands categories flat]} options]
       (pout "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
@@ -730,9 +747,9 @@
       (println "\nTool options:")
       (pout [:bold "  -C, --color"] "    Enable ANSI color output")
       (pout [:bold "  -N, --no-color"] " Disable ANSI color output")
-      (pout [:bold "  -h, --help"] "     This tool summary")
-      (println "\nCommands:")
-      (let [grouped-commands   (collect-commands commands)
+      (pout [:bold "  -h, --help"] "     This tool summary\n")
+      (let [grouped-commands   (collect-commands commands (when search-term
+                                                            (string/lower-case search-term)))
             all-commands       (cond->> (reduce into [] (vals grouped-commands))
                                         ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
                                         flat (map (fn [command]
@@ -740,11 +757,24 @@
             command-name-width (->> all-commands
                                     (map :command-name)
                                     (map count)
-                                    (apply max))]
+                                    (apply max 0))]
+        (cond
+          (empty? all-commands)
+          (do
+            (if search-term
+              (pout "No commands match " [:italic search-term])
+              (println "No commands are configured"))
+            (exit 0))
+
+          search-term
+          (pout "Commands (matching " [:italic search-term] "):")
+
+          :else
+          (println "Commands:"))
         (if flat
           (print-commands command-name-width all-commands)
-          ;; TODO: Adjust ordering based on the command-group
-          (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)]
+          (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)
+                  :when (contains? grouped-commands category)]
             (println)
             (pout [:bold
                    (when command-group
@@ -797,23 +827,17 @@
              remaining-args    (next arguments)
              possible-commands commands]
         (cond-let
-          (nil? term)
-          (abort [:bold.green tool-name]
-                 ": "
-                 [:bold.red (str/join " " prefix)]
-                 " is incomplete, a sub-command name should follow"
-                 (use-help-message tool-name))
-
           :let [matchable-terms (filter string? (keys possible-commands))]
 
           ;; Options start with a '-', but we're still looking for commands
-          (str/starts-with? term "-")
+          (or (nil? term)
+              (str/starts-with? term "-"))
           (abort
             [:bold.green tool-name ": " [:red (str/join " " prefix)]]
             " is incomplete; "
             (compose-list matchable-terms)
             " could follow; use "
-            [:bold [:green tool-name] " help"]
+            [:bold [:green tool-name " help"]]
             " to list commands")
 
           ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
@@ -831,8 +855,8 @@
                               [:bold [:green tool-name " help"]]
                               " to list commands")]
             (abort
-              [:bold tool-name ": " [:red
-                                     (string/join " " (conj prefix term))]]
+              [:bold [:green tool-name] ": "
+               [:red (string/join " " (conj prefix term))]]
               " "
               body
               help-suffix))
@@ -876,9 +900,9 @@
   [{:keys [tool-name commands arguments] :as options}]
   ;; Capture these options for use by help command or when printing usage
   (binding [*options* options]
-    (if (str/blank? tool-name)
-      (throw (ex-info "must specify :tool-name" {:options options}))
-      (dispatch-options-parser tool-name arguments commands))
+    (when (str/blank? tool-name)
+      (throw (ex-info "must specify :tool-name" {:options options})))
+    (dispatch-options-parser tool-name arguments commands)
     nil))
 
 (defn command-map?
