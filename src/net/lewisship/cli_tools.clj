@@ -371,7 +371,7 @@
         all-labels    (map :label response-maps)
         ;; When there's a default that corresponds to multiple labels, use the longest
         ;; one.
-        default-label (when default
+        default-label (when (some? default)
                         (->> response-maps
                              (keep #(when (= default (:value %))
                                       (:label %)))
@@ -397,7 +397,7 @@
         (let [input (read-line)]
           (cond-let
             (and (string/blank? input)
-                 default)
+                 (some? default))
             default
 
             :let [match (best-match input all-labels)]
@@ -415,17 +415,20 @@
                                  (zero? i)
                                  nil
 
-                                 default
-                                 ", "
-
                                  (< i n)
                                  ", "
 
+                                 default-label
+                                 ", "
+
+                                 (< (count response-maps) 3)
+                                 " or "
+
                                  :else
-                                 " or ")
+                                 ", or ")
                                [:italic label]))
                            response-maps)
-                         (when default
+                         (when default-label
                            (list
                              ", or just enter for the default ("
                              [:bold default-label]
@@ -433,7 +436,7 @@
               (recur))))))))
 
 (defn ^{:added "0.12.0"} ask
-  "Ask the user a quesion with a fixed number of possible responses.
+  "Ask the user a question with a fixed number of possible responses.
 
   The prompt is a string (possibly, a composed string) and should
   usually end with a question mark.
@@ -469,7 +472,7 @@
 
   Options:
 
-  :default - the default value which must correspond to one value
+  :default - the default value which must correspond to one value (may not be nil)
   :force? - if true, then the user is not prompted and the default (which must be non-nil)
     is returned
 
@@ -486,7 +489,7 @@
          {:keys [default force?]} opts]
      (cond
        (and force? (nil? default))
-       (throw (ex-info ":force is set, but no :default" {:opts opts}))
+       (throw (ex-info ":force? option is set, but no :default" {:opts opts}))
 
        (and default (not (contains? (->> response-maps (map :value) set) default)))
        (throw (ex-info ":default does not correspond to any value"
