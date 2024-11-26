@@ -1,14 +1,17 @@
 (ns net.lewisship.cli-tools-test
-  (:require [clj-commons.ansi :as ansi]
+  (:require [clj-commons.ansi :as ansi :refer [compose]]
+            [clojure.string :as string]
             [clojure.test :refer [deftest is use-fixtures are]]
             [net.lewisship.cli-tools :as cli :refer [defcommand dispatch select-option]]
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
             net.lewisship.conflict
+            matcher-combinators.clj-test                    ;; to enable (is (match? ..))
             [net.lewisship.cli-tools.impl :as impl]
             [clojure.repl :as repl]
             [clojure.string :as str])
-  (:import (java.io StringWriter)))
+  (:import
+    (java.io BufferedReader StringReader StringWriter)))
 
 (cli/set-prevent-exit! true)
 
@@ -71,9 +74,32 @@
   [expected-errors & body]
   `(let [*errors# (atom nil)]
      (with-redefs [cli/print-errors (fn [_command-map# errors#]
-                                       (reset! *errors# errors#))]
+                                      (reset! *errors# errors#))]
        (with-exit 1 ~@body))
      (is (= @*errors# ~expected-errors))))
+
+(defn prep-input
+  [input]
+  (-> (str (if (vector? input)
+             (string/join "\n" input)
+             input)
+           "\n")
+      StringReader.
+      BufferedReader.))
+
+(defmacro with-input
+  [input & body]
+  `(binding [*in* (prep-input ~input)]
+     ~@body))
+
+(defmacro with-result+err-str
+  "Captures output to \\*err\\* and returns a vector of the body's
+  result and that output."
+  [& body]
+  `(let [result# (volatile! nil)
+         error#  (with-err-str
+                   (vreset! result# (do ~@body)))]
+     [@result# error#]))
 
 (deftest success
   (is (= (configure "-v" "http://myhost.com" "fred=flintstone")
@@ -361,3 +387,107 @@
     (is (= {:k1 :value-1
             :k2 :value-2}
            (dissoc kvs :parse-fn :validate :default :default-desc)))))
+
+(deftest simple-ask-without-default
+  (is (match? [true "Prompt? (yes/no) "]                    ; Note: no bold
+              (with-result+err-str
+                (with-input "y"
+                            (cli/ask "Prompt?" cli/yes-or-no))))))
+
+(deftest simple-ask-with-default
+  (is (match? [true (compose "Prompt? (" [:bold "yes"] "/no) ")]
+              (with-result+err-str
+                (with-input ""
+                            (cli/ask "Prompt?" cli/yes-or-no {:default true}))))))
+
+(deftest simple-ask-with-false-default
+  (is (match? [false (compose "Prompt? (yes/" [:bold "no"] ") ")]
+              (with-result+err-str
+                (with-input ""
+                            (cli/ask "Prompt?" cli/yes-or-no {:default false}))))))
+
+(deftest ask-with-keywords
+  (let [expected (compose "Sort order? (name/address/phone) "
+                          "Input '"
+                          [:yellow "adz"]
+                          "' not recognized; enter "
+                          [:italic "name"]
+                          ", "
+                          [:italic "address"]
+                          ", or "
+                          [:italic "phone"]
+                          "\n"
+                          "Sort order? (name/address/phone) ")]
+    (is (match? [:address expected]
+                (with-result+err-str
+                  (with-input ["adz" "add"]
+                              (cli/ask "Sort order?"
+                                       [:name :address :phone])))))))
+
+(deftest ask-invalid-just-two
+  (let [expected (compose "Really? (" [:bold "yes"] "/no) "
+                          "Input '"
+                          [:yellow "x"]
+                          "' not recognized; enter "
+                          [:italic "yes"]
+                          ", "
+                          [:italic "no"]
+                          ", or just enter for the default ("
+                          [:bold "yes"]
+                          ")\n"
+                          "Really? (" [:bold "yes"] "/no) ")
+        ]
+    (is (match? [true expected]
+                (with-result+err-str
+                  (with-input ["x" ""]
+                              (cli/ask "Really?"
+                                       cli/yes-or-no
+                                       {:default true})))))))
+
+(deftest ask-with-keywords-and-default
+  (let [expected (compose "Sort order? (" [:bold "name"] "/address/phone) "
+                          "Input '"
+                          [:yellow "adz"]
+                          "' not recognized; enter "
+                          [:italic "name"]
+                          ", "
+                          [:italic "address"]
+                          ", "
+                          [:italic "phone"]
+                          ", or just enter for the default ("
+                          [:bold "name"]
+                          ")\n"
+                          "Sort order? (" [:bold "name"] "/address/phone) ")]
+    (is (match? [:name expected]
+                (with-result+err-str
+                  (with-input ["adz" ""]
+                              (cli/ask "Sort order?"
+                                       [:name :address :phone]
+                                       {:default :name})))))))
+
+(deftest ask-with-force
+  (is (match? [:name ""]
+              (with-result+err-str
+                (cli/ask "Sort order?"
+                         [:name :address :phone]
+                         {:default :name
+                          :force?  true})))))
+
+(deftest ask-with-force-but-no-default
+  (when-let [e (is (thrown? Exception
+                            (cli/ask "Sort order?"
+                                     [:name :address :phone]
+                                     {:force? true})))]
+    (is (= ":force? option is set, but no :default" (ex-message e)))
+    (is (match? {:opts {:force? true}}
+                (ex-data e)))))
+
+(deftest ask-when-default-does-not-match-a-possible-response
+  (when-let [e (is (thrown? Exception
+                            (cli/ask "Really?"
+                                     cli/yes-or-no
+                                     {:default :maybe})))]
+    (is (= ":default does not correspond to any value" (ex-message e)))
+    (is (match? {:opts      {:default :maybe}
+                 :responses cli/yes-or-no}
+                (ex-data e)))))
