@@ -138,16 +138,29 @@
     ns-object
     (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
 
-(defn- namespace->category
-  [ns-symbol]
-  (let [ns      (resolve-ns ns-symbol)
-        ns-meta (meta ns)]
-    {:category      ns-symbol
-     ;; :ns is removed before being written to cache
-     :ns            ns
-     :command-group (:command-group ns-meta)
-     :label         (:command-category ns-meta (name ns-symbol))
-     :order         (:command-category-order ns-meta 0)}))
+(defn- add-namespace-to-categories
+  [m ns-symbol]
+  (let [ns                (resolve-ns ns-symbol)
+        ns-meta           (meta ns)
+        ;; An existing namespace can be referenced with the :command-ns meta to make the subsequent namespace
+        ;; act as if it were part of the earlier namespace (same command-group, label, etc.).
+        {:keys [command-ns]} ns-meta
+        ;; Ok, looks like there's a difference between Babashka and Clojure. In Clojure, an unquoted symbol breaks
+        ;; (it looks like an unresolved classname) and a quoted symbol is a Symbol.  In Babashka, the quoted symbol
+        ;; ends up as the list (quote symbol).
+        k                 (if command-ns
+                            (if (sequential? command-ns)
+                              (second command-ns)
+                              command-ns)
+                            ns-symbol)
+        existing-category (get m k)]
+    (if existing-category
+      (assoc m ns-symbol existing-category)
+      (assoc m k
+             {:category      k
+              :command-group (:command-group ns-meta)
+              :label         (:command-category ns-meta (name ns-symbol))
+              :order         (:command-category-order ns-meta 0)}))))
 
 (defn locate-commands
   "Passed a seq of symbols identifying *loaded* namespaces, this function
@@ -157,9 +170,10 @@
 
   Returns a tuple: the command categories map, and the command map."
   [namespace-symbols]
-  (let [categories     (map namespace->category namespace-symbols)
+  (let [categories     (reduce add-namespace-to-categories {} namespace-symbols)
         ;; Each category that is a command group gets a psuedo command
         group-commands (->> categories
+                            vals
                             (filter :command-group)
                             (reduce (fn [m category-map]
                                       (let [{:keys [command-group]} category-map]
@@ -167,10 +181,11 @@
                                         ;; within a group. This is the first place that would change if we allowed groups
                                         ;; within groups.
                                         (assoc m command-group {:command-path   [command-group]
-                                                                :group-category (dissoc category-map :ns)})))
+                                                                :group-category category-map})))
                                     {}))
-        f              (fn [m category-map]
-                         (let [{:keys [category command-group ns]} category-map
+        ;; In rare cases, multiple keys (ns'es) point to the same category map
+        f              (fn [m ns category-map]
+                         (let [{:keys [category command-group]} category-map
                                base-path (cond-> []
                                            command-group (conj command-group))]
                            (->> ns
@@ -206,8 +221,8 @@
                                                                       (impl/extract-command-summary v)
                                                                       :var          (symbol v)})))
                                         m))))
-        commands       (reduce f group-commands categories)
-        categories'    (map #(dissoc % :ns) categories)]
+        commands       (reduce-kv f group-commands categories)
+        categories'    (-> categories vals distinct)]
     [categories' commands]))
 
 (defn dispatch*

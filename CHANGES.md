@@ -3,6 +3,8 @@
 The `help` builtin command now includes an optional search term argument; if provided, only commands whose name
 or command summary includes the search term (using a caseless match) are included in the output.
 
+Added support for :command-ns meta-data on namespaces.
+
 # 0.13 -- 22 Sep 2024
 
 *BREAKING CHANGES*

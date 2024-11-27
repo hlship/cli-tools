@@ -215,6 +215,13 @@
                                :namespaces '[net.lewisship.example-ns]
                                :arguments  ["help" "Xyzzyx"]})))))
 
+(deftest use-of-command-ns-meta
+  (is (= (slurp "test-resources/combo-help.txt")
+         (  with-exit 0
+                    (dispatch {:tool-name  "combo"
+                               :namespaces '[net.lewisship.cli-tools.colors]
+                               :arguments  ["-h"]})))))
+
 (defcommand set-mode
   "Sets the execution mode"
   [mode ["-m" "--mode MODE" (str "Execution mode, one of " mode-names)
