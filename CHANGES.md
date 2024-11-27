@@ -1,9 +1,15 @@
-# 0.14 -- UNRELEASED
+# 0.14 -- 27 Nov 2024
 
 The `help` builtin command now includes an optional search term argument; if provided, only commands whose name
 or command summary includes the search term (using a caseless match) are included in the output.
 
 Added support for :command-ns meta-data on namespaces.
+
+Added two optional namespaces (that appear as built-in commands):
+- `net.lewisship.cli-tools.color` (prints a chart of foreground and background colors)
+- `net.lewisship.cli-tools.job-status-demo` (runs a demo of the job status system)
+
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/6?closed=1)
 
 # 0.13 -- 22 Sep 2024
 
