@@ -201,6 +201,27 @@
                                :namespaces '[net.lewisship.example-ns]
                                :arguments  ["help" "-f"]})))))
 
+(deftest help-with-search-term
+  (is (= (slurp "test-resources/tool-help-search.txt")
+         (with-exit 0
+                    (dispatch {:tool-name  "test-harness"
+                               :namespaces '[net.lewisship.example-ns]
+                               :arguments  ["help" "EXP"]})))))
+
+(deftest help-with-search-term
+  (is (= (slurp "test-resources/tool-help-search-no-match.txt")
+         (with-exit 0
+                    (dispatch {:tool-name  "test-harness"
+                               :namespaces '[net.lewisship.example-ns]
+                               :arguments  ["help" "Xyzzyx"]})))))
+
+(deftest use-of-command-ns-meta
+  (is (= (slurp "test-resources/combo-help.txt")
+         (  with-exit 0
+                    (dispatch {:tool-name  "combo"
+                               :namespaces '[net.lewisship.cli-tools.colors]
+                               :arguments  ["-h"]})))))
+
 (defcommand set-mode
   "Sets the execution mode"
   [mode ["-m" "--mode MODE" (str "Execution mode, one of " mode-names)

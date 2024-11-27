@@ -352,21 +352,54 @@ overridden by setting the :command-category metadata on the namespace to a short
 
 Each category has a sort order, which defaults to 0.  The categories are sorted by this sort order,
 then (within each set of categories with the same sort order) by label.  The sort order
-can be specified as the :command-category-order metadata on the namespace.  `net.lewisship.cli-tools` has
+can be specified as the :command-category-order metadata on the namespace.  `net.lewisship.cli-tools.builtins` has
 a sort order of 100, so that it will generally be last.
 
 If you want to see the list of commands without categories, use the `-f` / `--flat` option to `help`.
 If you want to use multiple namespaces for your commands without using categories,
 add the `:flat` option to the map passed to `dispatch`.
 
+The help command itself accept a single search term; it will filter the commands and categories it outputs to only
+those that contain the search term in either the command name, or command summary. This search is caseless.
+
+## :command-ns meta-data
+
+Normally, there is a 1:1 mapping from namespace to category. In rare cases, you may want to have multiple namespaces
+map to the same category.
+
+A namespace may have a :command-ns meta-data, whose value is a symbol identifying another namespace.  The commands
+in the new namespace are categorized as if they were in the identified namespace.  Order counts: make sure the referenced
+namespace is listed before the referencing namespace.
+
+An example of this is the `net.lewisship.cli-tools.colors` namespace:
+
+```clojure
+
+(ns net.lewisship.cli-tools.colors
+  {:command-ns 'net.lewisship.cli-tools.builtins}
+  (:require [clj-commons.ansi :refer [pout]]
+            [clojure.string :as string]
+            [net.lewisship.cli-tools :refer [defcommand]]))
+
+(def ^:private width 16)
+
+(defcommand colors
+...
+```
+This adds an additional command to the built-in category, `colors`, as if it were declared in the `builtins` namespace.
+
+You can add this namespace to your own tools:
+
+![colors command](images/flow-colors.png)
+
 ## Command Groups
 
 A category can also have a `:command-group` metadata value, a short string that acts like a command name.
-All commands in the same namespace/category are accessible via that group command.  The built-in `help`
+All commands in the same namespace/category are only accessible via that group command.  The built-in `help`
 command will identify the command group when listing the commands in the category.
 
 Command groups are useful when creating the largest tools with the most commands; it allows for shorter command names,
-as the name only have to be unique within command group, not globally.
+as each commands' name will only have to be unique within it's command group, not globally.
 
 
 ## Testing
