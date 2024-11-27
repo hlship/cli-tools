@@ -474,14 +474,15 @@ This handles invalid input gracefully:
 Error in flow kill-port: PORT: Not a number
 ```
 
-You might be tempted to use `#(Long/parseLong %)` as the parse function; this works, but the message produced comes from the exception message, and is not very friendly:
+You might be tempted to use `#(Long/parseLong %)` as the parse function; this works, but the message produced comes from 
+the message of the thrown exception, and is not very friendly:
 
 ```
 > flow kill-port abc
 Error in flow kill-port: PORT: Error in PORT: For input string: "abc"
 ```
 
-## Job Board
+## Job Board (experimental)
 
 For tools that run for a while, visual feedback can be provided to the user using the _job board_
 in the `net.lewisship.cli-tools.job-status` namespace.
@@ -493,6 +494,8 @@ can provide feedback on status and progress through a simple API.
 The job board updates status lines as they change, and highlights lines that have recently changed.
 
 This is built on the `tput` command line tool, so it works on OS X and Linux, but **not on Windows**.
+
+The above `job-status-demo`, like `colors`, can be added by including the `net.lewisship.cli-tools.job-status-demo` namespace.
 
 
 ## License
