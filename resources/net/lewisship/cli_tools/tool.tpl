@@ -32,7 +32,7 @@ _{{tool}}() {
 
   case "$state" in
       subcommands)
-        _values "{{tool}} {{cmd.name}}" {% for sub in cmd.subcommands %} \
+        _values "{{tool}} {{cmd.name}} subcommand" {% for sub in cmd.subcommands %} \
           "{{sub.name}}[{{sub.summary}}]" {% endfor %}
       ;;
   esac
