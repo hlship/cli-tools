@@ -1,12 +1,17 @@
 (ns scale-test
   (:require [clojure.string :as str]
             [babashka.fs :as fs]
+            selmer.util
             [selmer.parser :as selmer]))
 
 (def root-dir "scale-test/uber")
 
 (def command-name-terms
   (str/split "gnip frob update nerd spit snip echo gnop cluster system node module user role acl server service deployment"
+             #"\s+"))
+
+(def category-name-terms
+  (str/split "kubenetes operations database polylith charts splunk aws datomic clojure monitor github console"
              #"\s+"))
 
 (defn gen-single-command-name
@@ -28,18 +33,21 @@
 
 (defn write-ns
   [group? i command-names]
-  (let [ns-name (str "commands.command-ns-" i)
+  (let [category-name (str (rand-nth category-name-terms) "-" i)
+        ns-name (str "commands." category-name)
         ns-file (-> ns-name
                     (str/replace "-" "_")
-                    (str/replace "." "/")
-                    )]
+                    (str/replace "." "/"))]
     (render "command-ns.edn"
             (str "src/" ns-file ".clj")
             {:ns            ns-name
              :command-names command-names
-             :category      (str "Category " i)
+             :category      (-> category-name
+                                str/capitalize
+                                (str/replace #"-" " ")
+                                (str " Commands"))
              :group         (when group?
-                              (str "command-" i))})
+                              category-name)})
     ns-name))
 
 (defn setup
@@ -50,18 +58,19 @@
   (fs/delete-tree root-dir)
   (fs/create-dirs (str root-dir "/src/commands"))
   (fs/create-dirs (str root-dir "/src/uber"))
-  (let [{:keys [commands namespaces group]
-         :or   {commands   6
-                namespaces 250
-                group      true}} opts
-        commands-per-ns (->> command-names
-                             (partition commands)
-                             (take namespaces))
-        ns-names        (doall (map-indexed (partial write-ns group) commands-per-ns))]
-    (render "bb.edn" "bb.edn" {})
-    (render "deps.edn" "deps.edn" {})
-    (render "app.edn" "app" {:ns-names ns-names})
-    (render "main.edn" "src/uber/main.clj" {:ns-names ns-names})
-    (fs/set-posix-file-permissions (str root-dir "/app") "rwxrwxrwx")
-    (printf "%,d namespaces, %,d commands/namespace, %,d total command%n"
-            namespaces commands (* namespaces commands))))
+  (selmer.util/without-escaping
+    (let [{:keys [commands namespaces group]
+           :or   {commands   6
+                  namespaces 250
+                  group      true}} opts
+          commands-per-ns (->> command-names
+                               (partition commands)
+                               (take namespaces))
+          ns-names        (doall (map-indexed (partial write-ns group) commands-per-ns))]
+      (render "bb.edn" "bb.edn" {})
+      (render "deps.edn" "deps.edn" {})
+      (render "app.edn" "app" {:ns-names ns-names})
+      (render "main.edn" "src/uber/main.clj" {:ns-names ns-names})
+      (fs/set-posix-file-permissions (str root-dir "/app") "rwxrwxrwx")
+      (printf "%,d namespaces, %,d commands/namespace, %,d total commands%n"
+              namespaces commands (* namespaces commands)))))

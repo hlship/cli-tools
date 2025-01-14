@@ -2,4 +2,4 @@
 
 (require '[net.lewisship.cli-tools :as cli])
 
-(cli/dispatch {:namespaces '[{{ns-names|join:" "}}]})
+(cli/dispatch {:namespaces '[{{ns-names|join:" "}} net.lewisship.cli-tools.completions]})
