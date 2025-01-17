@@ -1,3 +1,10 @@
+# 0.15 -- UNRELEASED
+
+Added optional namespaces`net.lewisship.cli-tools.completions`):
+
+Added new functions to `net.lewisship.cli-tools`:
+- `fail` is used to terminate a tool with a status code and provide an error message to standard error
+
 # 0.14 -- 27 Nov 2024
 
 The `help` builtin command now includes an optional search term argument; if provided, only commands whose name

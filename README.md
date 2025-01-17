@@ -401,6 +401,21 @@ command will identify the command group when listing the commands in the categor
 Command groups are useful when creating the largest tools with the most commands; it allows for shorter command names,
 as each commands' name will only have to be unique within it's command group, not globally.
 
+## Utilities
+
+### abort
+
+The `net.lewisship.cli-tools/abort` function provides a uniform way to indicate a failure
+and terminate execution.
+
+`abort` can be invoked from inside a command, and will output (to standard error)
+the tool name and command name in bold red, and the provided messages
+in red.
+
+Messages may also be exceptions, from which the exception message is extracted (exceptions with a null message
+are converted to the exception class name).
+
+Finally, `abort` invokes `exit` with the provided exit status code.
 
 ## Testing
 

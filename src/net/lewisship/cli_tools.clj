@@ -16,6 +16,34 @@
   [status]
   (impl/exit status))
 
+(defn abort
+  "Invoked when a tool has a runtime failure. Writes to standard error;
+  identify the tool name, category (if any) and command name
+  (in bold red) and then writes the remaining message text after a colon and a space,
+  in red.
+
+  message is converted such that any exceptions in the message are converted via `ex-message`
+  to a string (if that is null, the exception class name is used)."
+  {:added "0.15"}
+  [status & message]
+  (let [{:keys [tool-name]} impl/*options*
+        {:keys [command-path]} impl/*command*]
+    (ansi/perr
+      [:red
+       [:bold
+        tool-name
+        (when command-path
+          (list " " (str/join " " command-path)))
+      ":"]
+       " "
+       (map (fn [m]
+              (if (instance? Throwable m)
+                (or (ex-message m)
+                    (-> m class .getName))
+                m))
+            message)])
+    (exit status)))
+
 (defn set-prevent-exit!
   "cli-tools will call [[exit]] when help is requested (with a 0 exit status, or 1 for
   a input validation error).  Normally, that results in a call to System/exit, but this function,
