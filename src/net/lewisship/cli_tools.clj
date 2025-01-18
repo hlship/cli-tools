@@ -154,11 +154,13 @@
                                    {:options (first args#)}
                                    (impl/parse-cli ~command-name'
                                                    args#
-                                                   ~(select-keys parsed-interface parse-cli-keys)))
-             ~@let-option-symbols]
-         (when-not test-mode?#
-           ~validations)
-         ~@body))))
+                                                   ~(select-keys parsed-interface parse-cli-keys)))]
+         (if impl/*introspection-mode*
+           ~command-map-symbol
+           (let [~@let-option-symbols]
+             (when-not test-mode?#
+               ~validations)
+             ~@body))))))
 
 (defn- resolve-ns
   [ns-symbol]

@@ -19,6 +19,11 @@
   "Bound to the command map selected by dispatch for execution."
   nil)
 
+(def ^:dynamic *introspection-mode*
+  "When true, defcommands, when invoked, bypass normal logic and simply return the
+  command map. Used when extracting options for completions."
+  false)
+
 (def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
 
 (defn exit
@@ -654,6 +659,8 @@
 (defn parse-cli
   [command-name command-line-arguments command-map]
   (cond-let
+    *introspection-mode* command-map
+
     :let [{:keys [command-args command-options parse-opts-options]} command-map
           {:keys [in-order summary-fn]
            :or   {in-order   false
