@@ -20,8 +20,20 @@ for you.
   will select the specific sub-command to execute. (think: `git`)
 - A complex tool organizes some commands into command groups that share an initial name (think `kubectl`)
 
+
 For tools with multiple commands, `cli-tools` automatically adds 
-a built-in `help` command to list out what commands are available.
+a built-in `help` command to list out what commands are available, and
+can even perform basic searches for commands.
+
+For complex tools, what `cli-tools` offers is **discoverability**.  You define the switches, options, and arguments for each command, and each command gets a `--help` switch to print
+out the command's summary. The  `help` command
+that can list out all the commands available, neatly organized, and can even do a simple
+search for you.  There's even (experimental) support for zsh completions for your tool and all of its categories, commands, and options.
+
+This kind of discoverability is a big improvement over shell aliases, and one-off shell scripts that leave you guessing what they do and what arguments need to be passed in.
+
+`cli-tools` also offers great **feedback**, using indentation, color, and careful attention
+to detail, to provide tool users with consistent, readable, and friendly error messages, command summaries, and so forth.
 
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
 for the kind of low-ceremony tools that `cli-tools` is intended for.
@@ -33,9 +45,8 @@ Below is an example of the author's personal toolkit, `flow`:
 
 ![Example](images/example-usage.png)
 
-Building on `cli-tools` provides discoverability and feedback, as the tool (and every command inside the tool) will provide detailed help.
-
-A more complete example is [dialog-tool](https://github.com/hlship/dialog-tool).
+A complete and open-source example is [dialog-tool](https://github.com/hlship/dialog-tool), which also shows how to organize 
+a tool so that it can be installed as a Homebrew formula.
 
 ## defcommand
 
@@ -359,9 +370,9 @@ a sort order of 100, so that it will generally be last.
 
 If you want to see the list of commands without categories, use the `-f` / `--flat` option to `help`.
 If you want to use multiple namespaces for your commands without using categories,
-add the `:flat` option to the map passed to `dispatch`.
+add `:flat true` to the options map passed to `dispatch`.
 
-The help command itself accept a single search term; it will filter the commands and categories it outputs to only
+The `help` command itself accept a single search term; it will filter the commands and categories it outputs to only
 those that contain the search term in either the command name, or command summary. This search is caseless.
 
 ## :command-ns meta-data
