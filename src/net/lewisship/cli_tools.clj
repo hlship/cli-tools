@@ -34,7 +34,7 @@
         tool-name
         (when command-path
           (list " " (str/join " " command-path)))
-      ":"]
+        ":"]
        " "
        (map (fn [m]
               (if (instance? Throwable m)
@@ -150,14 +150,22 @@
              ;; args# is normally a seq of strings, from *command-line-arguments*, but for testing,
              ;; it can also be a map with key :options
              test-mode?# (impl/command-map? args#)
-             ~command-map-symbol (if test-mode?#
-                                   {:options (first args#)}
-                                   (impl/parse-cli ~command-name'
-                                                   args#
-                                                   ~(select-keys parsed-interface parse-cli-keys)))]
+             command-spec# ~(select-keys parsed-interface parse-cli-keys)]
          (if impl/*introspection-mode*
-           ~command-map-symbol
-           (let [~@let-option-symbols]
+           command-spec#
+           (let [~command-map-symbol (cond
+                                       test-mode?#
+                                       {:options (first args#)}
+
+                                       impl/*introspection-mode*
+                                       command-spec#
+
+                                       :else
+                                       (impl/parse-cli ~command-name'
+                                                       args#
+                                                       command-spec#))
+                 ;; These symbols de-reference the command-map returned from parse-cli.
+                 ~@let-option-symbols]
              (when-not test-mode?#
                ~validations)
              ~@body))))))

@@ -28,8 +28,40 @@
 ;; :summary string
 ;; :fn-name string
 ;; :subcommands []
-;; :options[] TBD
+;; :options[] string
 
+(defn escape
+  [s]
+  (string/replace s "'" "\\'"))
+
+(defn- to-opt
+  [short-option long-option summary]
+  (let [both (and long-option short-option)
+        [long-option' option-name] (when long-option
+                                     (string/split long-option #"\s+"))]
+    (apply str
+           ;; Make the short and long exclusive of each other
+           (when both
+             (str
+               "'(" short-option " " long-option' ")'{"))
+           short-option
+           (when both ",")
+           long-option'
+           (when both "}")
+           "$'["
+           (escape summary)
+           "]'"
+           (when option-name
+             ;; TODO: meta data on the option to say what completion kind it is.
+             (str ":" option-name)))))
+
+(defn- options
+  [command]
+  (let [{:keys [var]} command
+        callable (requiring-resolve var)
+        {:keys [command-options]} (callable)]
+    (for [[short-option long-option summary] command-options]
+      (to-opt short-option long-option summary))))
 
 (defn- extract-command
   [fn-prefix [k command]]
@@ -47,7 +79,7 @@
           {:name    command-name
            :summary command-summary
            :fn-name fn-name
-           :options []})))))
+           :options (options command)})))))
 
 (defn- render-commands
   [tool-name commands]
@@ -63,10 +95,11 @@
 (defn print-tool
   [tool-name raw-commands]
   (let [commands (keep #(extract-command (str "_" tool-name) %) raw-commands)]
-    #_ (pprint commands)
-    (render "top-level" {:tool     tool-name
-                         :commands commands})
-    (render-commands tool-name commands)))
+    #_(pprint commands)
+    (selmer.util/without-escaping
+      (render "top-level" {:tool     tool-name
+                           :commands commands})
+      (render-commands tool-name commands))))
 
 
 (defcommand completions
@@ -88,10 +121,10 @@
           (with-open [w (-> output-file
                             io/output-stream
                             io/writer)]
-              (try
-                (binding [*out* w]
-                  (print-tool tool-name commands))
-                (catch Throwable t
-                  (abort 1 t))))
+            (try
+              (binding [*out* w]
+                (print-tool tool-name commands))
+              (catch Throwable t
+                (abort 1 t))))
           (perr [:cyan "Wrote " output-file]))))))
 
