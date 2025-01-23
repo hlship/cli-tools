@@ -4,12 +4,11 @@
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
             [clojure.string :as s]
-            [net.lewisship.cli-tools :as cli :refer [defcommand abort]]
+            [net.lewisship.cli-tools :refer [defcommand abort]]
             [clojure.string :as string]
             selmer.util
             selmer.parser
             [clj-commons.ansi :refer [perr]]
-            [clojure.pprint :refer [pprint]]
             [net.lewisship.cli-tools.impl :as impl]))
 
 (defn- simplify
@@ -22,13 +21,6 @@
   [file-name context]
   (print (selmer.parser/render-file (str "net/lewisship/cli_tools/" file-name ".tpl")
                                     context)))
-
-;; command
-;; :name string
-;; :summary string
-;; :fn-name string
-;; :subcommands []
-;; :options[] string
 
 (defn escape
   [s]
@@ -48,6 +40,8 @@
            (when both ",")
            long-option'
            (when both "}")
+           ;; The $' (instead of just ') allows for \' in the string to work
+           ;; correctly.
            "$'["
            (escape summary)
            "]'"
@@ -95,30 +89,23 @@
 (defn print-tool
   [tool-name raw-commands]
   (let [commands (keep #(extract-command (str "_" tool-name) %) raw-commands)]
-    #_(pprint commands)
     (selmer.util/without-escaping
       (render "top-level" {:tool     tool-name
                            :commands commands})
       (render-commands tool-name commands))))
 
-
 (defcommand completions
-  "Generate zsh command completions."
-  [pipe? ["-p" "--pipe" "Write to standard output instead of writing to a file"]]
-  ;; commands is two-levels only at this time.
+  "Generate zsh command completions.  Completions can be written
+  to a file or to standard output."
+  [:args
+   output-path ["PATH" "File to write completions to."
+                :optional true]]
   (binding [impl/*introspection-mode* true]
     (let [{:keys [commands tool-name]} impl/*options*]
-      (if pipe?
-        (print-tool tool-name commands)
-        (let [output-dir  (fs/expand-home "~/zsh-completions")
-              _           (when-not (fs/exists? output-dir)
-                            (perr [:faint "Creating " output-dir " ..."])
-                            (try
-                              (fs/create-dir output-dir)
-                              (catch Throwable t
-                                (abort 1 t))))
-              output-file (fs/file output-dir (str "_" tool-name))]
-          (with-open [w (-> output-file
+      (if output-path
+        (do
+          (with-open [w (-> output-path
+                            fs/file
                             io/output-stream
                             io/writer)]
             (try
@@ -126,5 +113,7 @@
                 (print-tool tool-name commands))
               (catch Throwable t
                 (abort 1 t))))
-          (perr [:cyan "Wrote " output-file]))))))
+          (perr [:cyan "Wrote " output-path]))
+        ;; Just write to standard output
+        (print-tool tool-name commands)))))
 

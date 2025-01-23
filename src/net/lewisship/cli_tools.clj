@@ -18,12 +18,14 @@
 
 (defn abort
   "Invoked when a tool has a runtime failure. Writes to standard error;
-  identify the tool name, category (if any) and command name
+  identifies the tool name, category (if any) and command name
   (in bold red) and then writes the remaining message text after a colon and a space,
   in red.
 
-  message is converted such that any exceptions in the message are converted via `ex-message`
-  to a string (if that is null, the exception class name is used)."
+  Each element of message may either be a composed string, or an exception.
+
+  Each exception in the message is converted to a string via `ex-message`.
+  If `ex-message` returns nil, then the class name of the exception is used."
   {:added "0.15"}
   [status & message]
   (let [{:keys [tool-name]} impl/*options*
@@ -113,7 +115,7 @@
 
    The returned function is variadic, accepting a number of strings, much
    like a `-main` function. For testing purposes, it may instead be passed a single map,
-   a map of options, which bypasses parsing and validation of the arguments, and is used only for testing.
+   a map of options, which bypasses parsing and validation of the arguments.
 
    Finally, the body is evaluated inside a let that destructures the options and positional arguments into local symbols."
   [command-name docstring interface & body]

@@ -7,9 +7,6 @@ _{{tool}}() {
     "1: :->cmds" \
     "*::arg:->args"
 
-  echo "_{{tool}} state: $state" >> debug.log
-  echo "_{{tool}} line[1]: $line[1]" >> debug.log
-
    case "$state" in
      cmds)
         _values "{{tool}} command" {% for cmd in commands %} \

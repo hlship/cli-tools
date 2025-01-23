@@ -1,9 +1,9 @@
 # 0.15 -- UNRELEASED
 
-Added optional namespaces`net.lewisship.cli-tools.completions`):
+Added optional namespace `net.lewisship.cli-tools.completions`, which is considered _experimental_.
 
 Added new functions to `net.lewisship.cli-tools`:
-- `fail` is used to terminate a tool with a status code and provide an error message to standard error
+- `abort` is used to terminate a tool with a status code and provide an error message to standard error
 
 # 0.14 -- 27 Nov 2024
 

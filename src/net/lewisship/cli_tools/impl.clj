@@ -21,7 +21,7 @@
 
 (def ^:dynamic *introspection-mode*
   "When true, defcommands, when invoked, bypass normal logic and simply return the
-  command map. Used when extracting options for completions."
+  command spec. Used when extracting options for completions."
   false)
 
 (def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
@@ -636,7 +636,7 @@
       complete-keyword))
 
 (defn compile-interface
-  "Parses the interface forms of a `defcommand` into a base command map; the interface
+  "Parses the interface forms of a `defcommand` into a command spec; the interface
    defines the options and positional arguments that will be parsed."
   [command-doc forms]
   (let [initial-state {:consuming       :options
@@ -657,6 +657,9 @@
         (update :command-options conj ["-h" "--help" "This command summary" :id :help]))))
 
 (defn parse-cli
+  "Given a command specification (returned from [[compile-interface]]), this is called during
+  execution time to convert command line arguments into options. The command map merges new
+  keys into the command spec."
   [command-name command-line-arguments command-spec]
   (cond-let
     :let [{:keys [command-args command-options parse-opts-options]} command-spec

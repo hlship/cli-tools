@@ -297,6 +297,8 @@ and arguments definitions; the `:let` keyword is followed by a vector of binding
 In the expanded code, the bindings are moved to the top, before the option and argument
 definitions.  Further, if there are multiple `:let` blocks, they are concatinated.
 
+This also means that the bindings _can not_ reference the symbols for options or arguments.
+
 ### :validate \<vector of test/message pairs\>
 
 Often you will need to perform validations that consider multiple fields.
@@ -448,10 +450,10 @@ and collect meta-data from all the namespaces and command functions.  Thanks to 
 but is made faster using caching.
 
 `dispatch` builds a cache based on the options passed to it, and the contents of the classpath; it can then 
-load the data it needs to operate from the cache if present.
+load the data it needs to operate from the cache, if such data is present.
 
-When executing from the cache, `dispatch` will ultimately load only a single command namespace, to invoke the single
-function.  This allows a complex tool, one with potentially hundreds of commands, to still execute the body
+When executing from the cache, `dispatch` will ultimately load only a single command namespace,
+to invoke the single command function.  This allows a complex tool, one with potentially hundreds of commands, to still execute the body
 of the `defcommand` within milliseconds.
 
 This may have an even more significant impact for a tool that is built on top of Clojure, rather than Babashka.
@@ -511,6 +513,17 @@ The job board updates status lines as they change, and highlights lines that hav
 This is built on the `tput` command line tool, so it works on OS X and Linux, but **not on Windows**.
 
 The above `job-status-demo`, like `colors`, can be added by including the `net.lewisship.cli-tools.job-status-demo` namespace.
+
+## zsh completions (experimental)
+
+The namespace `net.lewisship.cli-tools.completions` adds a `completions` command.  This command will
+compose a zsh completion script, which can be installed to a directory on the $fpath such as
+`/usr/local/share/zsh/site-functions`.
+
+![zsh completions demo](images/cli-tools-zsh-completion.gif)
+
+zsh completions greatly enhance the discoverability of commands, categories, and command options within a tool.
+However, this functionality is considered _experimental_ due to the complexity of zsh completion scripts.
 
 
 ## License
