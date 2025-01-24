@@ -1,25 +1,5 @@
 (ns cli-tools.hooks
-  (:require [clj-kondo.hooks-api :as api]
-            [clojure.pprint :refer [pprint]]))
-
-
-(comment
-  (defcommand foo
-              "docstring"
-              [opta [a...]
-               optb [b...]
-               :let [s1 ...
-                     s2 ...]]
-              ...body)
-  =>
-
-  (defn foo "docstring"
-    [& _args]
-    (let [s1   ...
-          s2   ...
-          opta [a...]
-          obtb [b...]]
-      body)))
+  (:require [clj-kondo.hooks-api :as api]))
 
 (defn- parse
   [state terms blocks]
@@ -57,7 +37,6 @@
 
 (defn- parse-interface
   [interface]
-  #_(pprint {:interface interface})
   (let [terms  (:children interface)
         blocks (parse :opts terms {:lets   []
                                    :opts   []
@@ -85,11 +64,30 @@
                               (concat
                                 [(api/token-node 'let)
                                  interface-vector]
-                                ;; Will this work if more than one expression?
                                 body))])]
-    (println "defcommand input:")
-    (println node)
-    (println "\ndefcommand output:")
-    (println node')
-    (println)
+    {:node node'}))
+
+(defn expand-cond-let
+  [nodes]
+  (if-not (seq nodes)
+    (api/token-node 'nil)
+    (let [[condition expr & more-nodes] nodes]
+      (if (and (api/keyword-node? condition)
+               (-> condition :k (= :let)))
+        (api/list-node
+          [(api/token-node 'let)
+           expr                                             ; vector body of let
+           (expand-cond-let more-nodes)                     ; cond-let continues as body of let
+           ])
+        ;; Normal case
+        (api/list-node
+          [(api/token-node 'if)
+           condition
+           expr
+           (expand-cond-let more-nodes)])))))
+
+(defn cond-let
+  [{:keys [node]}]
+  (let [children (-> node :children rest)
+        node'    (expand-cond-let children)]
     {:node node'}))

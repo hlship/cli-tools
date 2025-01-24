@@ -1,2 +1,8 @@
-{:hooks
- {:analyze-call {net.lewisship.cli-tools/defcommand cli-tools.hooks/defcommand}}}
+{:linters
+ {:unresolved-symbol {:exclude [(clojure.test/is [match?])]}}
+ ;; For some reason, clj-kondo triggers :unresolved-symbol and :unresolved-namespace for this NS,
+ ;; maybe because of the use of #?
+ :config-in-ns {net.lewisship.cli-tools.cache {:ignore true}}
+ :hooks
+ {:analyze-call {net.lewisship.cli-tools/defcommand    cli-tools.hooks/defcommand
+                 net.lewisship.cli-tools.impl/cond-let cli-tools.hooks/cond-let}}}

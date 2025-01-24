@@ -541,6 +541,13 @@ zsh completions greatly enhance the discoverability of commands, categories, and
 However, this functionality is considered _experimental_ due to the complexity of zsh completion scripts.
 
 
+## Linting
+
+`defcommand` is complex and will confuse clj-kondo out of the box, but we provide
+hooks to allow clj-kondo to reasonably lint it.
+
+The hooks are provided with config path `io.github.hlship/cli-tools`.
+
 ## License
 
 `io.github.hlship/cli-tools` is (c) 2022-present Howard M. Lewis Ship.

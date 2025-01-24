@@ -8,8 +8,7 @@
             net.lewisship.conflict
             matcher-combinators.clj-test                    ;; to enable (is (match? ..))
             [net.lewisship.cli-tools.impl :as impl]
-            [clojure.repl :as repl]
-            [clojure.string :as str])
+            [clojure.repl :as repl])
   (:import
     (java.io BufferedReader StringReader StringWriter)))
 
@@ -150,14 +149,14 @@
   [foo [nil "--foo FOO" "Foo option" :default "abc"]
    bar [nil "--bar BAR" "Bar option" :default-fn (constantly "xyz")]
    bazz [nil "--bazz BAZZ" "Bazz option" :default :bazz :default-desc "Bazzy"]]
-  nil)
+  [foo bar bazz])
 
 (deftest option-defaults
   (is (= (slurp "test-resources/option-defaults.txt")
          (with-exit 0 (invoke-command "default-variants" "-h")))))
 
 (defcommand in-order
-  ""
+  "Test of :in-order option"
   [verbose ["-v" "--verbose"]
    :args
    command ["COMMAND" "Remote command to execute"]
@@ -167,10 +166,13 @@
    :in-order true
    :summary "Execute remote command"]
   {:command command
-   :args    args})
+   :args    args
+   :verbose verbose})
 
 (deftest in-order-arguments
-  (is (= {:command "ls", :args ["-lR"]}
+  (is (= {:command "ls"
+          :args    ["-lR"]
+          :verbose true}
          ;; Without :in-order true, the -lR is flagged as an error
          (in-order "-v" "ls" "-lR"))))
 
@@ -208,7 +210,7 @@
                                :namespaces '[net.lewisship.example-ns]
                                :arguments  ["help" "EXP"]})))))
 
-(deftest help-with-search-term
+(deftest help-with-search-term-no-match
   (is (= (slurp "test-resources/tool-help-search-no-match.txt")
          (with-exit 0
                     (dispatch {:tool-name  "test-harness"
@@ -217,7 +219,7 @@
 
 (deftest use-of-command-ns-meta
   (is (= (slurp "test-resources/combo-help.txt")
-         (  with-exit 0
+         (with-exit 0
                     (dispatch {:tool-name  "combo"
                                :namespaces '[net.lewisship.cli-tools.colors]
                                :arguments  ["-h"]})))))
@@ -228,7 +230,7 @@
          :parse-fn keyword
          :validate [allowed-modes (str "Must be one of " mode-names)]]
    :let [allowed-modes #{:batch :async :real-time}
-         mode-names (->> allowed-modes (map name) sort (str/join ", "))]]
+         mode-names (->> allowed-modes (map name) sort (string/join ", "))]]
   {:mode mode})
 
 
@@ -299,8 +301,8 @@
          (cli/sorted-name-list [:whiskey :tango :foxtrot]))))
 
 (deftest group-namespace
-  (let [group-ns   (find-ns 'net.lewisship.group-ns)
-        builtin-ns (find-ns 'net.lewisship.cli-tools.builtins)]
+  (let [_group-ns   (find-ns 'net.lewisship.group-ns)
+        _builtin-ns (find-ns 'net.lewisship.cli-tools.builtins)]
     (is (= '[[{:category      net.lewisship.group-ns
                :command-group "group"
                :label         "Grouped commands"

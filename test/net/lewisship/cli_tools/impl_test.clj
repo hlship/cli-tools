@@ -1,8 +1,7 @@
 (ns net.lewisship.cli-tools.impl-test
   (:require [clojure.test :refer [deftest is are use-fixtures]]
             [clj-commons.ansi :as ansi]
-            [net.lewisship.cli-tools.impl :refer [compile-interface]]
-            [net.lewisship.cli-tools.impl :as impl]))
+            [net.lewisship.cli-tools.impl :as impl :refer [compile-interface]]))
 
 ;; Disable ANSI color output during tests.
 (use-fixtures :once

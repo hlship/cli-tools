@@ -4,8 +4,7 @@
             [clj-commons.ansi :as ansi]
             [clojure.string :as string]
             [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
-            [net.lewisship.cli-tools.cache :as cache]
-            [clojure.string :as str]))
+            [net.lewisship.cli-tools.cache :as cache]))
 
 (defn exit
   "An indirect call to System/exit, passing a numeric status code (0 for success, non-zero for
@@ -35,7 +34,7 @@
        [:bold
         tool-name
         (when command-path
-          (list " " (str/join " " command-path)))
+          (list " " (string/join " " command-path)))
         ":"]
        " "
        (map (fn [m]
@@ -103,7 +102,7 @@
   (->> values
        (map name)
        sort
-       (str/join ", ")))
+       (string/join ", ")))
 
 (defmacro defcommand
   "Defines a command.
@@ -250,7 +249,7 @@
                                                                 (str (symbol command-var))
                                                                 (str "namespace " (name (get-in conflict [:group-category :category]))))]
                                               (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
-                                                                                (str/join " " command-path)
+                                                                                (string/join " " command-path)
                                                                                 (str (symbol v))
                                                                                 where))))
                                             :else
