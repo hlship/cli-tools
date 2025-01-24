@@ -441,8 +441,9 @@ The map must provide a keyword key for each option or positional argument; the k
 even for options that normally have a default value. All normal option or argument validation is skipped.
 
 You may need to mock out `net.lewisship.cli-tools/print-errors` if your command
-invokes it, as that relies on some additional non-documented keys to
-be present in the command map. Fortunately, it is quite rare for a command to need to invoke this function.
+invokes it, as that relies on some internal state from undocumented dynamicall-bound vars. 
+
+Fortunately, it is quite rare for a command to need to invoke this function.
 
 When _not_ bypassing parsing and validation (that is, when testing by passing strings to the command function), 
 validation errors normally print a command summary and then call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 
