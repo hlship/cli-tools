@@ -1,9 +1,10 @@
-{:paths ["src"]
+{:paths ["src"
+         "resources"]
  ;; Needed to build and test w/ clojure
  :deps  {org.clojure/clojure      {:mvn/version "1.12.0"}
          org.clojure/tools.cli    {:mvn/version "1.1.230"}
          babashka/process         {:mvn/version "0.5.22"}
-         org.clj-commons/pretty   {:mvn/version "3.2.0"}
+         org.clj-commons/pretty   {:mvn/version "3.3.0"}
          org.clj-commons/humanize {:mvn/version "1.1"}}
 
  :net.lewisship.build/scm
@@ -19,7 +20,7 @@
                                                        :git/sha "dfb30dd"}
                  io.github.tonsky/clj-reload {:mvn/version "0.7.1"}
                  nubank/matcher-combinators {:mvn/version "3.9.1"}
-                 babashka/babashka {:mvn/version "1.12.195"}}
+                 babashka/babashka {:mvn/version "1.12.196"}}
    :exec-fn     cognitect.test-runner.api/test
    :jvm-opts    ["-Dclj-commons.ansi.enabled=true"]
    :exec-args

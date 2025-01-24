@@ -20,8 +20,20 @@ for you.
   will select the specific sub-command to execute. (think: `git`)
 - A complex tool organizes some commands into command groups that share an initial name (think `kubectl`)
 
+
 For tools with multiple commands, `cli-tools` automatically adds 
-a built-in `help` command to list out what commands are available.
+a built-in `help` command to list out what commands are available, and
+can even perform basic searches for commands.
+
+For complex tools, what `cli-tools` offers is **discoverability**.  You define the switches, options, and arguments for each command, and each command gets a `--help` switch to print
+out the command's summary. The  `help` command
+that can list out all the commands available, neatly organized, and can even do a simple
+search for you.  There's even (experimental) support for zsh completions for your tool and all of its categories, commands, and options.
+
+This kind of discoverability is a big improvement over shell aliases, and one-off shell scripts that leave you guessing what they do and what arguments need to be passed in.
+
+`cli-tools` also offers great **feedback**, using indentation, color, and careful attention
+to detail, to provide tool users with consistent, readable, and friendly error messages, command summaries, and so forth.
 
 `cli-tools` can work with Babashka, or with Clojure, but the near instantaneous startup time of Babashka is compelling
 for the kind of low-ceremony tools that `cli-tools` is intended for.
@@ -33,9 +45,8 @@ Below is an example of the author's personal toolkit, `flow`:
 
 ![Example](images/example-usage.png)
 
-Building on `cli-tools` provides discoverability and feedback, as the tool (and every command inside the tool) will provide detailed help.
-
-A more complete example is [dialog-tool](https://github.com/hlship/dialog-tool).
+A complete and open-source example is [dialog-tool](https://github.com/hlship/dialog-tool), which also shows how to organize 
+a tool so that it can be installed as a Homebrew formula.
 
 ## defcommand
 
@@ -297,6 +308,8 @@ and arguments definitions; the `:let` keyword is followed by a vector of binding
 In the expanded code, the bindings are moved to the top, before the option and argument
 definitions.  Further, if there are multiple `:let` blocks, they are concatinated.
 
+This also means that the bindings _can not_ reference the symbols for options or arguments.
+
 ### :validate \<vector of test/message pairs\>
 
 Often you will need to perform validations that consider multiple fields.
@@ -357,9 +370,9 @@ a sort order of 100, so that it will generally be last.
 
 If you want to see the list of commands without categories, use the `-f` / `--flat` option to `help`.
 If you want to use multiple namespaces for your commands without using categories,
-add the `:flat` option to the map passed to `dispatch`.
+add `:flat true` to the options map passed to `dispatch`.
 
-The help command itself accept a single search term; it will filter the commands and categories it outputs to only
+The `help` command itself accept a single search term; it will filter the commands and categories it outputs to only
 those that contain the search term in either the command name, or command summary. This search is caseless.
 
 ## :command-ns meta-data
@@ -401,6 +414,21 @@ command will identify the command group when listing the commands in the categor
 Command groups are useful when creating the largest tools with the most commands; it allows for shorter command names,
 as each commands' name will only have to be unique within it's command group, not globally.
 
+## Utilities
+
+### abort
+
+The `net.lewisship.cli-tools/abort` function provides a uniform way to indicate a failure
+and terminate execution.
+
+`abort` can be invoked from inside a command, and will output (to standard error)
+the tool name and command name in bold red, and the provided messages
+in red.
+
+Messages may also be exceptions, from which the exception message is extracted (exceptions with a null message
+are converted to the exception class name).
+
+Finally, `abort` invokes `exit` with the provided exit status code.
 
 ## Testing
 
@@ -413,8 +441,9 @@ The map must provide a keyword key for each option or positional argument; the k
 even for options that normally have a default value. All normal option or argument validation is skipped.
 
 You may need to mock out `net.lewisship.cli-tools/print-errors` if your command
-invokes it, as that relies on some additional non-documented keys to
-be present in the command map. Fortunately, it is quite rare for a command to need to invoke this function.
+invokes it, as that relies on some internal state from undocumented dynamicall-bound vars. 
+
+Fortunately, it is quite rare for a command to need to invoke this function.
 
 When _not_ bypassing parsing and validation (that is, when testing by passing strings to the command function), 
 validation errors normally print a command summary and then call `net.lewisship.cli-tools/exit`, which in turn, invokes `System/exit`; this is obviously 
@@ -433,10 +462,10 @@ and collect meta-data from all the namespaces and command functions.  Thanks to 
 but is made faster using caching.
 
 `dispatch` builds a cache based on the options passed to it, and the contents of the classpath; it can then 
-load the data it needs to operate from the cache if present.
+load the data it needs to operate from the cache, if such data is present.
 
-When executing from the cache, `dispatch` will ultimately load only a single command namespace, to invoke the single
-function.  This allows a complex tool, one with potentially hundreds of commands, to still execute the body
+When executing from the cache, `dispatch` will ultimately load only a single command namespace,
+to invoke the single command function.  This allows a complex tool, one with potentially hundreds of commands, to still execute the body
 of the `defcommand` within milliseconds.
 
 This may have an even more significant impact for a tool that is built on top of Clojure, rather than Babashka.
@@ -496,6 +525,17 @@ The job board updates status lines as they change, and highlights lines that hav
 This is built on the `tput` command line tool, so it works on OS X and Linux, but **not on Windows**.
 
 The above `job-status-demo`, like `colors`, can be added by including the `net.lewisship.cli-tools.job-status-demo` namespace.
+
+## zsh completions (experimental)
+
+The namespace `net.lewisship.cli-tools.completions` adds a `completions` command.  This command will
+compose a zsh completion script, which can be installed to a directory on the $fpath such as
+`/usr/local/share/zsh/site-functions`.
+
+![zsh completions demo](images/cli-tools-zsh-completion.gif)
+
+zsh completions greatly enhance the discoverability of commands, categories, and command options within a tool.
+However, this functionality is considered _experimental_ due to the complexity of zsh completion scripts.
 
 
 ## License

@@ -6,6 +6,7 @@
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.string :as str]
+            [clj-commons.ansi :refer [perr]]
             #?(:bb [babashka.classpath :as cp]))
   (:import [java.io File]
            [java.security MessageDigest]))
@@ -79,7 +80,7 @@
       (try
         (-> f slurp edn/read-string)
         (catch Exception e
-          (prn :exception-reading-from-cache e)
+          (perr [:yellow "Exception reading from cache: " (ex-message e)])
           nil)))))
 
 (defn write-to-cache

@@ -19,6 +19,11 @@
   "Bound to the command map selected by dispatch for execution."
   nil)
 
+(def ^:dynamic *introspection-mode*
+  "When true, defcommands, when invoked, bypass normal logic and simply return the
+  command spec. Used when extracting options for completions."
+  false)
+
 (def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
 
 (defn exit
@@ -631,7 +636,7 @@
       complete-keyword))
 
 (defn compile-interface
-  "Parses the interface forms of a `defcommand` into a base command map; the interface
+  "Parses the interface forms of a `defcommand` into a command spec; the interface
    defines the options and positional arguments that will be parsed."
   [command-doc forms]
   (let [initial-state {:consuming       :options
@@ -652,39 +657,42 @@
         (update :command-options conj ["-h" "--help" "This command summary" :id :help]))))
 
 (defn parse-cli
-  [command-name command-line-arguments command-map]
+  "Given a command specification (returned from [[compile-interface]]), this is called during
+  execution time to convert command line arguments into options. The command map merges new
+  keys into the command spec."
+  [command-name command-line-arguments command-spec]
   (cond-let
-    :let [{:keys [command-args command-options parse-opts-options]} command-map
+    :let [{:keys [command-args command-options parse-opts-options]} command-spec
           {:keys [in-order summary-fn]
            :or   {in-order   false
                   summary-fn summarize-specs}} parse-opts-options
           positional-specs (compile-positional-specs command-name command-args)
-          command-map' (merge command-map
-                              {:command-name     command-name
-                               :positional-specs positional-specs}
-                              (cli/parse-opts command-line-arguments command-options
-                                              :in-order in-order
-                                              :summary-fn summary-fn))
-          {:keys [arguments options]} command-map']
+          command-map (merge command-spec
+                             {:command-name     command-name
+                              :positional-specs positional-specs}
+                             (cli/parse-opts command-line-arguments command-options
+                                             :in-order in-order
+                                             :summary-fn summary-fn))
+          {:keys [arguments options]} command-map]
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.
     (:help options)
     (do
-      (print-summary command-map')
+      (print-summary command-map)
       (exit 0))
 
     :let [[positional-arguments arg-errors] (parse-positional-arguments positional-specs arguments)
-          errors (concat (:errors command-map')
+          errors (concat (:errors command-map)
                          arg-errors)]
 
     (seq errors)
     (do
-      (print-errors command-map' errors)
+      (print-errors command-map errors)
       (exit 1))
 
     :else
     ;; option and positional argument are verified to have unique symbols, so merge it all together
-    (update command-map' :options merge positional-arguments)))
+    (update command-map :options merge positional-arguments)))
 
 (defn extract-command-summary
   [command-var]

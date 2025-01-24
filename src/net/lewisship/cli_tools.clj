@@ -16,6 +16,36 @@
   [status]
   (impl/exit status))
 
+(defn abort
+  "Invoked when a tool has a runtime failure. Writes to standard error;
+  identifies the tool name, category (if any) and command name
+  (in bold red) and then writes the remaining message text after a colon and a space,
+  in red.
+
+  Each element of message may either be a composed string, or an exception.
+
+  Each exception in the message is converted to a string via `ex-message`.
+  If `ex-message` returns nil, then the class name of the exception is used."
+  {:added "0.15"}
+  [status & message]
+  (let [{:keys [tool-name]} impl/*options*
+        {:keys [command-path]} impl/*command*]
+    (ansi/perr
+      [:red
+       [:bold
+        tool-name
+        (when command-path
+          (list " " (str/join " " command-path)))
+        ":"]
+       " "
+       (map (fn [m]
+              (if (instance? Throwable m)
+                (or (ex-message m)
+                    (-> m class .getName))
+                m))
+            message)])
+    (exit status)))
+
 (defn set-prevent-exit!
   "cli-tools will call [[exit]] when help is requested (with a 0 exit status, or 1 for
   a input validation error).  Normally, that results in a call to System/exit, but this function,
@@ -85,7 +115,7 @@
 
    The returned function is variadic, accepting a number of strings, much
    like a `-main` function. For testing purposes, it may instead be passed a single map,
-   a map of options, which bypasses parsing and validation of the arguments, and is used only for testing.
+   a map of options, which bypasses parsing and validation of the arguments.
 
    Finally, the body is evaluated inside a let that destructures the options and positional arguments into local symbols."
   [command-name docstring interface & body]
@@ -122,15 +152,25 @@
              ;; args# is normally a seq of strings, from *command-line-arguments*, but for testing,
              ;; it can also be a map with key :options
              test-mode?# (impl/command-map? args#)
-             ~command-map-symbol (if test-mode?#
-                                   {:options (first args#)}
-                                   (impl/parse-cli ~command-name'
-                                                   args#
-                                                   ~(select-keys parsed-interface parse-cli-keys)))
-             ~@let-option-symbols]
-         (when-not test-mode?#
-           ~validations)
-         ~@body))))
+             command-spec# ~(select-keys parsed-interface parse-cli-keys)]
+         (if impl/*introspection-mode*
+           command-spec#
+           (let [~command-map-symbol (cond
+                                       test-mode?#
+                                       {:options (first args#)}
+
+                                       impl/*introspection-mode*
+                                       command-spec#
+
+                                       :else
+                                       (impl/parse-cli ~command-name'
+                                                       args#
+                                                       command-spec#))
+                 ;; These symbols de-reference the command-map returned from parse-cli.
+                 ~@let-option-symbols]
+             (when-not test-mode?#
+               ~validations)
+             ~@body))))))
 
 (defn- resolve-ns
   [ns-symbol]
