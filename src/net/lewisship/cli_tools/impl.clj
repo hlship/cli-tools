@@ -1,7 +1,6 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
-            [clojure.string :as str]
             [clj-commons.ansi :refer [compose pout perr *color-enabled*]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
@@ -108,14 +107,6 @@
   [s]
   (binding [*out* *err*] (println s)))
 
-(defn- print-errors
-  [errors]
-  (when (seq errors)
-    (println)
-    (pout [:red (if (= 1 (count errors)) "Error:" "Errors:")])
-    (doseq [e errors]
-      (pout "  " [:red e]))))
-
 (defn- arg-spec->str
   [arg-spec]
   (let [{:keys [label optional repeatable]} arg-spec]
@@ -129,16 +120,16 @@
 (defn- first-sentence
   [s]
   (-> s
-      str/trim
-      str/split-lines
+      string/trim
+      string/split-lines
       first
-      (str/split #"\s*\.")
+      (string/split #"\s*\.")
       first
-      str/trim))
+      string/trim))
 
 (defn- indentation-of-line
   [line]
-  (if (str/blank? line)
+  (if (string/blank? line)
     [0 ""]
     (let [[_ indent text] (re-matches #"(\s+)(.*)" line)]
       (if
@@ -155,9 +146,9 @@
 
 (defn- cleanup-docstring
   [docstring]
-  (let [docstring'       (str/trim docstring)
+  (let [docstring'       (string/trim docstring)
         lines            (->> docstring'
-                              str/split-lines
+                              string/split-lines
                               (map indentation-of-line))
         non-zero-indents (->> lines
                               (map first)
@@ -167,7 +158,7 @@
       (let [indentation (reduce min non-zero-indents)]
         (->> lines
              (mapv #(strip-indent indentation %))
-             (str/join "\n"))))))
+             (string/join "\n"))))))
 
 (defn print-summary
   [command-map]
@@ -184,7 +175,7 @@
         ;; A stand-alone tool will use its command-name, a command within
         ;; a multi-command tool will have a command-path.
         [:bold.green (if command-path
-                       (str/join " " command-path)
+                       (string/join " " command-path)
                        command-name)]
         " [OPTIONS]"
         (map list (repeat " ") arg-strs))
@@ -225,7 +216,7 @@
         (when tool-name " ")
 
         (if command-path
-          (str/join " " command-path)
+          (string/join " " command-path)
           command-name)]
        ":"
        (if (= 1 (count errors))
@@ -328,7 +319,7 @@
           (println-err (format "Warning: command %s, argument %s contains invalid key(s): %s"
                                command-name
                                id
-                               (str/join ", " invalid-keys))))
+                               (string/join ", " invalid-keys))))
         {:label      label
          :id         id
          :doc        doc
@@ -761,7 +752,7 @@
             all-commands       (cond->> (reduce into [] (vals grouped-commands))
                                         ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
                                         flat (map (fn [command]
-                                                    (assoc command :command-name (str/join " " (:command-path command))))))
+                                                    (assoc command :command-name (string/join " " (:command-path command))))))
             command-name-width (->> all-commands
                                     (map :command-name)
                                     (map count)
@@ -795,7 +786,7 @@
 
 (defn- to-matcher
   [s]
-  (let [terms      (str/split s #"\-")
+  (let [terms      (string/split s #"\-")
         re-pattern (apply str "(?i)"
                           (map-indexed (fn [i term]
                                          (str
@@ -828,7 +819,7 @@
   [tool-name arguments commands]
   (let [command-name (first arguments)]
     (if (or (nil? command-name)
-            (str/starts-with? command-name "-"))
+            (string/starts-with? command-name "-"))
       (abort [:bold tool-name] ": no command provided" (use-help-message tool-name))
       (loop [prefix            []
              term              command-name
@@ -839,9 +830,9 @@
 
           ;; Options start with a '-', but we're still looking for commands
           (or (nil? term)
-              (str/starts-with? term "-"))
+              (string/starts-with? term "-"))
           (abort
-            [:bold.green tool-name ": " [:red (str/join " " prefix)]]
+            [:bold.green tool-name ": " [:red (string/join " " prefix)]]
             " is incomplete; "
             (compose-list matchable-terms)
             " could follow; use "
@@ -908,7 +899,7 @@
   [{:keys [tool-name commands arguments] :as options}]
   ;; Capture these options for use by help command or when printing usage
   (binding [*options* options]
-    (when (str/blank? tool-name)
+    (when (string/blank? tool-name)
       (throw (ex-info "must specify :tool-name" {:options options})))
     (dispatch-options-parser tool-name arguments commands)
     nil))

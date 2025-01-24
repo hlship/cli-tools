@@ -1,2 +1,7 @@
 /target/
 *.asc
+.idea
+.cpcache
+.clj-kondo/.cache
+.nrepl-port
+*.iml

@@ -3,7 +3,6 @@
   {:command-ns 'net.lewisship.cli-tools.builtins}
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
-            [clojure.string :as s]
             [net.lewisship.cli-tools :refer [defcommand abort]]
             [clojure.string :as string]
             selmer.util

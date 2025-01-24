@@ -1,6 +1,6 @@
 (ns net.lewisship.cli-tools.job-status-demo
   {:command-ns 'net.lewisship.cli-tools.builtins}
-  (:require [net.lewisship.cli-tools :refer [defcommand] :as c]
+  (:require [net.lewisship.cli-tools :refer [defcommand]]
             [net.lewisship.cli-tools.job-status :as j]))
 
 (defn sleep

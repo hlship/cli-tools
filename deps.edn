@@ -4,7 +4,7 @@
  :deps  {org.clojure/clojure      {:mvn/version "1.12.0"}
          org.clojure/tools.cli    {:mvn/version "1.1.230"}
          babashka/process         {:mvn/version "0.5.22"}
-         org.clj-commons/pretty   {:mvn/version "3.3.0"}
+         org.clj-commons/pretty   {:mvn/version "3.3.1"}
          org.clj-commons/humanize {:mvn/version "1.1"}}
 
  :net.lewisship.build/scm
@@ -18,13 +18,20 @@
   {:extra-paths ["test" "test-resources"]
    :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
                                                        :git/sha "dfb30dd"}
-                 io.github.tonsky/clj-reload {:mvn/version "0.7.1"}
-                 nubank/matcher-combinators {:mvn/version "3.9.1"}
-                 babashka/babashka {:mvn/version "1.12.196"}}
+                 io.github.tonsky/clj-reload          {:mvn/version "0.7.1"}
+                 nubank/matcher-combinators           {:mvn/version "3.9.1"}
+                 babashka/babashka                    {:mvn/version "1.12.196"}}
    :exec-fn     cognitect.test-runner.api/test
    :jvm-opts    ["-Dclj-commons.ansi.enabled=true"]
    :exec-args
    {:patterns [".*-tests?$"]}}
+
+  :1.11
+  {:override-deps {org.clojure/clojure {:mvn/version "1.11.4"}}}
+
+  :lint
+  {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.01.16"}}
+   :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
 
   :build
   {:deps       {io.github.hlship/build-tools {:git/tag "0.10.2" :git/sha "3c446e4"}}

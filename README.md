@@ -20,7 +20,6 @@ for you.
   will select the specific sub-command to execute. (think: `git`)
 - A complex tool organizes some commands into command groups that share an initial name (think `kubectl`)
 
-
 For tools with multiple commands, `cli-tools` automatically adds 
 a built-in `help` command to list out what commands are available, and
 can even perform basic searches for commands.
@@ -47,6 +46,10 @@ Below is an example of the author's personal toolkit, `flow`:
 
 A complete and open-source example is [dialog-tool](https://github.com/hlship/dialog-tool), which also shows how to organize 
 a tool so that it can be installed as a Homebrew formula.
+
+## Compatibility
+
+`cli-tools` is compatible with Clojure 1.11 and above, and w/ Babashka.
 
 ## defcommand
 
@@ -537,6 +540,13 @@ compose a zsh completion script, which can be installed to a directory on the $f
 zsh completions greatly enhance the discoverability of commands, categories, and command options within a tool.
 However, this functionality is considered _experimental_ due to the complexity of zsh completion scripts.
 
+
+## Linting
+
+`defcommand` is complex and will confuse clj-kondo out of the box, but we provide
+hooks to allow clj-kondo to reasonably lint it.
+
+The hooks are provided with config path `io.github.hlship/cli-tools`.
 
 ## License
 
