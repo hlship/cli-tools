@@ -1,0 +1,2 @@
+{:hooks
+ {:analyze-call {net.lewisship.cli-tools/defcommand cli-tools.hooks/defcommand}}}
