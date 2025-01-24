@@ -20,7 +20,6 @@ for you.
   will select the specific sub-command to execute. (think: `git`)
 - A complex tool organizes some commands into command groups that share an initial name (think `kubectl`)
 
-
 For tools with multiple commands, `cli-tools` automatically adds 
 a built-in `help` command to list out what commands are available, and
 can even perform basic searches for commands.
@@ -47,6 +46,10 @@ Below is an example of the author's personal toolkit, `flow`:
 
 A complete and open-source example is [dialog-tool](https://github.com/hlship/dialog-tool), which also shows how to organize 
 a tool so that it can be installed as a Homebrew formula.
+
+## Compatibility
+
+`cli-tools` is compatible with Clojure 1.11 and above, and w/ Babashka.
 
 ## defcommand
 
