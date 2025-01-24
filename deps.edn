@@ -3,9 +3,14 @@
  ;; Needed to build and test w/ clojure
  :deps  {org.clojure/clojure      {:mvn/version "1.12.0"}
          org.clojure/tools.cli    {:mvn/version "1.1.230"}
-         babashka/process         {:mvn/version "0.5.22"}
          org.clj-commons/pretty   {:mvn/version "3.3.1"}
-         org.clj-commons/humanize {:mvn/version "1.1"}}
+         org.clj-commons/humanize {:mvn/version "1.1"}
+
+         ;; Normally provided by Babashka, but needed when using cli-tools in a Clojure
+         ;; application:
+         babashka/fs              {:mvn/version "0.5.24"}
+         babashka/process         {:mvn/version "0.5.22"}
+         selmer/selmer            {:mvn/version "1.12.61"}}
 
  :net.lewisship.build/scm
  {:url     "https://github.com/hlship/cli-tools"
