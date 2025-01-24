@@ -5,7 +5,7 @@
             [net.lewisship.build :as b]))
 
 (def lib 'io.github.hlship/cli-tools)
-(def version "0.14")
+(def version "0.15")
 
 (def jar-params {:project-name lib
                  :version version})

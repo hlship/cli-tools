@@ -1,9 +1,12 @@
-# 0.15 -- UNRELEASED
+# 0.15 -- 24 Jan 2025
 
 Added optional namespace `net.lewisship.cli-tools.completions`, which is considered _experimental_.
+The added `completions` command generates zsh command completions for the tool.
 
 Added new functions to `net.lewisship.cli-tools`:
 - `abort` is used to terminate a tool with a status code and provide an error message to standard error
+
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/7?closed=1)
 
 # 0.14 -- 27 Nov 2024
 
