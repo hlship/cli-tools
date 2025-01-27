@@ -210,14 +210,15 @@
     (perr
       [:red
        (inflect/pluralize-noun (count errors) "Error")
-       " in "
-       [:bold.green
-        tool-name
-        (when tool-name " ")
+       (when (or tool-name command-path)
+         (list
+           " in "
+           [:bold.green
+            tool-name
+            (when tool-name " ")
 
-        (if command-path
-          (string/join " " command-path)
-          command-name)]
+            (when command-path
+              (string/join " " command-path))]))
        ":"
        (if (= 1 (count errors))
          (list " " (first errors))
