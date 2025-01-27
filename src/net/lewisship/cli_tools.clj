@@ -48,12 +48,12 @@
   Each exception in the message is converted to a string via `ex-message`.
   If `ex-message` returns nil, then the class name of the exception is used.
 
-  By default, the exit status is 1.  if the first message value is a number, it is used
+  By default, the exit status is 1.  If the first message value is a number, it is used
   as the exit status instead.
 
-  `abort` assumes that the command function was invoked by `defcommand`.
-  When it is invoked from otherwise, including when using `defcommand` to
-  create a main entry point, prefix (identifying the tool name and possibly
+  `abort` assumes that the command function was invoked by `dispatch`.
+  When it is invoked otherwise, including when using `defcommand` to
+  create a main entry point, the prefix (normally identifying the tool name and possibly
   nested command name, and the colon) are omitted.  Just the message portion
   is output, in red.
 
