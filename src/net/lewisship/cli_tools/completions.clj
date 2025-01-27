@@ -21,7 +21,7 @@
   (print (selmer.parser/render-file (str "net/lewisship/cli_tools/" file-name ".tpl")
                                     context)))
 
-(defn escape
+(defn- escape
   [s]
   (string/replace s "'" "\\'"))
 
@@ -85,7 +85,7 @@
       (render "command" {:tools   tool-name
                          :command command}))))
 
-(defn print-tool
+(defn- print-tool
   [tool-name raw-commands]
   (let [commands (keep #(extract-command (str "_" tool-name) %) raw-commands)]
     (selmer.util/without-escaping
@@ -93,7 +93,7 @@
                            :commands commands})
       (render-commands tool-name commands))))
 
-(defcommand completions
+(defcommand ^{:added "0.15"} completions
   "Generate zsh command completions.  Completions can be written
   to a file or to standard output."
   [:args
