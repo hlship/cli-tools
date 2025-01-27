@@ -3,9 +3,14 @@
 Changes:
 
 The `abort` function assumes an exit status of 1 if the first message passed is not numeric.
+It also now prints the tool and command name in bold green (to be conistent with
+the rest of the library).
 
 Dependencies were not properly declared for Clojure applications that use cli-tools
 (libraries that are bundled with Babashka were omitted).
+
+A number of minor issues related to single-command tools (those that use a `defcommand`
+to define their single main entrypoint, usually named `-main`) were resolved.
 
 [Closed Issues](https://github.com/hlship/cli-tools/milestone/8?closed=1)
 

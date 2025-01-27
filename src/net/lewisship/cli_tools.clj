@@ -23,12 +23,11 @@
       [:red
        (when tool-name
          (list
-           [:bold
+           [:bold.green
             tool-name
             (when command-path
-              (list " " (string/join " " command-path)))
-            ":"]
-           " "))
+              (list " " (string/join " " command-path)))]
+           ": "))
        (map (fn [m]
               (if (instance? Throwable m)
                 (or (ex-message m)
@@ -76,16 +75,21 @@
 (defn print-errors
   "Prints the errors for the command to `*err*`.
 
-   To invoke this, you need the command map, which is available via the :as clause to [[defcommand]].
+   ~To invoke this, you need the command map, which is available via the :as clause to [[defcommand]].~
 
    Ex:
 
       Error in my-tool my-command: --count is not a number
 
-  errors is a seq of strings (or composed strings) to display as errors."
+  errors is a seq of strings (or composed strings) to display as errors.
+
+  In 0.15.1, the two-argument variant was deprecated in favor of the new version which
+  only requires the seq of errors."
   {:added "0.13"}
-  [command-map errors]
-  (impl/print-errors command-map errors))
+  ([_command-map errors]
+   (print-errors errors))
+  ([errors]
+   (impl/print-errors errors)))
 
 (defn best-match
   "Given an input string and a seq of possible values, returns the matching value if it can
@@ -163,7 +167,7 @@
         parse-cli-keys     [:command-args :command-options :parse-opts-options :command-doc :summary]
         validations        (when (seq validate-cases)
                              `(when-let [message# (cond ~@(impl/invert-tests-in-validate-cases validate-cases))]
-                                (print-errors ~command-map-symbol [message#])
+                                (print-errors [message#])
                                 (exit 1)))]
     `(defn ~fn-name
        ~symbol-with-meta

@@ -203,10 +203,9 @@
           (pout (interpose \newline lines)))))))
 
 (defn print-errors
-  [command-map errors]
+  [errors]
   (let [{:keys [tool-name]} *options*
-        {:keys [command-path]} *command*
-        {:keys [command-name]} command-map]
+        {:keys [command-path]} *command*]
     (perr
       [:red
        (inflect/pluralize-noun (count errors) "Error")
@@ -679,7 +678,7 @@
 
     (seq errors)
     (do
-      (print-errors command-map errors)
+      (print-errors errors)
       (exit 1))
 
     :else
@@ -821,7 +820,7 @@
   (let [command-name (first arguments)]
     (if (or (nil? command-name)
             (string/starts-with? command-name "-"))
-      (abort [:bold tool-name] ": no command provided" (use-help-message tool-name))
+      (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
       (loop [prefix            []
              term              command-name
              remaining-args    (next arguments)

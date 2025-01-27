@@ -16,7 +16,7 @@
 
 (deftest abort-with-message
   (binding [ansi/*color-enabled* true]
-    (is (= (str (compose [:red [:bold "tool category command:"] " base message"]) "\n")
+    (is (= (compose [:bold.green "tool category command"] [:red ": base message"] "\n")
            (with-exit 1
                       (abort "base message"))))))
 
@@ -46,5 +46,5 @@
 
 (deftest just-the-message-when-no-tool
   (binding [impl/*options* nil]
-    (is (= (str (compose [:red "utter failure"]) "\n")
+    (is (= (compose [:red "utter failure"] "\n")
            (with-exit 1 (abort "utter failure"))))))
