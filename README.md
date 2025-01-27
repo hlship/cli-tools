@@ -252,7 +252,8 @@ or something else defined within your namespace.
 
 The `:command` option is also useful when using cli-tools to define
 the `-main` function for a simple tool (a tool with options and arguments,
-but not subcommands).
+but not subcommands); this command name will be used in the command summary (from the 
+`-h` / `--help` switch).
 
 ### :summary \<string\>
 
