@@ -15,6 +15,28 @@
   [status]
   (impl/exit status))
 
+(defn- abort*
+  [status messages]
+  (let [{:keys [tool-name]} impl/*options*
+        {:keys [command-path]} impl/*command*]
+    (ansi/perr
+      [:red
+       (when tool-name
+         (list
+           [:bold
+            tool-name
+            (when command-path
+              (list " " (string/join " " command-path)))
+            ":"]
+           " "))
+       (map (fn [m]
+              (if (instance? Throwable m)
+                (or (ex-message m)
+                    (-> m class .getName))
+                m))
+            messages)])
+    (exit status)))
+
 (defn abort
   "Invoked when a tool has a runtime failure. Writes to standard error;
   identifies the tool name, category (if any) and command name
@@ -24,26 +46,25 @@
   Each element of message may either be a composed string, or an exception.
 
   Each exception in the message is converted to a string via `ex-message`.
-  If `ex-message` returns nil, then the class name of the exception is used."
-  {:added "0.15"}
-  [status & message]
-  (let [{:keys [tool-name]} impl/*options*
-        {:keys [command-path]} impl/*command*]
-    (ansi/perr
-      [:red
-       [:bold
-        tool-name
-        (when command-path
-          (list " " (string/join " " command-path)))
-        ":"]
-       " "
-       (map (fn [m]
-              (if (instance? Throwable m)
-                (or (ex-message m)
-                    (-> m class .getName))
-                m))
-            message)])
-    (exit status)))
+  If `ex-message` returns nil, then the class name of the exception is used.
+
+  By default, the exit status is 1.  if the first message value is a number, it is used
+  as the exit status instead.
+
+  `abort` assumes that the command function was invoked by `defcommand`.
+  When it is invoked from otherwise, including when using `defcommand` to
+  create a main entry point, prefix (identifying the tool name and possibly
+  nested command name, and the colon) are omitted.  Just the message portion
+  is output, in red.
+
+  "
+  {:added    "0.15"
+   :arglists '[[status & message]
+               [& message]]}
+  [& message]
+  (if (-> message first number?)
+    (abort* (first message) (rest message))
+    (abort* 1 message)))
 
 (defn set-prevent-exit!
   "cli-tools will call [[exit]] when help is requested (with a 0 exit status, or 1 for
@@ -117,19 +138,19 @@
    a map of options, which bypasses parsing and validation of the arguments.
 
    Finally, the body is evaluated inside a let that destructures the options and positional arguments into local symbols."
-  [command-name docstring interface & body]
-  (assert (simple-symbol? command-name)
+  [fn-name docstring interface & body]
+  (assert (simple-symbol? fn-name)
           "defcommand expects a symbol for command name")
   (assert (string? docstring)
           "defcommand requires a docstring")
   (assert (vector? interface)
           "defcommand expects a vector to define the interface")
-  (let [symbol-meta        (meta command-name)
+  (let [symbol-meta        (meta fn-name)
         parsed-interface   (impl/compile-interface docstring interface)
         {:keys [option-symbols command-map-symbol command-summary let-forms validate-cases]
          :or   {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name'      (or (:command-name parsed-interface)
-                               (name command-name))
+                               (name fn-name))
         let-option-symbols (cond-> []
                              (seq option-symbols)
                              (into `[{:keys ~option-symbols} (:options ~command-map-symbol)]))
@@ -144,7 +165,7 @@
                              `(when-let [message# (cond ~@(impl/invert-tests-in-validate-cases validate-cases))]
                                 (print-errors ~command-map-symbol [message#])
                                 (exit 1)))]
-    `(defn ~command-name
+    `(defn ~fn-name
        ~symbol-with-meta
        [~'& args#]
        (let [~@let-forms
