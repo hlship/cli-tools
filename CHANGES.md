@@ -1,4 +1,4 @@
-# 0.15.1 -- UNRELEASED
+# 0.15.1 -- 27 Jan 2025
 
 Changes:
 
