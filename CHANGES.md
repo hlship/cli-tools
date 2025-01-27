@@ -3,10 +3,10 @@
 Changes:
 
 The `abort` function assumes an exit status of 1 if the first message passed is not numeric.
-It also now prints the tool and command name in bold green (to be conistent with
+It also now prints the tool and command name in bold green (to be consistent with
 the rest of the library).
 
-The clj-kondo hook for the `defcommand` now produces slightly different code, that defeats
+The clj-kondo hook for the `defcommand` macro now produces slightly different code, that defeats
 the clj-kondo static type analysis, preventing spurious warnings about vectors passed
 to particular clojure.core functions.
 
