@@ -1,3 +1,14 @@
+# 0.15.1 -- UNRELEASED
+
+Changes:
+
+The `abort` function assumes an exit status of 1 if the first message passed is not numeric.
+
+Dependencies were not properly declared for Clojure applications that use cli-tools
+(libraries that are bundled with Babashka were omitted).
+
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/8?closed=1)
+
 # 0.15 -- 24 Jan 2025
 
 Added optional namespace `net.lewisship.cli-tools.completions`, which is considered _experimental_.
