@@ -6,6 +6,10 @@ The `abort` function assumes an exit status of 1 if the first message passed is 
 It also now prints the tool and command name in bold green (to be conistent with
 the rest of the library).
 
+The clj-kondo hook for the `defcommand` produces slightly different code, that defeats
+the clj-kondo static type analysis, preventing spurious warnings about vectors passed
+to particular clojure.core functions.
+
 Dependencies were not properly declared for Clojure applications that use cli-tools
 (libraries that are bundled with Babashka were omitted).
 
