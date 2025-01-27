@@ -34,6 +34,23 @@
                (next more-terms)
                (update blocks :opts conj term (first more-terms)))))))
 
+(defn xform-opts
+  "This is a lot of work to actually defeat clj-kondo's normal static analysis.
+
+  See https://github.com/hlship/cli-tools/issues/28 for more info."
+  [opts]
+  (when (seq opts)
+    (let [pairs     (partition 2 opts)
+          collector (api/token-node (gensym "options"))
+          map-terms (mapcat (fn [[sym v]]
+                              [(api/keyword-node (-> sym str keyword)) v])
+                            pairs)]
+      [collector
+       (api/map-node (vec map-terms))
+
+       (api/map-node [(api/keyword-node :keys)
+                      (api/vector-node (map first pairs))])
+       collector])))
 
 (defn- parse-interface
   [interface]
@@ -45,7 +62,7 @@
         vector (api/vector-node
                  (concat
                    lets
-                   opts
+                   (xform-opts opts)
                    afters))]
     vector))
 
