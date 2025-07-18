@@ -2,7 +2,7 @@
 
 The [[net.lewisship.cli-tools/dispatch]] function is the prime entrypoint for both Babashka and Clojure tools.
 
-`dispatch` is provided with a descriptor for your tool; it reads the namespaces defined in the descriptor to build
+`dispatch` is provided with a descriptor map for your tool; it reads the namespaces defined in the descriptor to build
 up an index of all the commands and categories in your tool.
 
 The `dispatch` function then starts to consume command line arguments, identifying groups and sub-groups until
@@ -21,6 +21,8 @@ are ultimately exposed as local symbols that your command's code can act on.
            :groups [...]}]}
 ```
 
+TODO: Document :tool-name, :flat
+
 The top-level `:namespaces` is used to define any top-level ("Built-in") namespaces.
 Each namespace is a symbol for the namespace.
 
@@ -29,7 +31,13 @@ This is optional and defaults to an empty list.
 The namespace `net.lewiship.cli-tools.builtins` is always prefixed to the provided list; this provides
 the tool-level `help` command.
 
-In addition to the built-in commands, you may provide groups.
+In addition to the built-in commands, you may optionally provide groups.
+
+Groups serve two purposes:
+
+* They divide the list of commands into sequences of related commands
+
+* They may optionally define a command group name, which isolates the commands within the group; for example, the way the `docker` command has sub-commands such as `compose` and `volume`, each containing further sub-commands.
 
 For each group, you may specify any number of namespaces for the commands within that group.
 

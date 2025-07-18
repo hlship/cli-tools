@@ -196,15 +196,9 @@
                ~validations)
              ~@body))))))
 
-(defn- resolve-ns
-  [ns-symbol]
-  (if-let [ns-object (find-ns ns-symbol)]
-    ns-object
-    (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
-
 (defn- add-namespace-to-categories
   [m ns-symbol]
-  (let [ns                (resolve-ns ns-symbol)
+  (let [ns                (impl/resolve-ns ns-symbol)
         ns-meta           (meta ns)
         ;; An existing namespace can be referenced with the :command-ns meta to make the subsequent namespace
         ;; act as if it were part of the earlier namespace (same command-group, label, etc.).
@@ -324,8 +318,6 @@
         tool-name'  (or tool-name
                         (impl/default-tool-name)
                         (throw (ex-info "No :tool-name specified" {:options options})))
-        _           (when-not (seq namespaces)
-                      (throw (ex-info "No :namespaces specified" {:options options})))
         namespaces' (cons 'net.lewisship.cli-tools.builtins namespaces)
         _           (run! require namespaces')
         [command-categories commands] (locate-commands namespaces')]
@@ -336,22 +328,23 @@
      :categories command-categories
      :commands   commands}))
 
+
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
   Some applications may call this instead of `dispatch`, modify the results, and then
   invoke `dispatch*`."
   [options]
   (let [{:keys [cache-dir arguments]} options
-        ;; Don't include everything when building the digest, especially the command line arguments@
+        ;; Don't include everything when building the digest, especially the command line arguments
         options' (dissoc options :arguments :cache-dir)
         result   (if-not cache-dir
-                   (expand-dispatch-options* options')
+                   (impl/expand-dispatch-options options')
                    (let [cache-dir' (fs/expand-home cache-dir)
                          digest     (cache/classpath-digest options')
                          cached     (cache/read-from-cache cache-dir' digest)]
                      (if cached
                        cached
-                       (let [full (expand-dispatch-options* options)]
+                       (let [full (impl/expand-dispatch-options options)]
                          (cache/write-to-cache cache-dir' digest full)
                          full))))]
     (assoc result :arguments (or arguments *command-line-args*))))

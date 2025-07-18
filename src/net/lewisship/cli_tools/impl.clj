@@ -685,6 +685,7 @@
     ;; option and positional argument are verified to have unique symbols, so merge it all together
     (update command-map :options merge positional-arguments)))
 
+;; TODO: make private? Remove?
 (defn extract-command-summary
   [command-var]
   (let [v-meta (meta command-var)
@@ -904,6 +905,100 @@
     (dispatch-options-parser tool-name arguments commands)
     nil))
 
+
+(defn- invoke-command+
+  [command-map args]
+  (binding [*command* command-map]
+    (apply (-> command-map :fn requiring-resolve) args)))
+
+(defn- inner-dispatch+
+  [tool-name arguments root-command]
+  (let [command-name (first arguments)]
+    (if (or (nil? command-name)
+            (string/starts-with? command-name "-"))
+      (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
+      (loop [prefix            []
+             term              command-name
+             remaining-args    (next arguments)
+             command root-command]
+        (cond-let
+          :let [possible-commands (:subs command)
+                matchable-terms (keys possible-commands)]
+
+          ;; Options start with a '-', but we're still looking for commands
+          (or (nil? term)
+              (string/starts-with? term "-"))
+          (abort
+            [:bold.green tool-name ": " [:red (string/join " " prefix)]]
+            " is incomplete; "
+            (compose-list matchable-terms)
+            " could follow; use "
+            [:bold [:green tool-name " help"]]
+            " to list commands")
+
+          :let [matched-terms (find-matches term matchable-terms)
+                match-count (count matched-terms)]
+
+          (not= 1 match-count)
+          (let [body        (if (pos? match-count)
+                              (list "matches "
+                                    (compose-list matched-terms))
+                              (list "is not a command, expected "
+                                    (compose-list matchable-terms {:conjuction "or"})))
+                help-suffix (list
+                              "; use "
+                              [:bold [:green tool-name " help"]]
+                              " to list commands")]
+            (abort
+              [:bold [:green tool-name] ": "
+               [:red (string/join " " (conj prefix term))]]
+              " "
+              body
+              help-suffix))
+
+          ;; Exactly one match
+          :let [matched-term (first matched-terms)
+                matched-command (get possible-commands matched-term)]
+
+          (:fn matched-command)
+          (invoke-command+ matched-command remaining-args)
+
+          ;; Otherwise, it was a command group.
+          ;; The map for a group contains string keys for nested commands, as well as keyword keys
+          ;; not used here.
+          :else
+          (recur (conj prefix term)
+                 (first remaining-args)
+                 (rest remaining-args)
+                 matched-command))))))
+
+(defn dispatch-options-parser+
+  [tool-name arguments command-root]
+  (let [[first-arg & remaining-args] arguments]
+    (cond
+      ;; In the normal case, when help is available, treat -h or --help the same as help
+      (#{"-h" "--help"} first-arg)
+      (inner-dispatch+ tool-name (cons "help" remaining-args) command-root)
+
+      (#{"-C" "--color"} first-arg)
+      (binding [*color-enabled* true]
+        ;; Can't use recur, due to binding
+        (dispatch-options-parser+ tool-name remaining-args command-root))
+
+      (#{"-N" "--no-color"} first-arg)
+      (binding [*color-enabled* false]
+        (dispatch-options-parser+ tool-name remaining-args command-root))
+
+      :else
+      (inner-dispatch+ tool-name arguments command-root))))
+
+
+(defn dispatch+
+  [{:keys [command-root arguments tool-name] :as options}]
+  (binding [*options* options]
+    (dispatch-options-parser+ tool-name arguments command-root))
+  nil)
+
 (defn command-map?
   [arguments]
   (and (= 1 (count arguments))
@@ -921,3 +1016,113 @@
        (mapcat (fn [[test expr]]
                  [(list not test) expr]))))
 
+(defn resolve-ns
+  [ns-symbol]
+  (if-let [ns-object (find-ns ns-symbol)]
+    ns-object
+    (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
+
+
+(defn command-group-dispatch
+  [remaining-args]
+  ()
+  )
+
+(comment
+  ;; collect-commands output
+  ;;
+  {:doc     "..."
+   :title   "..."
+   :command "..."                                           ; may not match fn name, from ::impl/command-name
+   :fn      'a-fn                                           ; function to dispatch to
+   :subs
+   {"sub-command" 'nested-command-map}
+   :groups  ["a" "b" "c"]                                   ;; names of group commands, in listed order
+   }
+
+  )
+
+;; wf [...]
+;;
+;; clojure - Clojure commands
+;;        bump: Bump dependencies
+;;   classpath: List classpath dependencies w/ sizes
+;;
+;; clojure edit - Clojure editting commands
+;;   add-dep: add a dependency
+;;
+
+(defn- collect-nested-commands
+  [path in-namespace]
+  (require in-namespace)
+  (let [commands-ns (resolve-ns in-namespace)]
+    (->> commands-ns
+         ns-publics
+         vals
+         (keep (fn [command-var]
+                 (let [command-meta (meta command-var)
+                       command-name (::command-name command-meta)]
+                   (when command-name
+                     {:fn           (symbol command-var)
+                      :doc          (:doc command-meta)
+                      :command      command-name
+                      :command-path (conj path command-name)
+                      :title        (extract-command-summary command-var)})))))))
+
+
+(defn- build-command-group
+  [path descriptor]
+  (let [{:keys [namespaces title doc command]} descriptor
+        path'           (conj path command)
+        nested-commands (mapcat #(collect-nested-commands path' %) namespaces)
+        nested-groups   (map #(build-command-group path' %) (:groups descriptor))
+        subs            (reduce (fn [m c]
+                                  ;; TODO: Check for name collisions
+                                  (assoc m (:command c) c))
+                                {}
+                                (concat nested-commands nested-groups))]
+    {:doc          doc
+     :title        (or title
+                       (first-sentence doc))
+     :command      command
+     :command-path path'
+     :subs         subs
+     :groups       (mapv :command nested-groups)}))
+
+
+(defn- expand-dispatch-options
+  [options]
+  (let [{:keys [tool-name]} options
+        tool-name' (or tool-name
+                       (default-tool-name)
+                       (throw (ex-info "No :tool-name specified" {:options options})))
+        ;; options are also the root descriptor for the built-in namespace
+        options'   (-> options
+                       (update :namespaces conj 'net.lewisship.cli-tools.builtins)
+                       (assoc :command tool-name))
+        root       (build-command-group [] options')]
+    (assoc options
+      :tool-name tool-name'
+      :command-root root)))
+
+
+(comment
+
+  (expand-dispatch-options {:tool-name "test1"
+                            :doc       "First example"})
+
+
+  (expand-dispatch-options {:tool-name  "test2"
+                            :namespaces ['net.lewisship.cli-tools.completions]
+                            :doc        "Ex 2"})
+
+  (expand-dispatch-options {:tool-name "test3"
+                            :groups
+                            [{:command    "shell"
+                              :doc        "ZSh helpers"
+                              :namespaces ['net.lewisship.cli-tools.completions]}]
+                            :doc       "Test 3. It's personal"})
+
+
+  ;
+  )
