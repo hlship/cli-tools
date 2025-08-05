@@ -220,6 +220,7 @@
               :label         (:command-category ns-meta (name ns-symbol))
               :order         (:command-category-order ns-meta 0)}))))
 
+;; TODO: Delete or revise this
 (defn locate-commands
   "Passed a seq of symbols identifying *loaded* namespaces, this function
   locates commands, functions defined by [[defcommand]].
@@ -290,7 +291,9 @@
   (or when providing an override).
 
   options:
-  
+
+  TODO: UPDATE THIS
+
   - :tool-name - used in command summary and errors
   - :tool-doc - used in command summary
   - :arguments - seq of strings; first is name of command, rest passed to command
@@ -312,22 +315,7 @@
   [options]
   (impl/dispatch options))
 
-(defn- expand-dispatch-options*
-  [options]
-  (let [{:keys [namespaces tool-name tool-doc flat]} options
-        tool-name'  (or tool-name
-                        (impl/default-tool-name)
-                        (throw (ex-info "No :tool-name specified" {:options options})))
-        namespaces' (cons 'net.lewisship.cli-tools.builtins namespaces)
-        _           (run! require namespaces')
-        [command-categories commands] (locate-commands namespaces')]
-    {:tool-name  tool-name'
-     :tool-doc   (or tool-doc
-                     (some-> namespaces first find-ns meta :doc))
-     :flat       (boolean flat)
-     :categories command-categories
-     :commands   commands}))
-
+;; TODO: Expandable expansion and caching
 
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
@@ -362,8 +350,6 @@
   - :tool-name (optional, string) - used in command summary and errors
   - :tool-doc (optional, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
-  - :namespaces - symbols identifying namespaces to search for commands
-  - :flat (optional, boolean) - if true, then the default help will be flat (no categories)
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
@@ -385,7 +371,7 @@
   [options]
   (-> (merge default-options options)
       expand-dispatch-options
-      dispatch*))
+      impl/dispatch))
 
 (defn select-option
   "Builds a standard option spec for selecting from a list of possible values.

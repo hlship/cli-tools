@@ -119,13 +119,14 @@
 
 (defn- first-sentence
   [s]
-  (-> s
-      string/trim
-      string/split-lines
-      first
-      (string/split #"\s*\.")
-      first
-      string/trim))
+  (when (string? s)
+    (-> s
+        string/trim
+        string/split-lines
+        first
+        (string/split #"\s*\.")
+        first
+        string/trim)))
 
 (defn- indentation-of-line
   [line]
@@ -736,6 +737,66 @@
                    category->command)
         prune-empty-values)))
 
+(defn- collect-subs
+  [commands-map *result]
+  (doseq [command (vals commands-map)]
+    (vswap! *result conj! command)
+    (collect-subs (:subs command) *result)))
+
+(defn- collect-commands+
+  [command-root]
+  (let [*result (volatile! (transient []))]
+    (collect-subs (:subs command-root) *result)
+    (-> *result deref persistent!)))
+
+(defn- output-commands
+  [command-name-width command-map]
+  ;; subs is a mix of commands and groups
+  (let [{:keys [subs groups command-path doc]} command-map]
+    (println)
+    (when-not (= [] command-path)
+      (pout [:bold (string/join " " command-path)]
+            " - "
+            doc))
+    (doseq [{:keys [command title]} (->> subs
+                                         vals
+                                         (sort-by :command))]
+      (pout
+        "  "
+        [{:width command-name-width} [:bold.green command]]
+        ": "
+        title))
+
+    ;; Recurse any sub-groups
+    (run! #(output-commands command-name-width
+                            (get subs %)) groups)))
+
+(defn show-tool-help
+  [options _search-term]
+  (binding [*out* *err*]
+    (let [{tool-doc :doc
+           :keys    [tool-name command-root]} options
+          _                  (do
+                               (pout "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
+                               (when tool-doc
+                                 (println)
+                                 (-> tool-doc cleanup-docstring println))
+                               (println "\nTool options:")
+                               (pout [:bold "  -C, --color"] "    Enable ANSI color output")
+                               (pout [:bold "  -N, --no-color"] " Disable ANSI color output")
+                               (pout [:bold "  -h, --help"] "     This tool summary\n"))
+          all-commands       (collect-commands+ command-root)
+          command-name-width (->> all-commands
+                                  (map :command)
+                                  (map count)
+                                  (apply max 0))]
+
+      (print "\nCommands:")
+      ;; TODO: the root namespace is different, with the built-in commands coming last.  Or maybe that goes?
+      (output-commands command-name-width command-root)))
+  #_(exit 0))
+
+#_
 (defn show-tool-help
   [options search-term]
   (binding [*out* *err*]
@@ -811,10 +872,16 @@
   [tool-name]
   (list ", use " [:bold.green tool-name " help"] " to list commands"))
 
+#_
 (defn- invoke-command
   [command-map args]
   (binding [*command* command-map]
     (apply (-> command-map :var requiring-resolve) args)))
+
+(defn- invoke-command
+  [command-map args]
+  (binding [*command* command-map]
+    (apply (-> command-map :fn requiring-resolve) args)))
 
 (defn- inner-dispatch
   [tool-name arguments commands]
@@ -876,6 +943,7 @@
                  (rest remaining-args)
                  matched-command))))))
 
+#_
 (defn dispatch-options-parser
   [tool-name arguments commands]
   (let [[first-arg & remaining-args] arguments]
@@ -896,6 +964,7 @@
       :else
       (inner-dispatch tool-name arguments commands))))
 
+#_
 (defn dispatch
   [{:keys [tool-name commands arguments] :as options}]
   ;; Capture these options for use by help command or when printing usage
@@ -905,13 +974,7 @@
     (dispatch-options-parser tool-name arguments commands)
     nil))
 
-
-(defn- invoke-command+
-  [command-map args]
-  (binding [*command* command-map]
-    (apply (-> command-map :fn requiring-resolve) args)))
-
-(defn- inner-dispatch+
+(defn- inner-dispatch
   [tool-name arguments root-command]
   (let [command-name (first arguments)]
     (if (or (nil? command-name)
@@ -961,7 +1024,7 @@
                 matched-command (get possible-commands matched-term)]
 
           (:fn matched-command)
-          (invoke-command+ matched-command remaining-args)
+          (invoke-command matched-command remaining-args)
 
           ;; Otherwise, it was a command group.
           ;; The map for a group contains string keys for nested commands, as well as keyword keys
@@ -972,31 +1035,31 @@
                  (rest remaining-args)
                  matched-command))))))
 
-(defn dispatch-options-parser+
+(defn dispatch-options-parser
   [tool-name arguments command-root]
   (let [[first-arg & remaining-args] arguments]
     (cond
       ;; In the normal case, when help is available, treat -h or --help the same as help
       (#{"-h" "--help"} first-arg)
-      (inner-dispatch+ tool-name (cons "help" remaining-args) command-root)
+      (inner-dispatch tool-name (cons "help" remaining-args) command-root)
 
       (#{"-C" "--color"} first-arg)
       (binding [*color-enabled* true]
         ;; Can't use recur, due to binding
-        (dispatch-options-parser+ tool-name remaining-args command-root))
+        (dispatch-options-parser tool-name remaining-args command-root))
 
       (#{"-N" "--no-color"} first-arg)
       (binding [*color-enabled* false]
-        (dispatch-options-parser+ tool-name remaining-args command-root))
+        (dispatch-options-parser tool-name remaining-args command-root))
 
       :else
-      (inner-dispatch+ tool-name arguments command-root))))
+      (inner-dispatch tool-name arguments command-root))))
 
 
-(defn dispatch+
+(defn dispatch
   [{:keys [command-root arguments tool-name] :as options}]
   (binding [*options* options]
-    (dispatch-options-parser+ tool-name arguments command-root))
+    (dispatch-options-parser tool-name arguments command-root))
   nil)
 
 (defn command-map?
@@ -1023,10 +1086,6 @@
     (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
 
 
-(defn command-group-dispatch
-  [remaining-args]
-  ()
-  )
 
 (comment
   ;; collect-commands output
@@ -1034,6 +1093,7 @@
   {:doc     "..."
    :title   "..."
    :command "..."                                           ; may not match fn name, from ::impl/command-name
+   :command-path ["a" "b"]
    :fn      'a-fn                                           ; function to dispatch to
    :subs
    {"sub-command" 'nested-command-map}
@@ -1065,7 +1125,7 @@
                    (when command-name
                      {:fn           (symbol command-var)
                       :doc          (:doc command-meta)
-                      :command      command-name
+                      :command      command-name            ; needed?
                       :command-path (conj path command-name)
                       :title        (extract-command-summary command-var)})))))))
 
@@ -1073,7 +1133,9 @@
 (defn- build-command-group
   [path descriptor]
   (let [{:keys [namespaces title doc command]} descriptor
-        path'           (conj path command)
+        path'           (if (nil? path)
+                          []
+                          (conj path command))
         nested-commands (mapcat #(collect-nested-commands path' %) namespaces)
         nested-groups   (map #(build-command-group path' %) (:groups descriptor))
         subs            (reduce (fn [m c]
@@ -1087,12 +1149,13 @@
      :command      command
      :command-path path'
      :subs         subs
+     ;; Keep the (sub)-groups in the order they are specified in the options
      :groups       (mapv :command nested-groups)}))
 
 
-(defn- expand-dispatch-options
+(defn expand-dispatch-options
   [options]
-  (let [{:keys [tool-name]} options
+  (let [{:keys [tool-name tool-doc]} options
         tool-name' (or tool-name
                        (default-tool-name)
                        (throw (ex-info "No :tool-name specified" {:options options})))
@@ -1100,10 +1163,19 @@
         options'   (-> options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
                        (assoc :command tool-name))
-        root       (build-command-group [] options')]
-    (assoc options
-      :tool-name tool-name'
-      :command-root root)))
+        root       (build-command-group nil options')
+        tool-doc'  (or tool-doc
+                       (:doc root)
+                       (-> options
+                           :namespaces
+                           first
+                           resolve-ns
+                           meta
+                           :doc))]
+    (-> options
+        (dissoc :groups)
+        (assoc :tool-name tool-name'
+               :command-root (assoc root :doc tool-doc')))))
 
 
 (comment
