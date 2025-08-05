@@ -12,7 +12,7 @@
    search-term ["SEARCH" "Filter shown commands to those that match this term"
          :optional true]]
   ;; dispatch binds *options* for us
-  (impl/show-tool-help (cond-> impl/*options*
+  (impl/print-tool-help (cond-> impl/*options*
                                flat (assoc :flat true))
-                       search-term))
+                        search-term))
 

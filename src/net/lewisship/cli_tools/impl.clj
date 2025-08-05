@@ -68,6 +68,7 @@
                  max-terms  3
                  noun       "command"}} opts
          n    (count terms)
+         terms' (sort terms)
          wrap (fn [term]
                 [font term])]
      (cond
@@ -80,20 +81,20 @@
 
        (= 2 n)
        (list
-         (-> terms first wrap)
+         (-> terms' first wrap)
          (str " " conjuction " ")
-         (-> terms second wrap))
+         (-> terms' second wrap))
 
        (<= n max-terms)
        (let [n'            (dec n)
-             leading-terms (take n' terms)
-             final-term    (nth terms n')]
+             leading-terms (take n' terms')
+             final-term    (nth terms' n')]
          (concat
            (inject-commas (map wrap leading-terms))
            [(str ", " conjuction " ") (wrap final-term)]))
 
        :else
-       (let [listed-terms (take max-terms terms)
+       (let [listed-terms (take max-terms terms')
              n-unlisted   (- n max-terms)]
          (concat
            (inject-commas (map wrap listed-terms))
@@ -162,46 +163,44 @@
              (string/join "\n"))))))
 
 (defn print-summary
-  [command-map]
-  (binding [*out* *err*]
-    (let [{:keys [tool-name]} *options*
-          {:keys [command-path]} *command*
-          {:keys [command-name positional-specs command-doc summary]} command-map
-          arg-strs (map arg-spec->str positional-specs)]
-      (pout
-        "Usage: "
-        ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
-        (when tool-name
-          [:bold.green tool-name " "])
-        ;; A stand-alone tool will use its command-name, a command within
-        ;; a multi-command tool will have a command-path.
-        [:bold.green (if command-path
-                       (string/join " " command-path)
-                       command-name)]
-        " [OPTIONS]"
-        (map list (repeat " ") arg-strs))
-      (when command-doc
-        (-> command-doc cleanup-docstring println))
+  [command-doc command-map]
+  (let [{:keys [tool-name]} *options*
+        {:keys [command-path]} *command*
+        {:keys [command-name positional-specs summary]} command-map
+        arg-strs (map arg-spec->str positional-specs)]
+    (perr
+      "Usage: "
+      ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
+      (when tool-name
+        [:bold.green tool-name " "])
+      ;; A stand-alone tool will use its command-name, a command within
+      ;; a multi-command tool will have a command-path.
+      [:bold.green (if command-path
+                     (string/join " " command-path)
+                     command-name)]
+      " [OPTIONS]"
+      (map list (repeat " ") arg-strs))
+    (when command-doc
+      (-> command-doc cleanup-docstring println))
 
-      ;; There's always at least -h/--help:
-      (println "\nOptions:")
-      (println summary)
+    ;; There's always at least -h/--help:
+    (perr "\nOptions:\n" summary)
 
-      (when (seq positional-specs)
-        (let [max-label-width (->> positional-specs
-                                   (map :label)
-                                   (map count)
-                                   (reduce max)
-                                   ;; For indentation
-                                   (+ 2))
-              lines           (for [{:keys [label doc]} positional-specs]
-                                (list
-                                  [{:width max-label-width}
-                                   [:bold label]]
-                                  ": "
-                                  doc))]
-          (println "\nArguments:")
-          (pout (interpose \newline lines)))))))
+    (when (seq positional-specs)
+      (let [max-label-width (->> positional-specs
+                                 (map :label)
+                                 (map count)
+                                 (reduce max)
+                                 ;; For indentation
+                                 (+ 2))
+            lines           (for [{:keys [label doc]} positional-specs]
+                              (list
+                                [{:width max-label-width}
+                                 [:bold label]]
+                                ": "
+                                doc))]
+        (perr "\nArguments:")
+        (perr (interpose \newline lines))))))
 
 (defn print-errors
   [errors]
@@ -230,10 +229,10 @@
     (list
       "  "
       [{:width max-option-width
-        :pad   :right} opt-label]
+        :align :left} opt-label]
       " "
       [{:width max-default-width
-        :pad   :right} default]
+        :align :left} default]
       (when (pos? max-default-width)
         " ")
       opt-desc)))
@@ -630,14 +629,13 @@
 (defn compile-interface
   "Parses the interface forms of a `defcommand` into a command spec; the interface
    defines the options and positional arguments that will be parsed."
-  [command-doc forms]
+  [forms]
   (let [initial-state {:consuming       :options
                        :option-symbols  []
                        :command-options []
                        :command-args    []
                        :let-forms       []
-                       :validate-cases  []
-                       :command-doc     command-doc}
+                       :validate-cases  []}
         final-state   (reduce consumer
                               initial-state forms)]
     (when (:pending final-state)
@@ -652,25 +650,24 @@
   "Given a command specification (returned from [[compile-interface]]), this is called during
   execution time to convert command line arguments into options. The command map merges new
   keys into the command spec."
-  [command-name command-line-arguments command-spec]
+  [command-name command-doc command-line-arguments command-spec]
   (cond-let
     :let [{:keys [command-args command-options parse-opts-options]} command-spec
           {:keys [in-order summary-fn]
-           :or   {in-order   false
-                  summary-fn summarize-specs}} parse-opts-options
+           :or   {in-order false}} parse-opts-options
           positional-specs (compile-positional-specs command-name command-args)
           command-map (merge command-spec
                              {:command-name     command-name
                               :positional-specs positional-specs}
                              (cli/parse-opts command-line-arguments command-options
                                              :in-order in-order
-                                             :summary-fn summary-fn))
+                                             :summary-fn summarize-specs))
           {:keys [arguments options]} command-map]
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.
     (:help options)
     (do
-      (print-summary command-map)
+      (print-summary command-doc command-map)
       (exit 0))
 
     :let [[positional-arguments arg-errors] (parse-positional-arguments positional-specs arguments)
@@ -693,16 +690,6 @@
         {:keys [::command-summary]} v-meta]
     (or command-summary
         (-> v-meta :doc first-sentence))))
-
-(defn- print-commands
-  [command-name-width commands]
-  (doseq [{:keys [command-name]
-           :as   command-map} (sort-by :command-name commands)]
-    (pout
-      "  "
-      [{:width command-name-width} [:bold.green command-name]]
-      ": "
-      (:command-summary command-map))))
 
 (defn- command-match?
   [command search-term]
@@ -746,32 +733,38 @@
 (defn- collect-commands+
   [command-root]
   (let [*result (volatile! (transient []))]
-    (collect-subs (:subs command-root) *result)
+    (collect-subs command-root *result)
     (-> *result deref persistent!)))
 
-(defn- output-commands
-  [command-name-width command-map]
+(def ^:private missing-doc [:red "(missing documentation)"])
+
+(defn- print-commands
+  [command-name-width container-map command-map]
   ;; subs is a mix of commands and groups
-  (let [{:keys [subs groups command-path doc]} command-map]
+  (let [sorted-commands (->> command-map
+                             vals
+                             (sort-by :command))]
     (println)
-    (when-not (= [] command-path)
-      (pout [:bold (string/join " " command-path)]
+    (when container-map
+      (pout [:bold (string/join " " (:command-path container-map))]
             " - "
-            doc))
-    (doseq [{:keys [command title]} (->> subs
-                                         vals
-                                         (sort-by :command))]
+            (-> container-map :doc first-sentence (or missing-doc))))
+
+    ;; Commands (including sub-groups) inside this command
+    (doseq [{:keys [command doc fn]} sorted-commands]
       (pout
         "  "
         [{:width command-name-width} [:bold.green command]]
         ": "
-        title))
+        [(when-not fn :italic)
+         (or (first-sentence doc) missing-doc)]))
 
-    ;; Recurse any sub-groups
-    (run! #(output-commands command-name-width
-                            (get subs %)) groups)))
+    ;; Recurse and print sub-groups
+    (->> sorted-commands
+         (remove :fn)                                       ; Remove commands, leave groups
+         (run! #(print-commands command-name-width % (:subs %))))))
 
-(defn show-tool-help
+(defn print-tool-help
   [options _search-term]
   (binding [*out* *err*]
     (let [{tool-doc :doc
@@ -791,60 +784,9 @@
                                   (map count)
                                   (apply max 0))]
 
-      (print "\nCommands:")
-      ;; TODO: the root namespace is different, with the built-in commands coming last.  Or maybe that goes?
-      (output-commands command-name-width command-root)))
+      (print "Commands:")
+      (print-commands command-name-width nil command-root)))
   #_(exit 0))
-
-#_
-(defn show-tool-help
-  [options search-term]
-  (binding [*out* *err*]
-    (let [{:keys [tool-name tool-doc commands categories flat]} options]
-      (pout "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
-      (when tool-doc
-        (println)
-        (-> tool-doc cleanup-docstring println))
-      (println "\nTool options:")
-      (pout [:bold "  -C, --color"] "    Enable ANSI color output")
-      (pout [:bold "  -N, --no-color"] " Disable ANSI color output")
-      (pout [:bold "  -h, --help"] "     This tool summary\n")
-      (let [grouped-commands   (collect-commands commands (when search-term
-                                                            (string/lower-case search-term)))
-            all-commands       (cond->> (reduce into [] (vals grouped-commands))
-                                        ;; For a flat view, each command's name is its path (i.e., prefixed with the command group).
-                                        flat (map (fn [command]
-                                                    (assoc command :command-name (string/join " " (:command-path command))))))
-            command-name-width (->> all-commands
-                                    (map :command-name)
-                                    (map count)
-                                    (apply max 0))]
-        (cond
-          (empty? all-commands)
-          (do
-            (if search-term
-              (pout "No commands match " [:italic search-term])
-              (println "No commands are configured"))
-            (exit 0))
-
-          search-term
-          (pout "Commands (matching " [:italic search-term] "):")
-
-          :else
-          (println "Commands:"))
-        (if flat
-          (print-commands command-name-width all-commands)
-          (doseq [{:keys [category label command-group]} (sort-by (juxt :order :label) categories)
-                  :when (contains? grouped-commands category)]
-            (println)
-            (pout [:bold
-                   (when command-group
-                     (list
-                       [:green command-group]
-                       " - "))
-                   label])
-            (print-commands command-name-width (get grouped-commands category)))))))
-  (exit 0))
 
 (defn- to-matcher
   [s]
@@ -872,107 +814,10 @@
   [tool-name]
   (list ", use " [:bold.green tool-name " help"] " to list commands"))
 
-#_
-(defn- invoke-command
-  [command-map args]
-  (binding [*command* command-map]
-    (apply (-> command-map :var requiring-resolve) args)))
-
 (defn- invoke-command
   [command-map args]
   (binding [*command* command-map]
     (apply (-> command-map :fn requiring-resolve) args)))
-
-(defn- inner-dispatch
-  [tool-name arguments commands]
-  (let [command-name (first arguments)]
-    (if (or (nil? command-name)
-            (string/starts-with? command-name "-"))
-      (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
-      (loop [prefix            []
-             term              command-name
-             remaining-args    (next arguments)
-             possible-commands commands]
-        (cond-let
-          :let [matchable-terms (filter string? (keys possible-commands))]
-
-          ;; Options start with a '-', but we're still looking for commands
-          (or (nil? term)
-              (string/starts-with? term "-"))
-          (abort
-            [:bold.green tool-name ": " [:red (string/join " " prefix)]]
-            " is incomplete; "
-            (compose-list matchable-terms)
-            " could follow; use "
-            [:bold [:green tool-name " help"]]
-            " to list commands")
-
-          ;; In a command group, only the string keys map to further commands; keyword keys are other structure.
-          :let [matched-terms (find-matches term matchable-terms)
-                match-count (count matched-terms)]
-
-          (not= 1 match-count)
-          (let [body        (if (pos? match-count)
-                              (list "matches "
-                                    (compose-list matched-terms))
-                              (list "is not a command, expected "
-                                    (compose-list matchable-terms {:conjuction "or"})))
-                help-suffix (list
-                              "; use "
-                              [:bold [:green tool-name " help"]]
-                              " to list commands")]
-            (abort
-              [:bold [:green tool-name] ": "
-               [:red (string/join " " (conj prefix term))]]
-              " "
-              body
-              help-suffix))
-
-          :let [matched-term (first matched-terms)
-                matched-command (get possible-commands matched-term)]
-
-          (:var matched-command)
-          (invoke-command matched-command remaining-args)
-
-          ;; Otherwise, it was a command group.
-          ;; The map for a group contains string keys for nested commands, as well as keyword keys
-          ;; not used here.
-          :else
-          (recur (conj prefix term)
-                 (first remaining-args)
-                 (rest remaining-args)
-                 matched-command))))))
-
-#_
-(defn dispatch-options-parser
-  [tool-name arguments commands]
-  (let [[first-arg & remaining-args] arguments]
-    (cond
-      ;; In the normal case, when help is available, treat -h or --help the same as help
-      (#{"-h" "--help"} first-arg)
-      (inner-dispatch tool-name (cons "help" remaining-args) commands)
-
-      (#{"-C" "--color"} first-arg)
-      (binding [*color-enabled* true]
-        ;; Can't use recur, due to binding
-        (dispatch-options-parser tool-name remaining-args commands))
-
-      (#{"-N" "--no-color"} first-arg)
-      (binding [*color-enabled* false]
-        (dispatch-options-parser tool-name remaining-args commands))
-
-      :else
-      (inner-dispatch tool-name arguments commands))))
-
-#_
-(defn dispatch
-  [{:keys [tool-name commands arguments] :as options}]
-  ;; Capture these options for use by help command or when printing usage
-  (binding [*options* options]
-    (when (string/blank? tool-name)
-      (throw (ex-info "must specify :tool-name" {:options options})))
-    (dispatch-options-parser tool-name arguments commands)
-    nil))
 
 (defn- inner-dispatch
   [tool-name arguments root-command]
@@ -985,7 +830,7 @@
              remaining-args    (next arguments)
              command root-command]
         (cond-let
-          :let [possible-commands (:subs command)
+          :let [possible-commands command
                 matchable-terms (keys possible-commands)]
 
           ;; Options start with a '-', but we're still looking for commands
@@ -1014,7 +859,9 @@
                               " to list commands")]
             (abort
               [:bold [:green tool-name] ": "
-               [:red (string/join " " (conj prefix term))]]
+               [:green (string/join " " prefix)]
+               (when (seq prefix) " ")
+               [:red term]]
               " "
               body
               help-suffix))
@@ -1023,17 +870,16 @@
           :let [matched-term (first matched-terms)
                 matched-command (get possible-commands matched-term)]
 
+
           (:fn matched-command)
           (invoke-command matched-command remaining-args)
 
           ;; Otherwise, it was a command group.
-          ;; The map for a group contains string keys for nested commands, as well as keyword keys
-          ;; not used here.
           :else
-          (recur (conj prefix term)
+          (recur (:command-path matched-command)
                  (first remaining-args)
                  (rest remaining-args)
-                 matched-command))))))
+                 (:subs matched-command)))))))
 
 (defn dispatch-options-parser
   [tool-name arguments command-root]
@@ -1085,77 +931,55 @@
     ns-object
     (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
 
-
-
-(comment
-  ;; collect-commands output
-  ;;
-  {:doc     "..."
-   :title   "..."
-   :command "..."                                           ; may not match fn name, from ::impl/command-name
-   :command-path ["a" "b"]
-   :fn      'a-fn                                           ; function to dispatch to
-   :subs
-   {"sub-command" 'nested-command-map}
-   :groups  ["a" "b" "c"]                                   ;; names of group commands, in listed order
-   }
-
-  )
-
-;; wf [...]
-;;
-;; clojure - Clojure commands
-;;        bump: Bump dependencies
-;;   classpath: List classpath dependencies w/ sizes
-;;
-;; clojure edit - Clojure editting commands
-;;   add-dep: add a dependency
-;;
-
 (defn- collect-nested-commands
   [path in-namespace]
   (require in-namespace)
-  (let [commands-ns (resolve-ns in-namespace)]
-    (->> commands-ns
-         ns-publics
-         vals
-         (keep (fn [command-var]
+  (->> in-namespace
+       resolve-ns
+       ns-publics
+       vals
+       (reduce (fn [result command-var]
                  (let [command-meta (meta command-var)
                        command-name (::command-name command-meta)]
-                   (when command-name
-                     {:fn           (symbol command-var)
-                      :doc          (:doc command-meta)
-                      :command      command-name            ; needed?
-                      :command-path (conj path command-name)
-                      :title        (extract-command-summary command-var)})))))))
+                   (cond-> result
+                     command-name (assoc command-name
+                                         {:fn           (symbol command-var)
+                                          :doc          (:doc command-meta)
+                                          :command      command-name ; needed?
+                                          :command-path (conj path command-name) ; needed?
+                                          }))))
+               {})))
 
 
 (defn- build-command-group
   [path descriptor]
-  (let [{:keys [namespaces title doc command]} descriptor
+  (let [{:keys [namespaces title doc command groups]} descriptor
         path'           (if (nil? path)
                           []
                           (conj path command))
-        nested-commands (mapcat #(collect-nested-commands path' %) namespaces)
-        nested-groups   (map #(build-command-group path' %) (:groups descriptor))
-        subs            (reduce (fn [m c]
-                                  ;; TODO: Check for name collisions
-                                  (assoc m (:command c) c))
-                                {}
-                                (concat nested-commands nested-groups))]
+        direct-commands (->> namespaces
+                             (map #(collect-nested-commands path' %))
+                             (reduce merge {}))
+        ;; Mix in nested groups to form the subs for this group
+        subs            (reduce-kv
+                          (fn [commands group-command group-descriptor]
+                            (assoc commands group-command
+                                   (build-command-group path'
+                                                        (assoc group-descriptor
+                                                               :command group-command
+                                                               #_#_;; May be needed later?
+                                                                       :group? true))))
+                          direct-commands
+                          groups)]
     {:doc          doc
-     :title        (or title
-                       (first-sentence doc))
      :command      command
-     :command-path path'
-     :subs         subs
-     ;; Keep the (sub)-groups in the order they are specified in the options
-     :groups       (mapv :command nested-groups)}))
+     :command-path path'                                    ;; TODO: Is this needed?
+     :subs         subs}))
 
 
 (defn expand-dispatch-options
   [options]
-  (let [{:keys [tool-name tool-doc]} options
+  (let [{:keys [tool-name]} options
         tool-name' (or tool-name
                        (default-tool-name)
                        (throw (ex-info "No :tool-name specified" {:options options})))
@@ -1163,19 +987,12 @@
         options'   (-> options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
                        (assoc :command tool-name))
-        root       (build-command-group nil options')
-        tool-doc'  (or tool-doc
-                       (:doc root)
-                       (-> options
-                           :namespaces
-                           first
-                           resolve-ns
-                           meta
-                           :doc))]
+        root       (-> (build-command-group nil options')
+                       :subs)]
     (-> options
         (dissoc :groups)
         (assoc :tool-name tool-name'
-               :command-root (assoc root :doc tool-doc')))))
+               :command-root root))))
 
 
 (comment
@@ -1190,9 +1007,9 @@
 
   (expand-dispatch-options {:tool-name "test3"
                             :groups
-                            [{:command    "shell"
-                              :doc        "ZSh helpers"
-                              :namespaces ['net.lewisship.cli-tools.completions]}]
+                            {"shell"
+                             {:doc        "ZSh helpers"
+                              :namespaces ['net.lewisship.cli-tools.completions]}}
                             :doc       "Test 3. It's personal"})
 
 
