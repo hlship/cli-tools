@@ -181,7 +181,7 @@
       " [OPTIONS]"
       (map list (repeat " ") arg-strs))
     (when command-doc
-      (-> command-doc cleanup-docstring println))
+      (-> command-doc cleanup-docstring perr))
 
     ;; There's always at least -h/--help:
     (perr "\nOptions:\n" summary)
@@ -683,7 +683,6 @@
     ;; option and positional argument are verified to have unique symbols, so merge it all together
     (update command-map :options merge positional-arguments)))
 
-;; TODO: make private? Remove?
 (defn extract-command-summary
   [command-var]
   (let [v-meta (meta command-var)
@@ -693,36 +692,12 @@
 
 (defn- command-match?
   [command search-term]
-  (or (nil? search-term)
-      (let [{:keys [command-name command-summary]} command]
-        (or (string/includes? (string/lower-case command-name) search-term)
-            (string/includes? (string/lower-case command-summary) search-term)))))
-
-(defn- prune-empty-values
-  [m]
-  (reduce-kv (fn [m k v]
-               (cond-> m
-                 (seq v) (assoc k v)))
-             {}
-             m))
-
-(defn- collect-commands
-  "Walks the commands tree, to produce a map from command category to seq of command map."
-  ([commands search-term] (collect-commands {} commands search-term))
-  ([category->command commands search-term]
-   (->> commands
-        (reduce-kv (fn [m k v]
-                     (if (string? k)
-                       (let [{:keys [category]} v]
-                         (if category
-                           (cond-> m
-                             (command-match? v search-term) (update category conj v))
-                           ;; It's a group psuedo-command, a container of nested commands; recurse in
-                           ;; (this is where non-string keys come in)
-                           (collect-commands m v search-term)))
-                       m))
-                   category->command)
-        prune-empty-values)))
+  (let [{:keys [doc command-summary command-path]} command]
+    (or (string/includes? (string/lower-case doc) search-term)
+        (some #(string/includes? (string/lower-case %) search-term)
+              (map string/lower-case command-path))
+        (and command-summary
+             (string/includes? (string/lower-case command-summary) search-term)))))
 
 (defn- collect-subs
   [commands-map *result]
@@ -730,7 +705,7 @@
     (vswap! *result conj! command)
     (collect-subs (:subs command) *result)))
 
-(defn- collect-commands+
+(defn- collect-commands
   [command-root]
   (let [*result (volatile! (transient []))]
     (collect-subs command-root *result)
@@ -744,15 +719,15 @@
   (let [sorted-commands (->> command-map
                              vals
                              (sort-by :command))]
-    (println)
     (when container-map
-      (pout [:bold (string/join " " (:command-path container-map))]
+      (perr "\n"
+            [:bold (string/join " " (:command-path container-map))]
             " - "
             (-> container-map :doc first-sentence (or missing-doc))))
 
     ;; Commands (including sub-groups) inside this command
     (doseq [{:keys [command doc fn]} sorted-commands]
-      (pout
+      (perr
         "  "
         [{:width command-name-width} [:bold.green command]]
         ": "
@@ -764,29 +739,61 @@
          (remove :fn)                                       ; Remove commands, leave groups
          (run! #(print-commands command-name-width % (:subs %))))))
 
+(defn- command-path-width
+  [path]
+  (apply + (count path) -1 (map count path)))
+
 (defn print-tool-help
-  [options _search-term]
-  (binding [*out* *err*]
-    (let [{tool-doc :doc
+  [options search-term]
+  (cond-let
+    :let [{tool-doc :doc
            :keys    [tool-name command-root]} options
-          _                  (do
-                               (pout "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
-                               (when tool-doc
-                                 (println)
-                                 (-> tool-doc cleanup-docstring println))
-                               (println "\nTool options:")
-                               (pout [:bold "  -C, --color"] "    Enable ANSI color output")
-                               (pout [:bold "  -N, --no-color"] " Disable ANSI color output")
-                               (pout [:bold "  -h, --help"] "     This tool summary\n"))
-          all-commands       (collect-commands+ command-root)
-          command-name-width (->> all-commands
+          _ (do
+              (perr "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
+              (when tool-doc
+                (perr "\n"
+                      (cleanup-docstring tool-doc)))
+              (perr "\nTool options:")
+              (perr [:bold "  -C, --color"] "    Enable ANSI color output")
+              (perr [:bold "  -N, --no-color"] " Disable ANSI color output")
+              (perr [:bold "  -h, --help"] "     This tool summary\n"))
+          all-commands (collect-commands command-root)]
+
+    (nil? search-term)
+    (let [command-name-width (->> all-commands
                                   (map :command)
                                   (map count)
                                   (apply max 0))]
+      (perr "Commands:")
+      (print-commands command-name-width nil command-root))
 
-      (print "Commands:")
-      (print-commands command-name-width nil command-root)))
-  #_(exit 0))
+    :let [matching-commands (filter #(command-match? % search-term) all-commands)]
+
+    (seq matching-commands)
+    (let [command-width (->> matching-commands
+                             (map :command-path)
+                             (map command-path-width)
+                             (reduce max 0))
+          n (count matching-commands)]
+      (perr
+        (if (< n 20)
+          (-> n h/numberword string/capitalize)
+          n)
+        (if (= n 1)
+          " command matches "
+          " commands match ")
+        [:italic search-term]
+        ":" "\n")
+      (doseq [command (sort-by :command-path matching-commands)]
+        (perr [{:font  :bold.green
+                :width command-width}
+               (string/join " " (:command-path command))]
+              ": "
+              (-> command :doc first-sentence (or missing-doc)))))
+
+    :else
+    (perr "No commands match " [:italic search-term]))
+  (exit 0))
 
 (defn- to-matcher
   [s]
@@ -810,7 +817,7 @@
       ;; Otherwise, treat s as a match string and find any values that loosely match it.
       (sort (filter (to-matcher s) values')))))
 
-(defn use-help-message
+(defn- use-help-message
   [tool-name]
   (list ", use " [:bold.green tool-name " help"] " to list commands"))
 

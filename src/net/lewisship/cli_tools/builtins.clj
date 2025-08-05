@@ -7,12 +7,9 @@
 
 (defcommand help
   "List available commands"
-  [flat ["-f" "--flat" "Ignore categories and show a simple list of commands"]
-   :args
+  [:args
    search-term ["SEARCH" "Filter shown commands to those that match this term"
          :optional true]]
   ;; dispatch binds *options* for us
-  (impl/print-tool-help (cond-> impl/*options*
-                               flat (assoc :flat true))
-                        search-term))
+  (impl/print-tool-help impl/*options* search-term))
 
