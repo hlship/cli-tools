@@ -164,7 +164,7 @@
          :optional true
          :repeatable true]
    :in-order true
-   :summary "Execute remote command"]
+   :title "Execute remote command"]
   {:command command
    :args    args
    :verbose verbose})

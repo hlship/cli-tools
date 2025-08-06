@@ -151,7 +151,7 @@
           "defcommand expects a vector to define the interface")
   (let [symbol-meta        (meta fn-name)
         parsed-interface   (impl/compile-interface  interface)
-        {:keys [option-symbols command-map-symbol command-summary let-forms validate-cases]
+        {:keys [option-symbols command-map-symbol title let-forms validate-cases]
          :or   {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name'      (or (:command-name parsed-interface)
                                (name fn-name))
@@ -162,8 +162,7 @@
                                           :doc docstring
                                           :arglists '[['& 'args]]
                                           ::impl/command-name command-name')
-                             ;; TODO: This can be used, instead of the first sentence of the :doc meta
-                             command-summary (assoc ::impl/command-summary command-summary))
+                             title (assoc ::impl/title title))
         ;; Keys actually used by parse-cli and print-summary
         parse-cli-keys     [:command-args :command-options :parse-opts-options :summary]
         validations        (when (seq validate-cases)

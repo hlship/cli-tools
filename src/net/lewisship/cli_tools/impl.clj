@@ -23,7 +23,7 @@
   command spec. Used when extracting options for completions."
   false)
 
-(def ^:private supported-keywords #{:in-order :as :args :options :command :summary :let :validate})
+(def ^:private supported-keywords #{:in-order :as :args :options :command :title :let :validate})
 
 (defn exit
   [status]
@@ -604,13 +604,13 @@
       (assoc :command-name form)
       complete-keyword))
 
-(defmethod consumer :summary
+(defmethod consumer :title
   [state form]
   (when-not (string? form)
-    (fail "Expected string summary for command" state form))
+    (fail "Expected string title for command" state form))
 
   (-> state
-      (assoc :command-summary form)
+      (assoc :title form)
       complete-keyword))
 
 (defmethod consumer :validate
@@ -681,13 +681,6 @@
     :else
     ;; option and positional argument are verified to have unique symbols, so merge it all together
     (update command-map :options merge positional-arguments)))
-
-(defn extract-command-summary
-  [command-var]
-  (let [v-meta (meta command-var)
-        {:keys [::command-summary]} v-meta]
-    (or command-summary
-        (-> v-meta :doc first-sentence))))
 
 (defn- command-match?
   [command search-term]
@@ -783,9 +776,7 @@
                              (reduce max 0))
           n (count matching-commands)]
       (perr
-        (if (< n 20)
-          (-> n numberword string/capitalize)
-          n)
+        (-> n numberword string/capitalize)
         (if (= n 1)
           " command matches "
           " commands match ")
@@ -947,19 +938,16 @@
        ns-publics
        vals
        (reduce (fn [result command-var]
-                 (let [command-meta (meta command-var)
-                       {::keys [command-name command-summary]} command-meta]
+                 (let [{:keys  [doc]
+                        ::keys [command-name title]} (meta command-var)]
                    (cond-> result
                      command-name (assoc command-name
                                          {:fn           (symbol command-var)
                                           ;; Commands have a full :doc and an optional short :title
                                           ;; (the title defaults to the first sentence of the :doc
                                           ;; if not provided
-                                          :doc          (:doc command-meta)
-                                          ;; It's the :command-summary tem in defcommand, and
-                                          ;; the ::command-summary meta key, but we like it as
-                                          ;; :title from here.
-                                          :title        command-summary
+                                          :doc          doc
+                                          :title        title
                                           :command      command-name
                                           :command-path (conj path command-name)}))))
                {})))
