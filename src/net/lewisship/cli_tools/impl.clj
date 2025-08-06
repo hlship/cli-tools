@@ -1,7 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
-            [clj-commons.ansi :refer [compose pout perr *color-enabled*]]
+            [clj-commons.ansi :refer [compose perr *color-enabled*]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -713,6 +713,12 @@
 
 (def ^:private missing-doc [:red "(missing documentation)"])
 
+(defn- extract-command-title
+  [command-map]
+  (or (:title command-map)
+      (-> command-map :doc first-sentence)
+      missing-doc))
+
 (defn- print-commands
   [command-name-width container-map command-map]
   ;; subs is a mix of commands and groups
@@ -723,16 +729,16 @@
       (perr "\n"
             [:bold (string/join " " (:command-path container-map))]
             " - "
-            (-> container-map :doc first-sentence (or missing-doc))))
+            (extract-command-title container-map)))
 
     ;; Commands (including sub-groups) inside this command
-    (doseq [{:keys [command doc fn]} sorted-commands]
+    (doseq [{:keys [fn command] :as command-map} sorted-commands]
       (perr
         "  "
         [{:width command-name-width} [:bold.green command]]
         ": "
         [(when-not fn :italic)
-         (or (first-sentence doc) missing-doc)]))
+         (extract-command-title command-map)]))
 
     ;; Recurse and print sub-groups
     (->> sorted-commands
@@ -746,7 +752,9 @@
 (defn print-tool-help
   [options search-term]
   (cond-let
-    :let [{tool-doc :doc
+    :let [search-term' (when search-term
+                         (string/lower-case search-term))
+          {tool-doc :doc
            :keys    [tool-name command-root]} options
           _ (do
               (perr "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
@@ -759,7 +767,7 @@
               (perr [:bold "  -h, --help"] "     This tool summary\n"))
           all-commands (collect-commands command-root)]
 
-    (nil? search-term)
+    (nil? search-term')
     (let [command-name-width (->> all-commands
                                   (map :command)
                                   (map count)
@@ -767,7 +775,7 @@
       (perr "Commands:")
       (print-commands command-name-width nil command-root))
 
-    :let [matching-commands (filter #(command-match? % search-term) all-commands)]
+    :let [matching-commands (filter #(command-match? % search-term') all-commands)]
 
     (seq matching-commands)
     (let [command-width (->> matching-commands
@@ -789,7 +797,7 @@
                 :width command-width}
                (string/join " " (:command-path command))]
               ": "
-              (-> command :doc first-sentence (or missing-doc)))))
+              (extract-command-title command))))
 
     :else
     (perr "No commands match " [:italic search-term]))
@@ -932,35 +940,35 @@
        (mapcat (fn [[test expr]]
                  [(list not test) expr]))))
 
-(defn resolve-ns
-  [ns-symbol]
-  (if-let [ns-object (find-ns ns-symbol)]
-    ns-object
-    (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
-
 (defn- collect-nested-commands
   [path in-namespace]
   (require in-namespace)
   (->> in-namespace
-       resolve-ns
+       find-ns
        ns-publics
        vals
        (reduce (fn [result command-var]
                  (let [command-meta (meta command-var)
-                       command-name (::command-name command-meta)]
+                       {::keys [command-name command-summary]} command-meta]
                    (cond-> result
                      command-name (assoc command-name
                                          {:fn           (symbol command-var)
+                                          ;; Commands have a full :doc and an optional short :title
+                                          ;; (the title defaults to the first sentence of the :doc
+                                          ;; if not provided
                                           :doc          (:doc command-meta)
-                                          :command      command-name ; needed?
-                                          :command-path (conj path command-name) ; needed?
-                                          }))))
+                                          ;; It's the :command-summary tem in defcommand, and
+                                          ;; the ::command-summary meta key, but we like it as
+                                          ;; :title from here.
+                                          :title        command-summary
+                                          :command      command-name
+                                          :command-path (conj path command-name)}))))
                {})))
 
 
 (defn- build-command-group
   [path descriptor]
-  (let [{:keys [namespaces title doc command groups]} descriptor
+  (let [{:keys [namespaces doc command groups]} descriptor
         path'           (if (nil? path)
                           []
                           (conj path command))
@@ -973,14 +981,12 @@
                             (assoc commands group-command
                                    (build-command-group path'
                                                         (assoc group-descriptor
-                                                               :command group-command
-                                                               #_#_;; May be needed later?
-                                                                       :group? true))))
+                                                               :command group-command))))
                           direct-commands
                           groups)]
-    {:doc          doc
+    {:doc          doc                                      ; groups have just :doc, no :title
      :command      command
-     :command-path path'                                    ;; TODO: Is this needed?
+     :command-path path'
      :subs         subs}))
 
 

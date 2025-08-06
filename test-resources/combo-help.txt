@@ -6,7 +6,5 @@ Tool options:
 [0;1m  -h, --help[m     This tool summary
 
 Commands:
-
-[0;1mBuilt-in[m
   [0;32;1mcolors[m: Shows available foreground and background colors
     [0;32;1mhelp[m: List available commands

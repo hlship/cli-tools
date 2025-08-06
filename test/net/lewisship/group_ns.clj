@@ -1,7 +1,5 @@
 (ns net.lewisship.group-ns
   "Group example namespace"
-  {:command-group "group"
-   :command-category "Grouped commands"}
   (:require [net.lewisship.cli-tools :refer [defcommand]]))
 
 (defcommand echo

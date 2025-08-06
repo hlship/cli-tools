@@ -176,32 +176,16 @@
          ;; Without :in-order true, the -lR is flagged as an error
          (in-order "-v" "ls" "-lR"))))
 
-(deftest detects-command-name-conflicts
-  (when-let [e (is (thrown? RuntimeException
-                            (cli/locate-commands ['net.lewisship.cli-tools.builtins
-                                                  'net.lewisship.conflict])))]
-    (is (= "command help defined by net.lewisship.conflict/help conflicts with net.lewisship.cli-tools.builtins/help"
-           (ex-message e)))))
-
-(deftest rejects-undefined-namespace
-  (when-let [e (is (thrown? RuntimeException
-                            (cli/locate-commands ['does.not.exist])))]
-    (is (= "namespace does.not.exist not found (it may need to be required)"
-           (ex-message e)))))
 
 (deftest help-with-default-and-explicit-summary
   (is (= (slurp "test-resources/tool-help.txt")
          (with-exit 0
                     (dispatch {:tool-name  "test-harness"
+                               :doc   "Example commands as part of unit test suite.
+
+  Even this docstring is part of the test."
                                :namespaces '[net.lewisship.example-ns]
                                :arguments  ["help"]})))))
-
-(deftest help-with-default-and-explicit-summary-flat
-  (is (= (slurp "test-resources/tool-help-flat.txt")
-         (with-exit 0
-                    (dispatch {:tool-name  "test-harness"
-                               :namespaces '[net.lewisship.example-ns]
-                               :arguments  ["help" "-f"]})))))
 
 (deftest help-with-search-term
   (is (= (slurp "test-resources/tool-help-search.txt")
@@ -300,57 +284,17 @@
   (is (= "foxtrot, tango, whiskey"
          (cli/sorted-name-list [:whiskey :tango :foxtrot]))))
 
-(deftest group-namespace
-  (let [_group-ns   (find-ns 'net.lewisship.group-ns)
-        _builtin-ns (find-ns 'net.lewisship.cli-tools.builtins)]
-    (is (= '[[{:category      net.lewisship.group-ns
-               :command-group "group"
-               :label         "Grouped commands"
-               :order         0}
-              {:category      net.lewisship.cli-tools.builtins
-               :command-group nil
-               :label         "Built-in"
-               :order         100}]
-             {"group" {"echo"          {:category        net.lewisship.group-ns
-                                        :command-name    "echo"
-                                        :command-path    ["group" "echo"]
-                                        :command-summary "Echo a string"
-                                        :var             net.lewisship.group-ns/echo}
-                       "edit"          {:category        net.lewisship.group-ns
-                                        :command-summary "Edit a whatever"
-
-                                        :command-name    "edit"
-                                        :command-path    ["group"
-                                                          "edit"]
-                                        :var             net.lewisship.group-ns/edit}
-                       :command-path   ["group"]
-                       :group-category {:category      net.lewisship.group-ns
-                                        :command-group "group"
-                                        :label         "Grouped commands"
-                                        :order         0}}
-              "help"  {:category        net.lewisship.cli-tools.builtins
-                       :command-name    "help"
-                       :command-path    ["help"]
-                       :command-summary "List available commands"
-                       :var             net.lewisship.cli-tools.builtins/help}}]
-           (cli/locate-commands '[net.lewisship.group-ns
-                                  net.lewisship.cli-tools.builtins])))))
-
 (defn exec-group [& args]
   (dispatch {:tool-name  "group-test"
-             :namespaces '[net.lewisship.group-ns
-                           net.lewisship.example-ns]
+             :namespaces '[net.lewisship.example-ns]
+             :groups {"group" {:namespaces '[net.lewisship.group-ns]
+                              :doc  "Grouped commands"}}
              :arguments  args}))
 
 (deftest help-with-default-and-explicit-summary-grouped
   (is (= (slurp "test-resources/tool-help-grouped.txt")
          (with-exit 0
                     (exec-group "help")))))
-
-(deftest help-with-default-and-explicit-summary-flat-grouped
-  (is (= (slurp "test-resources/tool-help-grouped-flat.txt")
-         (with-exit 0
-                    (exec-group "help" "-f")))))
 
 (deftest can-find-a-grouped-command
   (is (= "echo: fancy\n"
@@ -370,10 +314,10 @@
          (ex-message e#)))))
 
 (deftest reports-group-match-failure
-  (is (= "group-test: g e matches echo and edit; use group-test help to list commands"
+  (is (= "group-test: group e matches echo and edit; use group-test help to list commands"
          (with-abort (exec-group "g" "e" "multiple"))))
 
-  (is (= "group-test: echo is not a command, expected group, help, default, or one other command; use group-test help to list commands"
+  (is (= "group-test: echo is not a command, expected default, explicit, group, or one other command; use group-test help to list commands"
          (with-abort (exec-group "echo" "wrong-level")))))
 
 (deftest select-option-no-default
