@@ -180,7 +180,7 @@
       nil
       '([:bold.green "alpha"] ", "
         [:bold.green "bravo"] ", "
-        [:bold.green "charlie"] ", and three other commands")
+        [:bold.green "charlie"] " (and three others)")
 
       nil
       nil
@@ -203,16 +203,14 @@
 
       base-terms
       {:max-terms  1
-       :noun       "thing"
        :conjuction "or"
        :font       :cyan}
       '([:cyan "alpha"]
-        " or five other things")
+        " (or five others)")
 
       (take 4 base-terms)
-      {:noun       "thing"
-       :conjuction "or"
+      {:conjuction "or"
        :font       :cyan}
       '([:cyan "alpha"] ", "
         [:cyan "bravo"] ", "
-        [:cyan "charlie"] ", or one other thing"))))
+        [:cyan "charlie"] " (or one other)"))))

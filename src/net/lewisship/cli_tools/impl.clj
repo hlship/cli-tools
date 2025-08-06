@@ -58,15 +58,20 @@
   [terms]
   (interpose ", " terms))
 
+(defn- numberword
+  [n]
+  (if (< n 20)
+    (h/numberword n)
+    (format "%,2d" n)))
+
 (defn compose-list
   ([terms]
    (compose-list terms nil))
   ([terms opts]
-   (let [{:keys [conjuction max-terms noun font]
+   (let [{:keys [conjuction max-terms font]
           :or   {conjuction "and"
                  font       :bold.green
-                 max-terms  3
-                 noun       "command"}} opts
+                 max-terms  3}} opts
          n    (count terms)
          terms' (sort terms)
          wrap (fn [term]
@@ -98,15 +103,9 @@
              n-unlisted   (- n max-terms)]
          (concat
            (inject-commas (map wrap listed-terms))
-           [(str (when (> max-terms 1) ",")
-                 " " conjuction " "
-                 (h/numberword n-unlisted)
-                 " other "
-                 (inflect/pluralize-noun n-unlisted noun))]))))))
-
-(defn- println-err
-  [s]
-  (binding [*out* *err*] (println s)))
+           [(str " (" conjuction " "
+                 (numberword n-unlisted) " "
+                 (inflect/pluralize-noun n-unlisted "other") ")")]))))))
 
 (defn- arg-spec->str
   [arg-spec]
@@ -316,7 +315,7 @@
                            :else
                            assoc)]
         (when (seq invalid-keys)
-          (println-err (format "Warning: command %s, argument %s contains invalid key(s): %s"
+          (perr (format "Warning: command %s, argument %s contains invalid key(s): %s"
                                command-name
                                id
                                (string/join ", " invalid-keys))))
@@ -448,7 +447,7 @@
 
 (defn abort
   [& compose-inputs]
-  (println-err (apply compose compose-inputs))
+  (apply perr compose-inputs)
   (exit 1))
 
 (defn- fail
@@ -785,7 +784,7 @@
           n (count matching-commands)]
       (perr
         (if (< n 20)
-          (-> n h/numberword string/capitalize)
+          (-> n numberword string/capitalize)
           n)
         (if (= n 1)
           " command matches "
