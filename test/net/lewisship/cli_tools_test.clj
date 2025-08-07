@@ -317,7 +317,7 @@
   (is (= "group-test: group e matches echo and edit; use group-test help to list commands"
          (with-abort (exec-group "g" "e" "multiple"))))
 
-  (is (= "group-test: echo is not a command, expected default, explicit, group, or one other command; use group-test help to list commands"
+  (is (= "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test help to list commands"
          (with-abort (exec-group "echo" "wrong-level")))))
 
 (deftest select-option-no-default

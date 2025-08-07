@@ -7,4 +7,4 @@
 
 (defcommand explicit
   "Docstring for explicit function."
-  [:summary "Explicit command summary"])
+  [:title "Explicit command summary"])
