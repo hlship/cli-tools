@@ -11,7 +11,7 @@
               (fn [f]
                 (binding [ansi/*color-enabled* false
                           impl/*options*       {:tool-name "tool"}
-                          impl/*command*       {:command-path ["category" "command"]}]
+                          impl/*command-map*   {:command-path ["category" "command"]}]
                   (f))))
 
 (deftest abort-with-message
@@ -32,7 +32,7 @@
                     (abort 99 "utter failure")))))
 
 (deftest when-no-command
-  (binding [impl/*command* nil]
+  (binding [impl/*command-map* nil]
     (is (= "tool: main failure\n"
            (with-exit 1 (abort "main failure"))))))
 

@@ -1,3 +1,20 @@
+# 0.16.0 -- UNRELEASED
+
+*BREAKING CHANGES*
+
+- Groups are now defined in the options passed to `net.lewisship.cli-tools/dispatch`, not in
+  namespace metadata
+- Command names are matched as prefixes (not substrings)
+- The tool's documentation must now be specified in top-level :doc option key.
+- In a `defcommand`, the :summary key has been renamed to :title
+
+*Changes*
+
+- Groups may now be nested, to arbitrary depth
+- You may now enter `-h` or `--help` after a group to get help for just that group
+- Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
+
+
 # 0.15.1 -- 27 Jan 2025
 
 Changes:

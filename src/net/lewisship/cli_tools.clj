@@ -18,7 +18,7 @@
 (defn- abort*
   [status messages]
   (let [{:keys [tool-name]} impl/*options*
-        {:keys [command-path]} impl/*command*]
+        {:keys [command-path]} impl/*command-map*]
     (ansi/perr
       [:red
        (when tool-name

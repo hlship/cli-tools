@@ -14,7 +14,7 @@
   "Bound by [[dispatch]] so that certain functions, such as help, can operate."
   nil)
 
-(def ^:dynamic *command*
+(def ^:dynamic *command-map*
   "Bound to the command map selected by dispatch for execution."
   nil)
 
@@ -164,7 +164,7 @@
 (defn print-summary
   [command-doc command-map]
   (let [{:keys [tool-name]} *options*
-        {:keys [command-path]} *command*
+        {:keys [command-path]} *command-map*
         {:keys [command-name positional-specs summary]} command-map
         arg-strs (map arg-spec->str positional-specs)]
     (perr
@@ -204,7 +204,7 @@
 (defn print-errors
   [errors]
   (let [{:keys [tool-name]} *options*
-        {:keys [command-path]} *command*]
+        {:keys [command-path]} *command-map*]
     (perr
       [:red
        (inflect/pluralize-noun (count errors) "Error")
@@ -824,7 +824,7 @@
 
 (defn- invoke-command
   [command-map args]
-  (binding [*command* command-map]
+  (binding [*command-map* command-map]
     (apply (-> command-map :fn requiring-resolve) args)))
 
 (defn- inner-dispatch
@@ -896,7 +896,7 @@
                  matched-command
                  (:subs matched-command)))))))
 
-(defn dispatch-options-parser
+(defn- dispatch-options-parser
   [tool-name arguments command-root]
   (let [[first-arg & remaining-args] arguments]
     (cond
@@ -928,7 +928,7 @@
   (and (= 1 (count arguments))
        (-> arguments first map?)))
 
-(defn default-tool-name
+(defn- default-tool-name
   []
   (when-let [path (System/getProperty "babashka.file")]
     (-> path io/file .getName)))
@@ -988,7 +988,6 @@
      :command-path path'
      :subs         subs}))
 
-
 (defn expand-dispatch-options
   [options]
   (let [{:keys [tool-name]} options
@@ -1006,24 +1005,3 @@
         (assoc :tool-name tool-name'
                :command-root root))))
 
-
-(comment
-
-  (expand-dispatch-options {:tool-name "test1"
-                            :doc       "First example"})
-
-
-  (expand-dispatch-options {:tool-name  "test2"
-                            :namespaces ['net.lewisship.cli-tools.completions]
-                            :doc        "Ex 2"})
-
-  (expand-dispatch-options {:tool-name "test3"
-                            :groups
-                            {"shell"
-                             {:doc        "ZSh helpers"
-                              :namespaces ['net.lewisship.cli-tools.completions]}}
-                            :doc       "Test 3. It's personal"})
-
-
-  ;
-  )
