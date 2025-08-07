@@ -970,8 +970,10 @@
                                                         (assoc group-descriptor
                                                                :command group-command))))
                           direct-commands
-                          groups)]
-    {:doc          doc                                      ; groups have just :doc, no :title
+                          groups)
+        doc'            (or doc
+                            (some #(-> % find-ns meta :doc) namespaces))]
+    {:doc          doc'                                     ; groups have just :doc, no :title
      :command      command
      :command-path path'
      :subs         subs}))

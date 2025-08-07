@@ -187,6 +187,15 @@
                                :namespaces '[net.lewisship.example-ns]
                                :arguments  ["help"]})))))
 
+(deftest group-help-defaults-from-first-ns-meta
+  (is (= (slurp "test-resources/tool-help-group-default.txt")
+         (with-exit 0
+                    (dispatch {:tool-name  "test-harness"
+                               :groups
+                               {"group" {:namespaces '[net.lewisship.group-default-ns
+                                                       net.lewisship.example-ns]}}
+                               :arguments  ["help"]})))))
+
 (deftest help-with-search-term
   (is (= (slurp "test-resources/tool-help-search.txt")
          (with-exit 0
