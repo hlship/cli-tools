@@ -304,6 +304,16 @@
          (with-exit 0
                     (exec-group "help")))))
 
+(deftest help-for-group
+  (let [expected (slurp "test-resources/sub-group-help.txt")]
+    (is (= expected
+           (with-exit 0
+                      (exec-group "group" "-h"))))
+
+    (is (= expected
+           (with-exit 0
+                      (exec-group "gr" "--help"))))))
+
 (deftest can-find-a-grouped-command
   (is (= "echo: fancy\n"
          (with-out-str

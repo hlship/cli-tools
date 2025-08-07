@@ -712,17 +712,20 @@
       missing-doc))
 
 (defn- print-commands
-  [command-name-width container-map command-map]
+  [command-name-width container-map commands-map recurse?]
   ;; subs is a mix of commands and groups
-  (let [sorted-commands (->> command-map
+  (let [sorted-commands     (->> commands-map
                              vals
-                             (sort-by :command))]
+                                 (sort-by :command))
+        command-name-width' (or command-name-width
+                                (->> sorted-commands
+                                     (map #(-> % :command count))
+                                     (reduce max 0)))]
     (when container-map
-      (perr "\n"
+      (perr (when recurse? "\n")
             [:bold (string/join " " (:command-path container-map))]
             " - "
             (-> container-map :doc cleanup-docstring)))
-
 
     (when (seq sorted-commands)
       (perr "\nCommands:"))
@@ -731,15 +734,16 @@
     (doseq [{:keys [fn command] :as command-map} sorted-commands]
       (perr
         "  "
-        [{:width command-name-width} [:bold.green command]]
+        [{:width command-name-width'} [:bold.green command]]
         ": "
         [(when-not fn :italic)
          (extract-command-title command-map)]))
 
     ;; Recurse and print sub-groups
-    (->> sorted-commands
-         (remove :fn)                                       ; Remove commands, leave groups
-         (run! #(print-commands command-name-width % (:subs %))))))
+    (when recurse?
+      (->> sorted-commands
+           (remove :fn)                                     ; Remove commands, leave groups
+           (run! #(print-commands command-name-width' % (:subs %) true))))))
 
 (defn- command-path-width
   [path]
@@ -768,7 +772,7 @@
                                   (map :command)
                                   (map count)
                                   (apply max 0))]
-      (print-commands command-name-width nil command-root))
+      (print-commands command-name-width nil command-root true))
 
     :let [matching-commands (filter #(command-match? % search-term') all-commands)]
 
@@ -829,12 +833,18 @@
     (if (or (nil? command-name)
             (string/starts-with? command-name "-"))
       (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
-      (loop [prefix            []
+      (loop [prefix            []                           ; Needed?
              term              command-name
              remaining-args    (next arguments)
-             command root-command]
+             container-map     nil
+             commands-map      root-command]
         (cond-let
-          :let [possible-commands command
+          (#{"-h" "--help"} term)
+          (do
+            (print-commands nil container-map commands-map false)
+            (exit 0))
+
+          :let [possible-commands commands-map
                 matchable-terms (keys possible-commands)]
 
           ;; Options start with a '-', but we're still looking for commands
@@ -883,6 +893,7 @@
           (recur (:command-path matched-command)
                  (first remaining-args)
                  (rest remaining-args)
+                 matched-command
                  (:subs matched-command)))))))
 
 (defn dispatch-options-parser
