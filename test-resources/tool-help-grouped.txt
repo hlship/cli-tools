@@ -12,5 +12,7 @@ Commands:
       [0;32;1mhelp[m: List available commands
 
 [0;1mgroup[m - Grouped commands
+
+Commands:
       [0;32;1mecho[m: Echo a string
       [0;32;1medit[m: Edit a whatever

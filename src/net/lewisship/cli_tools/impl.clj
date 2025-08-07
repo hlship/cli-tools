@@ -721,7 +721,11 @@
       (perr "\n"
             [:bold (string/join " " (:command-path container-map))]
             " - "
-            (extract-command-title container-map)))
+            (-> container-map :doc cleanup-docstring)))
+
+
+    (when (seq sorted-commands)
+      (perr "\nCommands:"))
 
     ;; Commands (including sub-groups) inside this command
     (doseq [{:keys [fn command] :as command-map} sorted-commands]
@@ -756,7 +760,7 @@
               (perr "\nTool options:")
               (perr [:bold "  -C, --color"] "    Enable ANSI color output")
               (perr [:bold "  -N, --no-color"] " Disable ANSI color output")
-              (perr [:bold "  -h, --help"] "     This tool summary\n"))
+              (perr [:bold "  -h, --help"] "     This tool summary"))
           all-commands (collect-commands command-root)]
 
     (nil? search-term')
@@ -764,7 +768,6 @@
                                   (map :command)
                                   (map count)
                                   (apply max 0))]
-      (perr "Commands:")
       (print-commands command-name-width nil command-root))
 
     :let [matching-commands (filter #(command-match? % search-term') all-commands)]
@@ -776,6 +779,7 @@
                              (reduce max 0))
           n (count matching-commands)]
       (perr
+        "\n"
         (-> n numberword string/capitalize)
         (if (= n 1)
           " command matches "
@@ -790,7 +794,7 @@
               (extract-command-title command))))
 
     :else
-    (perr "No commands match " [:italic search-term]))
+    (perr "\nNo commands match " [:italic search-term]))
   (exit 0))
 
 (defn- to-matcher
