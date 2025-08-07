@@ -283,11 +283,10 @@
 
       "h" commands :help
       "g" commands nil
-      "g-g" commands :gnip-gnop
+      "gn" commands :gnip-gnop
       "frob-wg" commands nil
-      "f-g" commands :frob-widget
-      "t-t" commands nil
-      "ti-t" commands :tip-top)))
+      "f" commands :frob-widget
+      "TI" commands :tip-top)))
 
 (deftest sorted-name-list
   (is (= "foxtrot, tango, whiskey"

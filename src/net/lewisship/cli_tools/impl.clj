@@ -798,22 +798,17 @@
   (exit 0))
 
 (defn- to-matcher
+  "A matcher for string s that is case insenstive and matches an initial prefix."
   [s]
-  (let [terms      (string/split s #"\-")
-        re-pattern (apply str "(?i)"
-                          (map-indexed (fn [i term]
-                                         (str
-                                           (when (pos? i) "\\-")
-                                           ".*\\Q" term "\\E.*"))
-                                       terms))
+  (let [re-pattern (str "(?i)" (Pattern/quote s) ".*")
         re         (Pattern/compile re-pattern)]
     (fn [input]
-      (re-matches re input))))
+      (re-find re input))))
 
 (defn find-matches
   [s values]
   (let [values' (set values)]
-    ;; If can find an exact match, then keep just that;
+    ;; If can find an exact match, then keep just that
     (if (contains? values' s)
       [s]
       ;; Otherwise, treat s as a match string and find any values that loosely match it.
