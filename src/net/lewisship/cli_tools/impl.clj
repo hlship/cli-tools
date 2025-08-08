@@ -750,7 +750,7 @@
   (apply + (count path) -1 (map count path)))
 
 (defn print-tool-help
-  [options search-term]
+  [options search-term full?]
   (cond-let
     :let [search-term' (when search-term
                          (string/lower-case search-term))
@@ -768,11 +768,12 @@
           all-commands (collect-commands command-root)]
 
     (nil? search-term')
-    (let [command-name-width (->> all-commands
-                                  (map :command)
-                                  (map count)
-                                  (apply max 0))]
-      (print-commands command-name-width nil command-root true))
+    (let [command-name-width (when full?
+                               (->> all-commands
+                                    (map :command)
+                                    (map count)
+                                    (apply max 0)))]
+      (print-commands command-name-width nil command-root full?))
 
     :let [matching-commands (filter #(command-match? % search-term') all-commands)]
 
@@ -871,7 +872,12 @@
                                     (compose-list matchable-terms {:conjuction "or"})))
                 help-suffix (list
                               "; use "
-                              [:bold [:green tool-name " help"]]
+                              [:bold [:green tool-name " "
+                                      (if (seq prefix)
+                                        (string/join " " prefix)
+                                        "help")]]
+                              (when (seq prefix)
+                                " --help (or -h)")
                               " to list commands")]
             (abort
               [:bold [:green tool-name] ": "

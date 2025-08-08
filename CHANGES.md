@@ -13,6 +13,7 @@
 - Groups may now be nested, to arbitrary depth
 - You may now enter `-h` or `--help` after a group to get help for just that group
 - Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
+- Tool help now displays just top-level commands by default (add --full to list nested commands)
 
 
 # 0.15.1 -- 27 Jan 2025

@@ -7,9 +7,10 @@
 
 (defcommand help
   "List available commands"
-  [:args
+  [full? ["-f" "--full" "Provide help for all commands, not just top-level"]
+   :args
    search-term ["SEARCH" "Filter shown commands to those that match this term"
          :optional true]]
   ;; dispatch binds *options* for us
-  (impl/print-tool-help impl/*options* search-term))
+  (impl/print-tool-help impl/*options* search-term full?))
 

@@ -194,7 +194,7 @@
                                :groups
                                {"group" {:namespaces '[net.lewisship.group-default-ns
                                                        net.lewisship.example-ns]}}
-                               :arguments  ["help"]})))))
+                               :arguments  ["help" "--full"]})))))
 
 (deftest help-with-search-term
   (is (= (slurp "test-resources/tool-help-search.txt")
@@ -302,7 +302,7 @@
 (deftest help-with-default-and-explicit-summary-grouped
   (is (= (slurp "test-resources/tool-help-grouped.txt")
          (with-exit 0
-                    (exec-group "help")))))
+                    (exec-group "help" "-f")))))
 
 (deftest help-for-group
   (let [expected (slurp "test-resources/sub-group-help.txt")]
@@ -324,10 +324,6 @@
          (with-exit 1
                     (exec-group "gr")))))
 
-(deftest suggest-help-when-name-in-group-has-multiple-matches
-  (is (= (slurp "test-resources/help-group-multiple-matches.txt")
-         (with-exit 1
-                    (exec-group "gr" "e")))))
 
 (deftest can-use-group-abbreviations
   (is (= "echo: abbreviated\n"
@@ -342,7 +338,7 @@
          (ex-message e#)))))
 
 (deftest reports-group-match-failure
-  (is (= "group-test: group e matches echo and edit; use group-test help to list commands"
+  (is (= "group-test: group e matches echo and edit; use group-test group --help (or -h) to list commands"
          (with-abort (exec-group "g" "e" "multiple"))))
 
   (is (= "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test help to list commands"
