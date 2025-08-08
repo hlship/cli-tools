@@ -39,7 +39,7 @@
 (defn abort
   "Invoked when a tool has a runtime failure. Writes to standard error;
   identifies the tool name, category (if any) and command name
-  (in bold red) and then writes the remaining message text after a colon and a space,
+  (in bold green) and then writes the remaining message text after a colon and a space,
   in red.
 
   Each element of message may either be a composed string, or an exception.
@@ -54,7 +54,7 @@
   When it is invoked otherwise, including when using `defcommand` to
   create a main entry point, the prefix (normally identifying the tool name and possibly
   nested command name, and the colon) are omitted.  Just the message portion
-  is output, in red.
+  is output.
 
   "
   {:added    "0.15"

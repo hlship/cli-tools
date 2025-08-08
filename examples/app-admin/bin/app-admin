@@ -1,0 +1,6 @@
+#!/usr/bin/env bb
+
+(require '[net.lewisship.cli-tools :as cli])
+
+(cli/dispatch {:doc "Application Admin Tool"
+               :namespaces '[app-admin.commands]})
