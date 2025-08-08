@@ -1009,7 +1009,7 @@
         root       (-> (build-command-group nil options')
                        :subs)]
     (-> options
-        (dissoc :groups)
+        (dissoc :groups :namespaces)
         (assoc :tool-name tool-name'
                :command-root root))))
 

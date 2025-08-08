@@ -207,11 +207,15 @@
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
   Some applications may call this instead of `dispatch`, modify the results, and then
-  invoke `dispatch*`."
+  invoke `dispatch*`.
+
+  Manages a cache, so the results may "
   [options]
   (let [{:keys [cache-dir arguments]} options
-        ;; Don't include everything when building the digest, especially the command line arguments
-        options' (dissoc options :arguments :cache-dir)
+        options' (select-keys options [:tool-name
+                                       :doc
+                                       :namespaces
+                                       :groups])
         result   (if-not cache-dir
                    (impl/expand-dispatch-options options')
                    (let [cache-dir' (fs/expand-home cache-dir)
@@ -219,7 +223,7 @@
                          cached     (cache/read-from-cache cache-dir' digest)]
                      (if cached
                        cached
-                       (let [full (impl/expand-dispatch-options options)]
+                       (let [full (impl/expand-dispatch-options options')]
                          (cache/write-to-cache cache-dir' digest full)
                          full))))]
     (assoc result :arguments (or arguments *command-line-args*))))
@@ -235,7 +239,7 @@
   options:
   
   - :tool-name (optional, string) - used in command summary and errors
-  - :tool-doc (optional, string) - used in help summary
+  - :doc (optional, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
   - :namespaces - seq of symbols identifying namespaces to search for root-level commands
   - :groups - map of group command (a string) to a group map
@@ -258,7 +262,7 @@
   with error code 1.
 
   Caching is enabled by default; this means that a scan of all namespaces is only required on the first
-  execution; subsequently, only the single namespace identifying by the command line will need to
+  execution; subsequently, only the single namespace implementing the selected command will need to
   be loaded.
 
   Returns nil."
