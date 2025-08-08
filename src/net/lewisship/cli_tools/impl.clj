@@ -807,7 +807,7 @@
   (let [re-pattern (str "(?i)" (Pattern/quote s) ".*")
         re         (Pattern/compile re-pattern)]
     (fn [input]
-      (re-find re input))))
+      (re-matches re input))))
 
 (defn find-matches
   [s values]
@@ -851,11 +851,13 @@
           (or (nil? term)
               (string/starts-with? term "-"))
           (abort
-            [:bold.green tool-name ": " [:red (string/join " " prefix)]]
+            [:bold.green tool-name ": "
+             (string/join " " (butlast prefix))
+             [:red (last prefix)]]
             " is incomplete; "
             (compose-list matchable-terms)
             " could follow; use "
-            [:bold [:green tool-name " help"]]
+            [:bold [:green tool-name " " (string/join " " prefix) " --help (or -h)"]]
             " to list commands")
 
           :let [matched-terms (find-matches term matchable-terms)

@@ -1,0 +1,1 @@
+[0;32;1mgroup-test[0;1m: [0;32;1mgroup[0;1m [0;31;1me[m matches [0;32;1mecho[m and [0;32;1medit[m; use [0;32;1mgroup-test help[m to list commands

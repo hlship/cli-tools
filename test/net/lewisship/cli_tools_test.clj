@@ -260,7 +260,7 @@
 
 
 ;; This test fails under Babashka (repl/doc returns empty string) and not sure why.
-;; There's some subtle differences in now macros are expanded when meta data is involved.
+;; There are some subtle differences in now macros are expanded when meta-data is involved.
 ;; Just ignoring it for now.
 (deftest generate-correct-meta
   (is (= (slurp "test-resources/set-mode-doc.txt")
@@ -272,12 +272,12 @@
         commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}]
     (are [input values expected] (= expected (cli/best-match input values))
 
-      "r" colors nil                                        ; multiple matches
+      "r" colors :red                                        ; multiple matches
       "red" colors :red                                     ; exact match
+      "Red" colors :red                                     ; caseless
+
       "b" colors :blue                                      ; partial match
       "z" colors nil                                        ; no match
-
-      "Red" colors :red                                     ; caseless
 
       "exact" #{:exact :exact-is-prefix} :exact
 
@@ -318,6 +318,16 @@
   (is (= "echo: fancy\n"
          (with-out-str
            (exec-group "group" "echo" "fancy")))))
+
+(deftest suggest-help-when-name-incomplete
+  (is (= (slurp "test-resources/help-incomplete.txt")
+         (with-exit 1
+                    (exec-group "gr")))))
+
+(deftest suggest-help-when-name-in-group-has-multiple-matches
+  (is (= (slurp "test-resources/help-group-multiple-matches.txt")
+         (with-exit 1
+                    (exec-group "gr" "e")))))
 
 (deftest can-use-group-abbreviations
   (is (= "echo: abbreviated\n"
