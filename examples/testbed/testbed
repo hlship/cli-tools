@@ -1,0 +1,12 @@
+#!/usr/bin/env bb
+
+(require '[net.lewisship.cli-tools :as cli])
+
+(cli/defcommand main
+  "Does the thing."
+  [option (cli/select-option "-o" "--option OPT" "Option:"
+                             #{:good :bad :ugly})
+   :command "testbed"]
+  (cli/abort "Failure: " (name option)))
+
+(apply main *command-line-args*)

@@ -1,4 +1,4 @@
-{{category.fn-name}}() {
+{{group.fn-name}}() {
   local state line
 
   _arguments -C \
@@ -7,11 +7,11 @@
 
   case "$state" in
      cmds)
-       _values "{{tool}} {{category.name}} subcommands" {% for sub in category.subs %} \
+       _values "{{tool}} {{group.name}} subcommands" {% for sub in group.subs %} \
          "{{sub.name}}[{{sub.summary}}]" {% endfor %}
        ;;
      args)
-       case $line[1] in {% for sub in category.subs %}
+       case $line[1] in {% for sub in group.subs %}
          {{sub.name}}) {{sub.fn-name}} ;; {% endfor %}
        esac
        ;;

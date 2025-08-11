@@ -10,10 +10,6 @@ Tool options:
 [0;1m  -h, --help[m     This tool summary
 
 Commands:
-
-[0;1mnet.lewisship.example-ns[m
    [0;32;1mdefault[m: Default command summary
   [0;32;1mexplicit[m: Explicit command summary
-
-[0;1mBuilt-in[m
       [0;32;1mhelp[m: List available commands

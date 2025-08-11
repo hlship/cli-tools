@@ -17,46 +17,24 @@
 
 (defn- abort*
   [status messages]
-  (let [{:keys [tool-name]} impl/*options*
-        {:keys [command-path]} impl/*command*]
-    (ansi/perr
-      [:red
-       (when tool-name
-         (list
-           [:bold.green
-            tool-name
-            (when command-path
-              (list " " (string/join " " command-path)))]
-           ": "))
-       (map (fn [m]
-              (if (instance? Throwable m)
-                (or (ex-message m)
-                    (-> m class .getName))
-                m))
-            messages)])
-    (exit status)))
+  (ansi/perr messages)
+  (exit status))
+
+(defn command-path
+  "Returns a composed string of the tool name and command path that can be used
+  in error messages. This function requires
+  global data bound by [[dispatch*]] and returns nil when invoked outside that
+  context."
+  {:added "0.16.0"}
+  []
+  (impl/command-path))
 
 (defn abort
-  "Invoked when a tool has a runtime failure. Writes to standard error;
-  identifies the tool name, category (if any) and command name
-  (in bold red) and then writes the remaining message text after a colon and a space,
-  in red.
-
-  Each element of message may either be a composed string, or an exception.
-
-  Each exception in the message is converted to a string via `ex-message`.
-  If `ex-message` returns nil, then the class name of the exception is used.
+  "Invoked when a tool has a runtime failure.  The messages, composed strings, are
+  printed to `*err*` and then [[exit]] is invoked.
 
   By default, the exit status is 1.  If the first message value is a number, it is used
-  as the exit status instead.
-
-  `abort` assumes that the command function was invoked by `dispatch`.
-  When it is invoked otherwise, including when using `defcommand` to
-  create a main entry point, the prefix (normally identifying the tool name and possibly
-  nested command name, and the colon) are omitted.  Just the message portion
-  is output, in red.
-
-  "
+  as the exit status instead."
   {:added    "0.15"
    :arglists '[[status & message]
                [& message]]}
@@ -150,8 +128,8 @@
   (assert (vector? interface)
           "defcommand expects a vector to define the interface")
   (let [symbol-meta        (meta fn-name)
-        parsed-interface   (impl/compile-interface docstring interface)
-        {:keys [option-symbols command-map-symbol command-summary let-forms validate-cases]
+        parsed-interface   (impl/compile-interface  interface)
+        {:keys [option-symbols command-map-symbol title let-forms validate-cases]
          :or   {command-map-symbol (gensym "command-map-")}} parsed-interface
         command-name'      (or (:command-name parsed-interface)
                                (name fn-name))
@@ -162,9 +140,9 @@
                                           :doc docstring
                                           :arglists '[['& 'args]]
                                           ::impl/command-name command-name')
-                             command-summary (assoc ::impl/command-summary command-summary))
+                             title (assoc ::impl/title title))
         ;; Keys actually used by parse-cli and print-summary
-        parse-cli-keys     [:command-args :command-options :parse-opts-options :command-doc :summary]
+        parse-cli-keys     [:command-args :command-options :parse-opts-options :summary]
         validations        (when (seq validate-cases)
                              `(when-let [message# (cond ~@(impl/invert-tests-in-validate-cases validate-cases))]
                                 (print-errors [message#])
@@ -188,6 +166,7 @@
 
                                        :else
                                        (impl/parse-cli ~command-name'
+                                                       ~docstring
                                                        args#
                                                        command-spec#))
                  ;; These symbols de-reference the command-map returned from parse-cli.
@@ -196,162 +175,33 @@
                ~validations)
              ~@body))))))
 
-(defn- resolve-ns
-  [ns-symbol]
-  (if-let [ns-object (find-ns ns-symbol)]
-    ns-object
-    (throw (RuntimeException. (format "namespace %s not found (it may need to be required)" (name ns-symbol))))))
-
-(defn- add-namespace-to-categories
-  [m ns-symbol]
-  (let [ns                (resolve-ns ns-symbol)
-        ns-meta           (meta ns)
-        ;; An existing namespace can be referenced with the :command-ns meta to make the subsequent namespace
-        ;; act as if it were part of the earlier namespace (same command-group, label, etc.).
-        {:keys [command-ns]} ns-meta
-        ;; Ok, looks like there's a difference between Babashka and Clojure. In Clojure, an unquoted symbol breaks
-        ;; (it looks like an unresolved classname) and a quoted symbol is a Symbol.  In Babashka, the quoted symbol
-        ;; ends up as the list (quote symbol).
-        k                 (if command-ns
-                            (if (sequential? command-ns)
-                              (second command-ns)
-                              command-ns)
-                            ns-symbol)
-        existing-category (get m k)]
-    (if existing-category
-      (assoc m ns-symbol existing-category)
-      (assoc m k
-             {:category      k
-              :command-group (:command-group ns-meta)
-              :label         (:command-category ns-meta (name ns-symbol))
-              :order         (:command-category-order ns-meta 0)}))))
-
-(defn locate-commands
-  "Passed a seq of symbols identifying *loaded* namespaces, this function
-  locates commands, functions defined by [[defcommand]].
-
-  Normally, this is called from [[dispatch]] and is only needed when calling [[dispatch*]] directly.
-
-  Returns a tuple: the command categories map, and the command map."
-  [namespace-symbols]
-  (let [categories     (reduce add-namespace-to-categories {} namespace-symbols)
-        ;; Each category that is a command group gets a psuedo command
-        group-commands (->> categories
-                            vals
-                            (filter :command-group)
-                            (reduce (fn [m category-map]
-                                      (let [{:keys [command-group]} category-map]
-                                        ;; Currently, we only allow two levels of nesting: top level, and directly
-                                        ;; within a group. This is the first place that would change if we allowed groups
-                                        ;; within groups.
-                                        (assoc m command-group {:command-path   [command-group]
-                                                                :group-category category-map})))
-                                    {}))
-        ;; In rare cases, multiple keys (ns'es) point to the same category map
-        f              (fn [m ns category-map]
-                         (let [{:keys [category command-group]} category-map
-                               base-path (cond-> []
-                                           command-group (conj command-group))]
-                           (->> ns
-                                ns-publics
-                                ;; Iterate over the public vars of the namespace
-                                vals
-                                (reduce (fn [m v]
-                                          (cond-let
-
-                                            :let [command-name (-> v meta ::impl/command-name)]
-
-                                            ;; Not a defcommand?
-                                            (nil? command-name)
-                                            m
-
-                                            :let [command-path (conj base-path command-name)
-                                                  conflict (get-in m command-path)]
-
-                                            conflict
-                                            (let [command-var (:var conflict)
-                                                  where       (if command-var
-                                                                (str (symbol command-var))
-                                                                (str "namespace " (name (get-in conflict [:group-category :category]))))]
-                                              (throw (RuntimeException. (format "command %s defined by %s conflicts with %s"
-                                                                                (string/join " " command-path)
-                                                                                (str (symbol v))
-                                                                                where))))
-                                            :else
-                                            (assoc-in m command-path {:category     category
-                                                                      :command-name command-name ; name within group
-                                                                      :command-path command-path
-                                                                      :command-summary
-                                                                      (impl/extract-command-summary v)
-                                                                      :var          (symbol v)})))
-                                        m))))
-        commands       (reduce-kv f group-commands categories)
-        categories'    (-> categories vals distinct)]
-    [categories' commands]))
+;; TODO: Expandable expansion and caching
 
 (defn dispatch*
-  "Invoked by [[dispatch]] after namespace and command resolution.
-
-  This can be used, for example, to avoid including the builtin help command
-  (or when providing an override).
-
-  options:
-  
-  - :tool-name - used in command summary and errors
-  - :tool-doc - used in command summary
-  - :arguments - seq of strings; first is name of command, rest passed to command
-  - :categories - seq of maps describing the command categories (see [[locate-commands]])
-  - :commands - seq of command maps (see [[locate-commands]])
-
-  Each namespace forms a command category, represented as a map with keys:
-  - :category - symbol identifying the namespace
-  - :command-group string - optional, from :command-group metadata on namespace, groups commands with a prefix name
-  - :label - string (from :command-category metadata on namespace), defaults to the namespace name
-  - :order - number (from :command-category-order metadata on namespace), defaults to 0
-
-  In the `help` command summary, the categories are sorted into ascending order by :order,
-  then by :label. Individual commands are listed under each category, in ascending alphabetic order.
-
-  All options are required.
-
-  Returns nil (if it returns at all, as most command will ultimately invoke [[exit]])."
-  [options]
-  (impl/dispatch options))
-
-(defn- expand-dispatch-options*
-  [options]
-  (let [{:keys [namespaces tool-name tool-doc flat]} options
-        tool-name'  (or tool-name
-                        (impl/default-tool-name)
-                        (throw (ex-info "No :tool-name specified" {:options options})))
-        _           (when-not (seq namespaces)
-                      (throw (ex-info "No :namespaces specified" {:options options})))
-        namespaces' (cons 'net.lewisship.cli-tools.builtins namespaces)
-        _           (run! require namespaces')
-        [command-categories commands] (locate-commands namespaces')]
-    {:tool-name  tool-name'
-     :tool-doc   (or tool-doc
-                     (some-> namespaces first find-ns meta :doc))
-     :flat       (boolean flat)
-     :categories command-categories
-     :commands   commands}))
+  "Invoked by [[dispatch]] after namespace and command resolution."
+  [expanded-options]
+  (impl/dispatch expanded-options))
 
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
   Some applications may call this instead of `dispatch`, modify the results, and then
-  invoke `dispatch*`."
+  invoke `dispatch*`.
+
+  Manages a cache, so the results may "
   [options]
   (let [{:keys [cache-dir arguments]} options
-        ;; Don't include everything when building the digest, especially the command line arguments@
-        options' (dissoc options :arguments :cache-dir)
+        options' (select-keys options [:tool-name
+                                       :doc
+                                       :namespaces
+                                       :groups])
         result   (if-not cache-dir
-                   (expand-dispatch-options* options')
+                   (impl/expand-dispatch-options options')
                    (let [cache-dir' (fs/expand-home cache-dir)
                          digest     (cache/classpath-digest options')
                          cached     (cache/read-from-cache cache-dir' digest)]
                      (if cached
                        cached
-                       (let [full (expand-dispatch-options* options)]
+                       (let [full (impl/expand-dispatch-options options')]
                          (cache/write-to-cache cache-dir' digest full)
                          full))))]
     (assoc result :arguments (or arguments *command-line-args*))))
@@ -367,26 +217,31 @@
   options:
   
   - :tool-name (optional, string) - used in command summary and errors
-  - :tool-doc (optional, string) - used in help summary
+  - :doc (optional, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
-  - :namespaces - symbols identifying namespaces to search for commands
-  - :flat (optional, boolean) - if true, then the default help will be flat (no categories)
+  - :namespaces - seq of symbols identifying namespaces to search for root-level commands
+  - :groups - map of group command (a string) to a group map
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
   is not provided and can't be defaulted.
 
-  The default for :tool-doc is the docstring of the first namespace.
+  A group map defines a set of commands grouped under a common name.  Its structure:
 
-  dispatch will load any namespaces specified, then scan those namespaces to identify commands.
-  It also adds a `help` command from the net.lewisship.cli-tools namespace.
+  - :doc - string, a short string identifying the purpose of the group
+  - :namespaces - seq of symbols identifying namespaces of commands in the group
+  - :groups - recusive map of groups nested within the group
+
+  dispatch will always add the `net.lewiship.cli-tools.builtins` namespace to the root
+  namespace list; this ensures the built-in `help` command is available.
 
   If option and argument parsing is unsuccessful, then
   an error message is written to \\*err\\*, and the program exits
   with error code 1.
 
-  dispatch simply loads and scans the namespaces (or obtains the necessary data from the
-  cache), adds the `help` command, and finally calls [[dispatch*]].
+  Caching is enabled by default; this means that a scan of all namespaces is only required on the first
+  execution; subsequently, only the single namespace implementing the selected command will need to
+  be loaded.
 
   Returns nil."
   [options]

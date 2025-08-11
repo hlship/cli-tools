@@ -14,30 +14,29 @@
           :let-forms       []
           :command-options [["-h" "--help" "This command summary" :id :help]]
           :command-args    []
-          :validate-cases  []
-          :command-doc     "<DOC>"}
-         (compile-interface "<DOC>" []))))
+          :validate-cases  []}
+         (compile-interface  []))))
 
 (deftest symbol-name-becomes-option-id
   (is (= [["-x" "--execute" :id :execute?]]
-         (-> (compile-interface nil '[execute? ["-x" "--execute"]])
+         (-> (compile-interface  '[execute? ["-x" "--execute"]])
              :command-options
              butlast))))
 
 (deftest let-requires-a-vector
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:let :foo])))]
+                            (compile-interface  '[:let :foo])))]
     (is (= "Expected a vector of symbol/expression pairs" (ex-message e)))
     (is (= :foo (-> e ex-data :form)))))
 
 (deftest let-requires-even-vector
   (is (thrown-with-msg? Exception #"Expected a vector of symbol/expression pairs"
-                        (compile-interface nil '[:let [:a :b :c]]))))
+                        (compile-interface  '[:let [:a :b :c]]))))
 
 (deftest let-success
   (is (= '[a :a
            b :b]
-         (-> (compile-interface nil '[:let [a :a
+         (-> (compile-interface  '[:let [a :a
                                             b :b]])
              :let-forms))))
 
@@ -45,32 +44,32 @@
   (is (= '[a :a
            b :b
            c :c]
-         (-> (compile-interface nil '[:let [a :a
+         (-> (compile-interface  '[:let [a :a
                                             b :b]
                                       :let [c :c]])
              :let-forms))))
 
 (deftest validate-must-be-vector-with-even-count
   (is (thrown-with-msg? Exception #"Expected a vector of test/message pairs"
-                        (compile-interface nil '[:validate foo])))
+                        (compile-interface  '[:validate foo])))
   (is (thrown-with-msg? Exception #"Expected even number of tests and messages"
-                        (compile-interface nil '[:validate [1 2 3]]))))
+                        (compile-interface  '[:validate [1 2 3]]))))
 
 (deftest validate-forms-collect
   (is (= '[1 2 a b]
-         (-> (compile-interface nil '[:validate [1 2]
+         (-> (compile-interface  '[:validate [1 2]
                                       :validate [a b]])
              :validate-cases))))
 
 (deftest docstring-becomes-doc
   (is (= [["-x" "--execute" "Command to execute" :id :execute?]]
-         (-> (compile-interface nil '[execute? ["-x" "--execute" "Command to execute"]])
+         (-> (compile-interface  '[execute? ["-x" "--execute" "Command to execute"]])
              :command-options
              butlast))))
 
 (deftest option-symbols-must-be-unique
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[switch ["-s" "--switch"]
+                            (compile-interface  '[switch ["-s" "--switch"]
                                                      verbose ["-v" "--verbose"]
                                                      :args
                                                      switch ["SWITCH" "Switch to operate on"]])))]
@@ -78,62 +77,62 @@
 
 
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[switch ["-s" "--switch"]
+                            (compile-interface  '[switch ["-s" "--switch"]
                                                      switch ["-v" "--verbose"]])))]
     (is (= "Option and argument symbols must be unique" (ex-message e)))))
 
 (deftest missing-argument-after-arg-symbol
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:args
+                            (compile-interface  '[:args
                                                      arg-symbol])))]
     (is (= "Missing data in interface definitions" (ex-message e)))))
 
 (deftest missing-option-after-option-symbol
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[option-symbol])))]
+                            (compile-interface  '[option-symbol])))]
     (is (= "Missing data in interface definitions" (ex-message e)))))
 
 (deftest can-provide-command-map-symbol-name
   (is (= 'my-command-map
-         (:command-map-symbol (compile-interface nil '[:as my-command-map])))))
+         (:command-map-symbol (compile-interface  '[:as my-command-map])))))
 
 (deftest missing-map-symbol-after-as-keyword
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:as])))]
+                            (compile-interface  '[:as])))]
     (is (= "Missing data in interface definitions" (ex-message e)))))
 
 (deftest not-a-symbol-after-as-keyword
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:as "my-command-map-string"])))]
+                            (compile-interface  '[:as "my-command-map-string"])))]
     (is (= "Expected command-map symbol" (ex-message e)))))
 
 (deftest not-a-valid-option-def
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[my-option "not valid"])))]
+                            (compile-interface  '[my-option "not valid"])))]
     (is (= "Expected option definition" (ex-message e)))))
 
 (deftest not-a-valid-arg-def
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:args my-arg "not valid"])))]
+                            (compile-interface  '[:args my-arg "not valid"])))]
     (is (= "Expected argument definition" (ex-message e)))))
 
 (deftest unexpected-keyword
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:left-field true])))]
+                            (compile-interface  '[:left-field true])))]
     (is (= "Unexpected keyword" (ex-message e)))))
 
 (deftest in-order-option
   (is (= {:in-order true}
-         (:parse-opts-options (compile-interface nil '[:in-order true])))))
+         (:parse-opts-options (compile-interface  '[:in-order true])))))
 
 (deftest in-order-must-be-boolean
   (when-let [e (is (thrown? Exception
-                            (compile-interface nil '[:in-order in-order])))]
+                            (compile-interface  '[:in-order in-order])))]
     (is (= "Expected boolean after :in-order" (ex-message e)))))
 
 (deftest can-override-command-nameD
   (is (= "overridden"
-         (:command-name (compile-interface nil '[:command "overridden"])))))
+         (:command-name (compile-interface  '[:command "overridden"])))))
 
 (def *help-args (atom nil))
 
@@ -142,9 +141,9 @@
   (reset! *help-args args))
 
 (deftest provides-help-with-h-or-help
-  (let [commands {"help" {:var `capture-help}}
+  (let [commands {"help" {:fn `capture-help}}
         options  {:tool-name "test-tool"
-                  :commands  commands}]
+                  :command-root  commands}]
     (doseq [arg ["-h" "--help"]
             :let [extra-arg (str "extra" arg)]]
       (reset! *help-args ::unset)
@@ -157,7 +156,7 @@
     (with-redefs [impl/abort (fn [& inputs]
                                (reset! *message* (apply ansi/compose inputs)))]
       (impl/dispatch {:tool-name "loco"
-                      :commands  {"help" {:var ::placeholder}}
+                      :command-root  {"help" {:fn ::placeholder}}
                       :arguments ["-no-such-option"]})
       (is (= "loco: no command provided, use loco help to list commands"
              @*message*))
@@ -165,7 +164,7 @@
       (reset! *message* nil)
 
       (impl/dispatch {:tool-name "bravo"
-                      :commands  {"help" {:var ::placeholder}}
+                      :command-root  {"help" {:fn ::placeholder}}
                       :arguments ["no-such-command"]})
 
       (is (= "bravo: no-such-command is not a command, expected help; use bravo help to list commands"
@@ -181,7 +180,7 @@
       nil
       '([:bold.green "alpha"] ", "
         [:bold.green "bravo"] ", "
-        [:bold.green "charlie"] ", and three other commands")
+        [:bold.green "charlie"] " (and three others)")
 
       nil
       nil
@@ -204,16 +203,14 @@
 
       base-terms
       {:max-terms  1
-       :noun       "thing"
        :conjuction "or"
        :font       :cyan}
       '([:cyan "alpha"]
-        " or five other things")
+        " (or five others)")
 
       (take 4 base-terms)
-      {:noun       "thing"
-       :conjuction "or"
+      {:conjuction "or"
        :font       :cyan}
       '([:cyan "alpha"] ", "
         [:cyan "bravo"] ", "
-        [:cyan "charlie"] ", or one other thing"))))
+        [:cyan "charlie"] " (or one other)"))))

@@ -7,12 +7,10 @@
 
 (defcommand help
   "List available commands"
-  [flat ["-f" "--flat" "Ignore categories and show a simple list of commands"]
+  [full? ["-f" "--full" "Provide help for all commands, not just top-level"]
    :args
    search-term ["SEARCH" "Filter shown commands to those that match this term"
          :optional true]]
   ;; dispatch binds *options* for us
-  (impl/show-tool-help (cond-> impl/*options*
-                               flat (assoc :flat true))
-                       search-term))
+  (impl/print-tool-help impl/*options* search-term full?))
 

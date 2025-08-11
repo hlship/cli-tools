@@ -1,21 +1,18 @@
 Usage: [0;32;1mgroup-test[m [TOOL OPTIONS] COMMAND ...
 
-Group example namespace
-
 Tool options:
 [0;1m  -C, --color[m    Enable ANSI color output
 [0;1m  -N, --no-color[m Disable ANSI color output
 [0;1m  -h, --help[m     This tool summary
 
 Commands:
-
-[0;32;1mgroup[0;1m - Grouped commands[m
-      [0;32;1mecho[m: Echo a string
-      [0;32;1medit[m: Edit a whatever
-
-[0;1mnet.lewisship.example-ns[m
    [0;32;1mdefault[m: Default command summary
   [0;32;1mexplicit[m: Explicit command summary
-
-[0;1mBuilt-in[m
+     [0;32;1mgroup[m: [0;3mGrouped commands[m
       [0;32;1mhelp[m: List available commands
+
+[0;1mgroup[m - Grouped commands
+
+Commands:
+      [0;32;1mecho[m: Echo a string
+      [0;32;1medit[m: Edit a whatever

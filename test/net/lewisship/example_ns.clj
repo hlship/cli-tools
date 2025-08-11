@@ -1,7 +1,4 @@
 (ns net.lewisship.example-ns
-  "Example commands as part of unit test suite.
-
-  Even this docstring is part of the test."
   (:require [net.lewisship.cli-tools :refer [defcommand]]))
 
 (defcommand default
@@ -10,4 +7,4 @@
 
 (defcommand explicit
   "Docstring for explicit function."
-  [:summary "Explicit command summary"])
+  [:title "Explicit command summary"])
