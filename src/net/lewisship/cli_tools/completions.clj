@@ -3,7 +3,7 @@
   {:command-ns 'net.lewisship.cli-tools.builtins}
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
-            [net.lewisship.cli-tools :refer [defcommand abort]]
+            [net.lewisship.cli-tools :refer [defcommand abort command-path]]
             [clojure.string :as string]
             selmer.util
             selmer.parser
@@ -111,7 +111,10 @@
               (binding [*out* w]
                 (print-tool tool-name commands))
               (catch Throwable t
-                (abort 1 t))))
+                (abort 1 [:red
+                          (command-path) ": "
+                          (or (ex-message t)
+                              (class t))]))))
           (perr [:cyan "Wrote " output-path]))
         ;; Just write to standard output
         (print-tool tool-name commands)))))

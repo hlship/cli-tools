@@ -25,6 +25,18 @@
 
 (def ^:private supported-keywords #{:in-order :as :args :options :command :title :let :validate})
 
+(defn command-path
+  []
+  (let [{:keys [tool-name]} *options*
+        path (:command-path *command-map*)]
+    (when tool-name
+      [:bold.green
+       tool-name
+       (when (seq path)
+         (list
+           " "
+           (string/join " " path)))])))
+
 (defn exit
   [status]
   (when-not prevent-exit
@@ -203,20 +215,14 @@
 
 (defn print-errors
   [errors]
-  (let [{:keys [tool-name]} *options*
-        {:keys [command-path]} *command-map*]
+  (let [{:keys [tool-name]} *options*]
     (perr
       [:red
        (inflect/pluralize-noun (count errors) "Error")
-       (when (or tool-name command-path)
+       (when tool-name
          (list
            " in "
-           [:bold.green
-            tool-name
-            (when tool-name " ")
-
-            (when command-path
-              (string/join " " command-path))]))
+           (command-path)))
        ":"
        (if (= 1 (count errors))
          (list " " (first errors))

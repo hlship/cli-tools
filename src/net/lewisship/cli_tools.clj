@@ -17,46 +17,24 @@
 
 (defn- abort*
   [status messages]
-  (let [{:keys [tool-name]} impl/*options*
-        {:keys [command-path]} impl/*command-map*]
-    (ansi/perr
-      [:red
-       (when tool-name
-         (list
-           [:bold.green
-            tool-name
-            (when command-path
-              (list " " (string/join " " command-path)))]
-           ": "))
-       (map (fn [m]
-              (if (instance? Throwable m)
-                (or (ex-message m)
-                    (-> m class .getName))
-                m))
-            messages)])
-    (exit status)))
+  (ansi/perr messages)
+  (exit status))
+
+(defn command-path
+  "Returns a composed string of the tool name and command path that can be used
+  in error messages. This function requires
+  global data bound by [[dispatch*]] and returns nil when invoked outside that
+  context."
+  {:added "0.16.0"}
+  []
+  (impl/command-path))
 
 (defn abort
-  "Invoked when a tool has a runtime failure. Writes to standard error;
-  identifies the tool name, category (if any) and command name
-  (in bold green) and then writes the remaining message text after a colon and a space,
-  in red.
-
-  Each element of message may either be a composed string, or an exception.
-
-  Each exception in the message is converted to a string via `ex-message`.
-  If `ex-message` returns nil, then the class name of the exception is used.
+  "Invoked when a tool has a runtime failure.  The messages, composed strings, are
+  printed to `*err*` and then [[exit]] is invoked.
 
   By default, the exit status is 1.  If the first message value is a number, it is used
-  as the exit status instead.
-
-  `abort` assumes that the command function was invoked by `dispatch`.
-  When it is invoked otherwise, including when using `defcommand` to
-  create a main entry point, the prefix (normally identifying the tool name and possibly
-  nested command name, and the colon) are omitted.  Just the message portion
-  is output.
-
-  "
+  as the exit status instead."
   {:added    "0.15"
    :arglists '[[status & message]
                [& message]]}

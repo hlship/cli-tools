@@ -2,19 +2,22 @@
 
 *BREAKING CHANGES*
 
-- Groups are now defined in the options passed to `net.lewisship.cli-tools/dispatch`, not in
+* Groups are now defined in the options passed to `net.lewisship.cli-tools/dispatch`, not in
   namespace metadata
-- Command names are matched as prefixes (not substrings)
-- The tool's documentation must now be specified in top-level :doc option key.
-- In a `defcommand`, the :summary key has been renamed to :title
+* Command names are matched as prefixes (not substrings)
+* The tool's documentation must now be specified in top-level :doc option key.
+* `net.lewisship.cli-tools`:
+    * In a `defcommand`, the :summary key has been renamed to :title
+    * `abort` has been stripped down, it no longer writes the tool name, command path, etc.
 
 *Changes*
 
-- Groups may now be nested, to arbitrary depth
-- You may now enter `-h` or `--help` after a group to get help for just that group
-- Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
-- Tool help now displays just top-level commands by default (add --full to list nested commands)
-
+* Groups may now be nested, to arbitrary depth
+* You may now enter `-h` or `--help` after a group to get help for just that group
+* Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
+* Tool help now displays just top-level commands by default (add --full to list nested commands)
+* net.lewisship.cli-tools
+    * New `command-path` function returns a composed string of the tool name and command path
 
 # 0.15.1 -- 27 Jan 2025
 
@@ -42,7 +45,7 @@ Added optional namespace `net.lewisship.cli-tools.completions`, which is conside
 The added `completions` command generates zsh command completions for the tool.
 
 Added new functions to `net.lewisship.cli-tools`:
-- `abort` is used to terminate a tool with a status code and provide an error message to standard error
+* `abort` is used to terminate a tool with a status code and provide an error message to standard error
 
 [Closed Issues](https://github.com/hlship/cli-tools/milestone/7?closed=1)
 
@@ -54,8 +57,8 @@ or command summary includes the search term (using a caseless match) are include
 Added support for :command-ns meta-data on namespaces.
 
 Added two optional namespaces (that appear as built-in commands):
-- `net.lewisship.cli-tools.color` (prints a chart of foreground and background colors)
-- `net.lewisship.cli-tools.job-status-demo` (runs a demo of the job status system)
+* `net.lewisship.cli-tools.color` (prints a chart of foreground and background colors)
+* `net.lewisship.cli-tools.job-status-demo` (runs a demo of the job status system)
 
 [Closed Issues](https://github.com/hlship/cli-tools/milestone/6?closed=1)
 
@@ -104,8 +107,8 @@ uniquely identify a command), and removed the fuzzy match ("did you mean?")
 that did not seem to provide any real benefit.
 
 Tools that make use of `dispatch` now add two new leading switches:
-- `-C`, `--color`: enables ANSI colors, even if otherwise disabled
-- `-N`, `--no-color`: disables ANSI colors, even if otherwise enabled
+* `-C`, `--color`: enables ANSI colors, even if otherwise disabled
+* `-N`, `--no-color`: disables ANSI colors, even if otherwise enabled
 
 Like `-h`, `--help`, these must precede any command names.
 
