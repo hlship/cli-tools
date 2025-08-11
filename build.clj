@@ -18,6 +18,10 @@
   [_params]
   (b/create-jar jar-params))
 
+(defn install
+  [_]
+  (b/install-jar (jar jar-params)))
+
 (defn deploy
   [_params]
   (clean nil)

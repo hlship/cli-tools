@@ -15,11 +15,6 @@
             (:args :options)
             (recur k more-terms blocks)
 
-            :as
-            (recur state
-                   (next more-terms)
-                   (update blocks :afters conj (first more-terms) (api/token-node 'nil)))
-
             :let
             (recur state
                    (next more-terms)

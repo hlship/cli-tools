@@ -23,7 +23,7 @@
   command spec. Used when extracting options for completions."
   false)
 
-(def ^:private supported-keywords #{:in-order :as :args :options :command :title :let :validate})
+(def ^:private supported-keywords #{:in-order :args :options :command :title :let :validate})
 
 (defn command-path
   []
@@ -572,15 +572,6 @@
   [state]
   (assoc state :consuming :keyword
          :pending false))
-
-(defmethod consumer :as
-  [state form]
-  (when-not (simple-symbol? form)
-    (fail "Expected command-map symbol" state form))
-
-  (-> state
-      (assoc :command-map-symbol form)
-      complete-keyword))
 
 (defmethod consumer :in-order
   [state form]

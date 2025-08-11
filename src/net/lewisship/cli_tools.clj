@@ -17,7 +17,7 @@
 
 (defn- abort*
   [status messages]
-  (ansi/perr messages)
+  (apply ansi/perr messages)
   (exit status))
 
 (defn command-path
@@ -53,21 +53,12 @@
 (defn print-errors
   "Prints the errors for the command to `*err*`.
 
-   ~To invoke this, you need the command map, which is available via the :as clause to [[defcommand]].~
-
    Ex:
 
-      Error in my-tool my-command: --count is not a number
-
-  errors is a seq of strings (or composed strings) to display as errors.
-
-  In 0.15.1, the two-argument variant was deprecated in favor of the new version which
-  only requires the seq of errors."
+       Error in my-tool my-command: --count is not a number"
   {:added "0.13"}
-  ([_command-map errors]
-   (print-errors errors))
-  ([errors]
-   (impl/print-errors errors)))
+  [errors]
+  (impl/print-errors errors))
 
 (defn best-match
   "Given an input string and a seq of possible values, returns the matching value if it can
@@ -75,18 +66,14 @@
 
   Values may be strings, symbols, or keywords.
 
-  best-match does a caseless substring match against the provided values. It returns the single
+  best-match does a caseless prefix match against the provided values. It returns the single
   value that matches the input. It returns nil if no value matches, or if multiple values match.
-
-  Some special handling for the `-` character; the input value is split on `-` and turned into
-  a generous regular expression that matches the substring on either side of the `-` as well as the `-`
-  itself.
 
   Returns the string/symbol/keyword from values.
 
-  e.g. `:parse-fn #(cli-tools/best-match % #{:red :green :blue})` would parse an input of `red` to
+  e.g. `:parse-fn #(cli-tools/best-match % #{:red :green :blue :grey})` would parse an input of `red` to
   `:red`, or an input of `b` to `:blue`; `z` matches nothing and returns nil, as would
-  `e` which matches multiple values.
+  `g` which matches multiple values.
 
   Expects symbols and keywords to be unqualified."
   [input values]
@@ -129,8 +116,8 @@
           "defcommand expects a vector to define the interface")
   (let [symbol-meta        (meta fn-name)
         parsed-interface   (impl/compile-interface  interface)
-        {:keys [option-symbols command-map-symbol title let-forms validate-cases]
-         :or   {command-map-symbol (gensym "command-map-")}} parsed-interface
+        {:keys [option-symbols title let-forms validate-cases]} parsed-interface
+        command-map-symbol (gensym "command-map-")
         command-name'      (or (:command-name parsed-interface)
                                (name fn-name))
         let-option-symbols (cond-> []
@@ -185,9 +172,7 @@
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
   Some applications may call this instead of `dispatch`, modify the results, and then
-  invoke `dispatch*`.
-
-  Manages a cache, so the results may "
+  invoke `dispatch*`."
   [options]
   (let [{:keys [cache-dir arguments]} options
         options' (select-keys options [:tool-name
@@ -268,6 +253,7 @@
   ... format (select-option
                  \"-f\" \"--format FORMAT\" \"Output format:\"
                  #{:plain :csv :tsv :json :edn}) ...
+  ```
   "
   {:added "0.10"}
   [short-opt long-opt desc-prefix input-values & {:keys [default] :as kvs}]
@@ -380,7 +366,8 @@
   :label | String | Response entered by user, e.g., \"yes\"
   :value | any    | Value to be returned by `ask`, e.g., true
 
-  A response may be a keyword; the :value will be the keyword, and the label
+  A response may also be abbreviated as a single keyword; it will be expanded into
+  a map where the :value will be the keyword, and the label
   will simply be the name of the keyword.
 
   Ex:

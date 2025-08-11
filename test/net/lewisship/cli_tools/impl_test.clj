@@ -92,20 +92,6 @@
                             (compile-interface  '[option-symbol])))]
     (is (= "Missing data in interface definitions" (ex-message e)))))
 
-(deftest can-provide-command-map-symbol-name
-  (is (= 'my-command-map
-         (:command-map-symbol (compile-interface  '[:as my-command-map])))))
-
-(deftest missing-map-symbol-after-as-keyword
-  (when-let [e (is (thrown? Exception
-                            (compile-interface  '[:as])))]
-    (is (= "Missing data in interface definitions" (ex-message e)))))
-
-(deftest not-a-symbol-after-as-keyword
-  (when-let [e (is (thrown? Exception
-                            (compile-interface  '[:as "my-command-map-string"])))]
-    (is (= "Expected command-map symbol" (ex-message e)))))
-
 (deftest not-a-valid-option-def
   (when-let [e (is (thrown? Exception
                             (compile-interface  '[my-option "not valid"])))]
