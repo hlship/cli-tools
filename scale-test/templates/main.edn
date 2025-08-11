@@ -3,6 +3,16 @@
 
 (defn -main
   [& args]
-  (cli/dispatch {:namespaces '[{{ns-names|join:" "}}]
+  (cli/dispatch {
+{% if group %}
+                  :namespaces '[net.lewisship.cli-tools.completions]
+                 :groups {
+{% for ns in ns-names %}
+                          "{{ns|strip-ns}}" '{:namespaces [{{ns}}]}
+{% endfor %}
+                          }
+{% else %}
+                 :namespaces '[{{ns-names|join:" "}}]
+{% endif %}
                  :tool-name "uber"
                  :arguments  args}))
