@@ -658,7 +658,7 @@
   [command-name command-doc command-line-arguments command-spec]
   (cond-let
     :let [{:keys [command-args command-options parse-opts-options]} command-spec
-          {:keys [in-order summary-fn]
+          {:keys [in-order]
            :or   {in-order false}} parse-opts-options
           positional-specs (compile-positional-specs command-name command-args)
           command-map (merge command-spec

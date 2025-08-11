@@ -9,7 +9,7 @@
       (if (api/keyword-node? term)
         (let [{:keys [k]} term]
           (case k
-            (:in-order :command :summary)
+            (:in-order :command :title)
             (recur state (next more-terms) blocks)
 
             (:args :options)

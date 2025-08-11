@@ -2,13 +2,12 @@
   "Support for generating zsh command completion scripts for a command."
   {:command-ns 'net.lewisship.cli-tools.builtins}
   (:require [babashka.fs :as fs]
-            [clj-commons.ansi :as ansi]
             [clojure.java.io :as io]
             [net.lewisship.cli-tools :refer [defcommand abort command-path]]
             [clojure.string :as string]
             selmer.util
             selmer.parser
-            [clj-commons.ansi :refer [perr]]
+            [clj-commons.ansi :as ansi :refer [perr]]
             [net.lewisship.cli-tools.impl :as impl]))
 
 (defn- simplify
@@ -57,7 +56,7 @@
       (to-opt short-option long-option summary))))
 
 (defn- extract-command
-  [fn-prefix [command-name command-map :as e]]
+  [fn-prefix [command-name command-map]]
   (let [{:keys [fn]} command-map
         title   (binding [ansi/*color-enabled* false]
                   (impl/extract-command-title command-map))
