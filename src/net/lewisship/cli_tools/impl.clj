@@ -711,7 +711,7 @@
 
 (def ^:private missing-doc [:red "(missing documentation)"])
 
-(defn- extract-command-title
+(defn extract-command-title
   [command-map]
   (or (:title command-map)
       (-> command-map :doc first-sentence)
@@ -966,14 +966,15 @@
                         ::keys [command-name title]} (meta command-var)]
                    (cond-> result
                      command-name (assoc command-name
-                                         {:fn           (symbol command-var)
-                                          ;; Commands have a full :doc and an optional short :title
-                                          ;; (the title defaults to the first sentence of the :doc
-                                          ;; if not provided
-                                          :doc          doc
-                                          :title        title
-                                          :command      command-name
-                                          :command-path (conj path command-name)}))))
+                                         (cond->
+                                           {:fn           (symbol command-var)
+                                            ;; Commands have a full :doc and an optional short :title
+                                            ;; (the title defaults to the first sentence of the :doc
+                                            ;; if not provided
+                                            :doc          doc
+                                            :command      command-name
+                                            :command-path (conj path command-name)}
+                                           title (assoc :title title))))))
                {})))
 
 
