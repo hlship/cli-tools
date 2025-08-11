@@ -5,3 +5,4 @@
 .clj-kondo/.cache
 .nrepl-port
 *.iml
+.*preview

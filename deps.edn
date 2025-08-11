@@ -40,5 +40,5 @@
    :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
 
   :build
-  {:deps       {io.github.hlship/build-tools {:git/tag "0.11.0" :git/sha "8c67d11"}}
+  {:deps       {io.github.hlship/build-tools {:git/tag "0.12.1" :git/sha "05f3aeb"}}
    :ns-default build}}}

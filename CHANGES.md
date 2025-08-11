@@ -9,7 +9,9 @@
 * `net.lewisship.cli-tools`:
     * In a `defcommand`, the :summary key has been renamed to :title
     * `abort` has been stripped down, it no longer writes the tool name, command path, etc.
-
+    * `defcommand`: the :as keyword is not longer supported.
+    * The two-arg variant of `print-errors` has been removed.
+    * 
 *Changes*
 
 * Groups may now be nested, to arbitrary depth
