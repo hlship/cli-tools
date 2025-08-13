@@ -171,65 +171,15 @@
    ["-N" "--no-color" "Disable ANSI color output"]
    ["-h" "--help" "This tool summary"]])
 
-(defn dispatch*
-  "Called from a tool handler to process remaining command line arguments.
-
-  - options - tool options
-  - color-flag - if non-nil, enables or disables ANSI colors before dispatching
-  - help - if true, then change the arguments to \"help\", to print tool help"
-  [options color-flag help?]
-  (cond
-    (some? color-flag)
-    (binding [ansi/*color-enabled* color-flag]
-      (dispatch* options nil help?))
-
-    help?
-    (recur (assoc options :arguments ["help"]) nil false)
-
-    :else
-    (impl/dispatch options)))
-
-(defn default-tool-handler
-  "Default tool handler, passed the tool options.  The [[default-tool-options]] support enabling or disabling
-  ANSI fonts, and requesting top-level help.
-
-  This is the default for the :handler key of dispatch options.
-
-  This function is passed the tool options (the data derived from the dispatch options) and
-  parses the default tool option, using the results in the call to [[dispatch*]]."
-  {:added "0.16.0"}
-  [tool-options]
-  (let [{:keys [arguments]} tool-options
-        {:keys [options arguments summary errors] :as result} (cli/parse-opts arguments
-                                                                              default-tool-options
-                                                                              :in-order true
-                                                                              :summary-fn (fn [specs]
-                                                                                            (delay (impl/summarize-specs specs))))
-        _          (when errors
-                     (throw (ex-info "Tool parse sanity check" result)))
-        {:keys [color no-color help]} options
-        color-flag (cond color true
-                         no-color false)]
-    (dispatch* (assoc tool-options
-                      :arguments arguments
-                      :tool-summary summary)
-               color-flag help)))
-
-(defn- invoke-tool-handler
+(defn- expand-tool-options
+  "Expanded dispatch options into tool options, leveraging a cache."
   [options]
-  ((:handler options) options))
-
-(defn expand-dispatch-options
-  "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
-  Some applications may call this instead of `dispatch`, modify the results, and then
-  invoke `dispatch*`."
-  [options]
-  (let [{:keys [cache-dir arguments]} options
+  (let [{:keys [cache-dir]} options
         options'   (select-keys options [:tool-name
                                          :doc
                                          :namespaces
                                          :groups])
-        cache-dir' (when (and cache-dir impl/*cache-enabled*)
+        cache-dir' (when (and cache-dir)
                      (fs/expand-home cache-dir))
         digest     (when cache-dir'
                      (cache/classpath-digest options'))
@@ -241,11 +191,68 @@
                        (when cache-dir'
                          (cache/write-to-cache cache-dir' digest expanded))
                        expanded))]
-    (-> result
-        (assoc :arguments (or arguments *command-line-args*))
-        (merge (select-keys options [:handler])))))
+    (merge result
+           (select-keys options [:tool-name :doc :arguments :tool-summary]))))
 
-(def ^:private default-options
+(defn dispatch*
+  "Called from a tool handler to process remaining command line arguments.
+
+  - dispatch-options - modified dispatch options
+  - color-flag - if non-nil, enables or disables ANSI colors before dispatching
+  - help - if true, then change the arguments to \"help\", to print tool help
+
+  In the dispatch options map, the tool handler should have set the following:
+
+  - :arguments -- seq of remaining arguments after processing tool-level options
+  - :tool-summary -- summary of tool options (used when printing tool help)."
+  [dispatch-options color-flag help?]
+  (cond
+    (some? color-flag)
+    (binding [ansi/*color-enabled* color-flag]
+      (dispatch* dispatch-options nil help?))
+
+    help?
+    (recur (assoc dispatch-options :arguments ["help"]) nil false)
+
+    :else
+    (-> dispatch-options expand-tool-options impl/dispatch)))
+
+(defn summarize-specs
+  "Converts a tools.cli command specification to a description of the options; this is an enhanced version of
+  clojure.tools.cli/summarize that makes use of indentation and ANSI colors.
+
+  Returns a delay (to ensure that ANSI color enabled/disabled options are enforced)."
+  {:added "0.16.0"}
+  [specs]
+  ;; summarize-specs is called before we parse the command line options (-C, -N) that may enable/disable
+  ;; ANSI colors, so a delay is used to prevent premature evaluation.
+  (delay (impl/summarize-specs specs)))
+
+(defn default-tool-handler
+  "Default tool handler, passed the tool options.  The [[default-tool-options]] support enabling or disabling
+  ANSI fonts, and requesting top-level help.
+
+  This is the default for the :handler key of dispatch options.
+
+  This function is passed the dispatch options, parses the default tool options, and delegates the rest to [[dispatch*]]."
+  {:added "0.16.0"}
+  [dispatch-options]
+  (let [{:keys [arguments]} dispatch-options
+        {:keys [options arguments summary errors] :as result} (cli/parse-opts arguments
+                                                                              default-tool-options
+                                                                              :in-order true
+                                                                              :summary-fn summarize-specs)
+        _          (when errors
+                     (throw (ex-info "Tool parse sanity check" result)))
+        {:keys [color no-color help]} options
+        color-flag (cond color true
+                         no-color false)]
+    (dispatch* (-> dispatch-options
+                   (assoc :arguments arguments
+                          :tool-summary summary))
+               color-flag help)))
+
+(def ^:private default-dispatch-options
   {:cache-dir (or (System/getenv "CLI_TOOLS_CACHE_DIR")
                   "~/.cli-tools-cache")
    :handler   default-tool-handler})
@@ -254,7 +261,7 @@
   "Locates commands in namespaces, finds the current command
   (as identified by the first command line argument) and processes CLI options and arguments.
 
-  options:
+  dispatch-options:
   
   - :tool-name (optional, string) - used in command summary and errors
   - :doc (optional, string) - used in help summary
@@ -262,6 +269,7 @@
   - :namespaces - seq of symbols identifying namespaces to search for root-level commands
   - :groups - map of group command (a string) to a group map
   - :handler - function to handle tool-level options, defaults to [[default-tool-handler]]
+  - :cache-dir (optional, string) - directory to cache data in, or nil to disable cache
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
@@ -269,9 +277,9 @@
 
   A group map defines a set of commands grouped under a common name.  Its structure:
 
-  - :doc - string, a short string identifying the purpose of the group
-  - :namespaces - seq of symbols identifying namespaces of commands in the group
-  - :groups - recusive map of groups nested within the group
+  - :doc (optional, string) - a short string identifying the purpose of the group
+  - :namespaces (seq of symbols, required) - identifies namespaces providing commands in the group
+  - :groups (optional, map) - recusive map of groups nested within the group
 
   dispatch will always add the `net.lewiship.cli-tools.builtins` namespace to the root
   namespace list; this ensures the built-in `help` command is available.
@@ -282,13 +290,16 @@
 
   Caching is enabled by default; this means that a scan of all namespaces is only required on the first
   execution; subsequently, only the single namespace implementing the selected command will need to
-  be loaded.
+  be loaded.  :cache-dir defaults to the value of the CLI_TOOLS_CACHE_DIR environment variable, or
+  to the default value `~/.cli-tools-cache`.  If set to nil, then caching is disabled.
 
   Returns nil."
-  [options]
-  (-> (merge default-options options)
-      expand-dispatch-options
-      invoke-tool-handler))
+  [dispatch-options]
+  (let [options' (merge {:arguments *command-line-args*}
+                        default-dispatch-options
+                        dispatch-options)
+        {:keys [handler]} options']
+    (handler (dissoc options' :handler))))
 
 (defn select-option
   "Builds a standard option spec for selecting from a list of possible values.

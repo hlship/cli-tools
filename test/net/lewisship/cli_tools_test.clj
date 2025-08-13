@@ -17,8 +17,8 @@
 (use-fixtures
   :once
   (fn [f]
-    (binding [impl/*tool-options*  {:tool-name "harness"}
-              impl/*cache-enabled* false]
+    (binding [impl/*tool-options*  {:tool-name "harness"
+                                    :cache-dir nil}]
       (f))))
 
 ;; An example to test around

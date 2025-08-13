@@ -23,9 +23,6 @@
   command spec. Used when extracting options for completions."
   false)
 
-(def ^:dynamic *cache-enabled*
-  true)
-
 (def ^:private supported-keywords #{:in-order :args :options :command :title :let :validate})
 
 (defn command-path
@@ -964,18 +961,16 @@
      :subs         subs}))
 
 (defn expand-tool-options
-  [options]
-  (let [{:keys [tool-name]} options
+  [dispatch-options]
+  (let [{:keys [tool-name]} dispatch-options
         tool-name' (or tool-name
                        (default-tool-name)
-                       (throw (ex-info "No :tool-name specified" {:options options})))
+                       (throw (ex-info "No :tool-name specified" {:options dispatch-options})))
         ;; options are also the root descriptor for the built-in namespace
-        root       (-> options
+        root       (-> dispatch-options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
                        (build-command-group nil tool-name)
                        :subs)]
-    (-> options
-        (dissoc :groups :namespaces)
-        (assoc :tool-name tool-name'
-               :command-root root))))
+    {:tool-name tool-name'
+     :command-root root}))
 
