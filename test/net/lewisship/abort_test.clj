@@ -10,7 +10,7 @@
 (use-fixtures :once
               (fn [f]
                 (binding [ansi/*color-enabled* false
-                          impl/*options*       {:tool-name "tool"}
+                          impl/*tool-options*  {:tool-name "tool"}
                           impl/*command-map*   {:command-path ["category" "command"]}]
                   (f))))
 
@@ -32,6 +32,6 @@
                     (abort 99 "utter failure")))))
 
 (deftest just-the-message-when-no-tool
-  (binding [impl/*options* nil]
+  (binding [impl/*tool-options* nil]
     (is (= (compose "utter failure\n")
            (with-exit 1 (abort (command-path) "utter failure"))))))

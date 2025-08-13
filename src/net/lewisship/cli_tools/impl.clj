@@ -10,7 +10,7 @@
 
 (def prevent-exit false)
 
-(def ^:dynamic *options*
+(def ^:dynamic *tool-options*
   "Bound by [[dispatch]] so that certain functions, such as help, can operate."
   nil)
 
@@ -27,7 +27,7 @@
 
 (defn command-path
   []
-  (let [{:keys [tool-name]} *options*
+  (let [{:keys [tool-name]} *tool-options*
         path (:command-path *command-map*)]
     (when tool-name
       [:bold.green
@@ -175,7 +175,7 @@
 
 (defn print-summary
   [command-doc command-map]
-  (let [{:keys [tool-name]} *options*
+  (let [{:keys [tool-name]} *tool-options*
         {:keys [command-path]} *command-map*
         {:keys [command-name positional-specs summary]} command-map
         arg-strs (map arg-spec->str positional-specs)]
@@ -215,7 +215,7 @@
 
 (defn print-errors
   [errors]
-  (let [{:keys [tool-name]} *options*]
+  (let [{:keys [tool-name]} *tool-options*]
     (perr
       [:red
        (inflect/pluralize-noun (count errors) "Error")
@@ -924,7 +924,7 @@
 
 (defn dispatch
   [{:keys [command-root arguments tool-name] :as options}]
-  (binding [*options* options]
+  (binding [*tool-options* options]
     (dispatch-options-parser tool-name arguments command-root))
   nil)
 
@@ -970,8 +970,8 @@
 
 
 (defn- build-command-group
-  [path descriptor]
-  (let [{:keys [namespaces doc command groups]} descriptor
+  [descriptor path command]
+  (let [{:keys [namespaces doc groups]} descriptor
         path'           (if (nil? path)
                           []
                           (conj path command))
@@ -982,9 +982,7 @@
         subs            (reduce-kv
                           (fn [commands group-command group-descriptor]
                             (assoc commands group-command
-                                   (build-command-group path'
-                                                        (assoc group-descriptor
-                                                               :command group-command))))
+                                   (build-command-group group-descriptor path' group-command)))
                           direct-commands
                           groups)
         doc'            (or doc
@@ -1001,10 +999,9 @@
                        (default-tool-name)
                        (throw (ex-info "No :tool-name specified" {:options options})))
         ;; options are also the root descriptor for the built-in namespace
-        options'   (-> options
+        root       (-> options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
-                       (assoc :command tool-name))
-        root       (-> (build-command-group nil options')
+                       (build-command-group nil tool-name)
                        :subs)]
     (-> options
         (dissoc :groups :namespaces)

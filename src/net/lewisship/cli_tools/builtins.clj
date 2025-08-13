@@ -12,5 +12,5 @@
    search-term ["SEARCH" "Filter shown commands to those that match this term"
          :optional true]]
   ;; dispatch binds *options* for us
-  (impl/print-tool-help impl/*options* search-term full?))
+  (impl/print-tool-help impl/*tool-options* search-term full?))
 
