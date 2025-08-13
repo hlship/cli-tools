@@ -23,6 +23,9 @@
   command spec. Used when extracting options for completions."
   false)
 
+(def ^:dynamic *cache-enabled*
+  true)
+
 (def ^:private supported-keywords #{:in-order :args :options :command :title :let :validate})
 
 (defn command-path
@@ -758,10 +761,8 @@
               (when tool-doc
                 (perr "\n"
                       (cleanup-docstring tool-doc)))
-              (perr "\nTool options:")
-              (perr [:bold "  -C, --color"] "    Enable ANSI color output")
-              (perr [:bold "  -N, --no-color"] " Disable ANSI color output")
-              (perr [:bold "  -h, --help"] "     This tool summary"))
+              (perr "\nTool options:\n"
+                    (-> options :tool-summary deref)))
           all-commands (collect-commands command-root)]
 
     (nil? search-term')
@@ -820,112 +821,82 @@
   [tool-name]
   (list ", use " [:bold.green tool-name " help"] " to list commands"))
 
-(defn- invoke-command
-  [command-map args]
-  (binding [*command-map* command-map]
-    (apply (-> command-map :fn requiring-resolve) args)))
-
-(defn- inner-dispatch
-  [tool-name arguments root-command]
-  (let [command-name (first arguments)]
-    (if (or (nil? command-name)
-            (string/starts-with? command-name "-"))
-      (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
-      (loop [prefix            []                           ; Needed?
-             term              command-name
-             remaining-args    (next arguments)
-             container-map     nil
-             commands-map      root-command]
-        (cond-let
-          (#{"-h" "--help"} term)
-          (do
-            (print-commands nil container-map commands-map false)
-            (exit 0))
-
-          :let [possible-commands commands-map
-                matchable-terms (keys possible-commands)]
-
-          ;; Options start with a '-', but we're still looking for commands
-          (or (nil? term)
-              (string/starts-with? term "-"))
-          (abort
-            [:bold.green tool-name ": "
-             (string/join " " (butlast prefix))
-             [:red (last prefix)]]
-            " is incomplete; "
-            (compose-list matchable-terms)
-            " could follow; use "
-            [:bold [:green tool-name " " (string/join " " prefix) " --help (or -h)"]]
-            " to list commands")
-
-          :let [matched-terms (find-matches term matchable-terms)
-                match-count (count matched-terms)]
-
-          (not= 1 match-count)
-          (let [body        (if (pos? match-count)
-                              (list "matches "
-                                    (compose-list matched-terms))
-                              (list "is not a command, expected "
-                                    (compose-list matchable-terms {:conjuction "or"})))
-                help-suffix (list
-                              "; use "
-                              [:bold [:green tool-name " "
-                                      (if (seq prefix)
-                                        (string/join " " prefix)
-                                        "help")]]
-                              (when (seq prefix)
-                                " --help (or -h)")
-                              " to list commands")]
-            (abort
-              [:bold [:green tool-name] ": "
-               [:green (string/join " " prefix)]
-               (when (seq prefix) " ")
-               [:red term]]
-              " "
-              body
-              help-suffix))
-
-          ;; Exactly one match
-          :let [matched-term (first matched-terms)
-                matched-command (get possible-commands matched-term)]
-
-
-          (:fn matched-command)
-          (invoke-command matched-command remaining-args)
-
-          ;; Otherwise, it was a command group.
-          :else
-          (recur (:command-path matched-command)
-                 (first remaining-args)
-                 (rest remaining-args)
-                 matched-command
-                 (:subs matched-command)))))))
-
-(defn- dispatch-options-parser
-  [tool-name arguments command-root]
-  (let [[first-arg & remaining-args] arguments]
-    (cond
-      ;; In the normal case, when help is available, treat -h or --help the same as help
-      (#{"-h" "--help"} first-arg)
-      (inner-dispatch tool-name (cons "help" remaining-args) command-root)
-
-      (#{"-C" "--color"} first-arg)
-      (binding [*color-enabled* true]
-        ;; Can't use recur, due to binding
-        (dispatch-options-parser tool-name remaining-args command-root))
-
-      (#{"-N" "--no-color"} first-arg)
-      (binding [*color-enabled* false]
-        (dispatch-options-parser tool-name remaining-args command-root))
-
-      :else
-      (inner-dispatch tool-name arguments command-root))))
-
-
 (defn dispatch
   [{:keys [command-root arguments tool-name] :as options}]
   (binding [*tool-options* options]
-    (dispatch-options-parser tool-name arguments command-root))
+    (let [command-name (first arguments)]
+      (if (or (nil? command-name)
+              (string/starts-with? command-name "-"))
+        (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
+        (loop [prefix            []                           ; Needed?
+               term              command-name
+               remaining-args    (next arguments)
+               container-map     nil
+               commands-map      command-root]
+          (cond-let
+            (#{"-h" "--help"} term)
+            (do
+              (print-commands nil container-map commands-map false)
+              (exit 0))
+
+            :let [possible-commands commands-map
+                  matchable-terms (keys possible-commands)]
+
+            ;; Options start with a '-', but we're still looking for commands
+            (or (nil? term)
+                (string/starts-with? term "-"))
+            (abort
+              [:bold.green tool-name ": "
+               (string/join " " (butlast prefix))
+               [:red (last prefix)]]
+              " is incomplete; "
+              (compose-list matchable-terms)
+              " could follow; use "
+              [:bold [:green tool-name " " (string/join " " prefix) " --help (or -h)"]]
+              " to list commands")
+
+            :let [matched-terms (find-matches term matchable-terms)
+                  match-count (count matched-terms)]
+
+            (not= 1 match-count)
+            (let [body        (if (pos? match-count)
+                                (list "matches "
+                                      (compose-list matched-terms))
+                                (list "is not a command, expected "
+                                      (compose-list matchable-terms {:conjuction "or"})))
+                  help-suffix (list
+                                "; use "
+                                [:bold [:green tool-name " "
+                                        (if (seq prefix)
+                                          (string/join " " prefix)
+                                          "help")]]
+                                (when (seq prefix)
+                                  " --help (or -h)")
+                                " to list commands")]
+              (abort
+                [:bold [:green tool-name] ": "
+                 [:green (string/join " " prefix)]
+                 (when (seq prefix) " ")
+                 [:red term]]
+                " "
+                body
+                help-suffix))
+
+            ;; Exactly one match
+            :let [matched-term (first matched-terms)
+                  matched-command (get possible-commands matched-term)]
+
+            (:fn matched-command)
+            (binding [*command-map* matched-command]
+              (apply (-> matched-command :fn requiring-resolve) remaining-args))
+
+            ;; Otherwise, it was a command group.
+            :else
+            (recur (:command-path matched-command)
+                   (first remaining-args)
+                   (rest remaining-args)
+                   matched-command
+                   (:subs matched-command)))))))
   nil)
 
 (defn command-map?
@@ -992,7 +963,7 @@
      :command-path path'
      :subs         subs}))
 
-(defn expand-dispatch-options
+(defn expand-tool-options
   [options]
   (let [{:keys [tool-name]} options
         tool-name' (or tool-name

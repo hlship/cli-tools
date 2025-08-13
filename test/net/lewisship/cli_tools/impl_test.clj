@@ -1,7 +1,10 @@
 (ns net.lewisship.cli-tools.impl-test
   (:require [clojure.test :refer [deftest is are use-fixtures]]
             [clj-commons.ansi :as ansi]
+            [net.lewisship.cli-tools :as cli]
             [net.lewisship.cli-tools.impl :as impl :refer [compile-interface]]))
+
+(cli/set-prevent-exit! true)
 
 ;; Disable ANSI color output during tests.
 (use-fixtures :once
@@ -125,17 +128,6 @@
 (defn capture-help
   [& args]
   (reset! *help-args args))
-
-(deftest provides-help-with-h-or-help
-  (let [commands {"help" {:fn `capture-help}}
-        options  {:tool-name "test-tool"
-                  :command-root  commands}]
-    (doseq [arg ["-h" "--help"]
-            :let [extra-arg (str "extra" arg)]]
-      (reset! *help-args ::unset)
-      (impl/dispatch (assoc options :arguments [arg extra-arg]))
-      (is (= [extra-arg]
-             @*help-args)))))
 
 (deftest command-not-provided
   (let [*message* (atom nil)]

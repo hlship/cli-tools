@@ -17,7 +17,8 @@
 (use-fixtures
   :once
   (fn [f]
-    (binding [impl/*tool-options* {:tool-name "harness"}]
+    (binding [impl/*tool-options*  {:tool-name "harness"}
+              impl/*cache-enabled* false]
       (f))))
 
 ;; An example to test around
@@ -126,6 +127,17 @@
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
          (with-exit 0 (invoke-command "configure" "-h")))))
+
+(deftest help-with-no-color
+  (is (= (slurp "test-resources/help-with-no-color.txt")
+         (with-exit 0
+                    (invoke-command  "-N" "-h")))))
+
+(deftest help-with-color-enabled
+  (binding [ansi/*color-enabled* false]
+    (is (= (slurp "test-resources/help-with-color-enabled.txt")
+           (with-exit 0
+                      (invoke-command   "-C" "-h"))))))
 
 (deftest unknown-option
   (is (= (slurp "test-resources/unknown-option.txt")

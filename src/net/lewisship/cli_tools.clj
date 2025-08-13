@@ -4,6 +4,7 @@
             [clj-commons.ansi :as ansi]
             [clojure.string :as string]
             [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
+            [clojure.tools.cli :as cli]
             [net.lewisship.cli-tools.cache :as cache]))
 
 (defn exit
@@ -162,12 +163,61 @@
                ~validations)
              ~@body))))))
 
-;; TODO: Expandable expansion and caching
+
+(def ^{:added "0.16.0"}
+  default-tool-options
+  "Default tool command line options."
+  [["-C" "--color" "Enable ANSI color output"]
+   ["-N" "--no-color" "Disable ANSI color output"]
+   ["-h" "--help" "This tool summary"]])
 
 (defn dispatch*
-  "Invoked by [[dispatch]] after namespace and command resolution."
-  [expanded-options]
-  (impl/dispatch expanded-options))
+  "Called from a tool handler to process remaining command line arguments.
+
+  - options - tool options
+  - color-flag - if non-nil, enables or disables ANSI colors before dispatching
+  - help - if true, then change the arguments to \"help\", to print tool help"
+  [options color-flag help?]
+  (cond
+    (some? color-flag)
+    (binding [ansi/*color-enabled* color-flag]
+      (dispatch* options nil help?))
+
+    help?
+    (recur (assoc options :arguments ["help"]) nil false)
+
+    :else
+    (impl/dispatch options)))
+
+(defn default-tool-handler
+  "Default tool handler, passed the tool options.  The [[default-tool-options]] support enabling or disabling
+  ANSI fonts, and requesting top-level help.
+
+  This is the default for the :handler key of dispatch options.
+
+  This function is passed the tool options (the data derived from the dispatch options) and
+  parses the default tool option, using the results in the call to [[dispatch*]]."
+  {:added "0.16.0"}
+  [tool-options]
+  (let [{:keys [arguments]} tool-options
+        {:keys [options arguments summary errors] :as result} (cli/parse-opts arguments
+                                                                              default-tool-options
+                                                                              :in-order true
+                                                                              :summary-fn (fn [specs]
+                                                                                            (delay (impl/summarize-specs specs))))
+        _          (when errors
+                     (throw (ex-info "Tool parse sanity check" result)))
+        {:keys [color no-color help]} options
+        color-flag (cond color true
+                         no-color false)]
+    (dispatch* (assoc tool-options
+                      :arguments arguments
+                      :tool-summary summary)
+               color-flag help)))
+
+(defn- invoke-tool-handler
+  [options]
+  ((:handler options) options))
 
 (defn expand-dispatch-options
   "Called by [[dispatch]] to expand the options before calling [[dispatch*]].
@@ -175,25 +225,30 @@
   invoke `dispatch*`."
   [options]
   (let [{:keys [cache-dir arguments]} options
-        options' (select-keys options [:tool-name
-                                       :doc
-                                       :namespaces
-                                       :groups])
-        result   (if-not cache-dir
-                   (impl/expand-dispatch-options options')
-                   (let [cache-dir' (fs/expand-home cache-dir)
-                         digest     (cache/classpath-digest options')
-                         cached     (cache/read-from-cache cache-dir' digest)]
-                     (if cached
-                       cached
-                       (let [full (impl/expand-dispatch-options options')]
-                         (cache/write-to-cache cache-dir' digest full)
-                         full))))]
-    (assoc result :arguments (or arguments *command-line-args*))))
+        options'   (select-keys options [:tool-name
+                                         :doc
+                                         :namespaces
+                                         :groups])
+        cache-dir' (when (and cache-dir impl/*cache-enabled*)
+                     (fs/expand-home cache-dir))
+        digest     (when cache-dir'
+                     (cache/classpath-digest options'))
+        cached     (when digest
+                     (cache/read-from-cache cache-dir' digest))
+        result     (if cached
+                     cached
+                     (let [expanded (impl/expand-tool-options options')]
+                       (when cache-dir'
+                         (cache/write-to-cache cache-dir' digest expanded))
+                       expanded))]
+    (-> result
+        (assoc :arguments (or arguments *command-line-args*))
+        (merge (select-keys options [:handler])))))
 
 (def ^:private default-options
   {:cache-dir (or (System/getenv "CLI_TOOLS_CACHE_DIR")
-                  "~/.cli-tools-cache")})
+                  "~/.cli-tools-cache")
+   :handler   default-tool-handler})
 
 (defn dispatch
   "Locates commands in namespaces, finds the current command
@@ -206,6 +261,7 @@
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
   - :namespaces - seq of symbols identifying namespaces to search for root-level commands
   - :groups - map of group command (a string) to a group map
+  - :handler - function to handle tool-level options, defaults to [[default-tool-handler]]
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
@@ -232,7 +288,7 @@
   [options]
   (-> (merge default-options options)
       expand-dispatch-options
-      dispatch*))
+      invoke-tool-handler))
 
 (defn select-option
   "Builds a standard option spec for selecting from a list of possible values.
