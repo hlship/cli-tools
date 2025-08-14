@@ -324,7 +324,7 @@
          (ex-message e#)))))
 
 (deftest reports-group-match-failure
-  (is (= "group-test: group e matches echo and edit; use group-test group --help (or -h) to list commands"
+  (is (= "group-test: group e could match echo or edit; use group-test group --help (or -h) to list commands"
          (with-abort (exec-group "g" "e" "multiple"))))
 
   (is (= "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test help to list commands"

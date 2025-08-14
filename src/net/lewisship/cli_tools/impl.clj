@@ -80,9 +80,8 @@
   ([terms]
    (compose-list terms nil))
   ([terms opts]
-   (let [{:keys [conjuction max-terms font]
-          :or   {conjuction "and"
-                 font       :bold.green
+   (let [{:keys [max-terms font]
+          :or   {font       :bold.green
                  max-terms  3}} opts
          n    (count terms)
          terms' (sort terms)
@@ -99,7 +98,7 @@
        (= 2 n)
        (list
          (-> terms' first wrap)
-         (str " " conjuction " ")
+         (str " or " )
          (-> terms' second wrap))
 
        (<= n max-terms)
@@ -108,14 +107,14 @@
              final-term    (nth terms' n')]
          (concat
            (inject-commas (map wrap leading-terms))
-           [(str ", " conjuction " ") (wrap final-term)]))
+           [", or " (wrap final-term)]))
 
        :else
        (let [listed-terms (take max-terms terms')
              n-unlisted   (- n max-terms)]
          (concat
            (inject-commas (map wrap listed-terms))
-           [(str " (" conjuction " "
+           [(str " (or "
                  (numberword n-unlisted) " "
                  (inflect/pluralize-noun n-unlisted "other") ")")]))))))
 
@@ -703,12 +702,30 @@
     (collect-subs command-root *result)
     (-> *result deref persistent!)))
 
-(def ^:private missing-doc [:red "(missing documentation)"])
+(def ^:private missing-doc [:yellow.italic "(missing documentation)"])
 
 (defn extract-command-title
   [command-map]
   (or (:title command-map)
       (-> command-map :doc first-sentence)
+      (when-not (:fn command-map)
+        (let [{command-count true
+               group-count   false} (->> command-map
+                                         :subs
+                                         vals
+                                         (map #(-> % :fn some?))
+                                         frequencies)]
+          [:faint
+           (when command-count
+             (list
+               (h/numberword command-count) " "
+               (inflect/pluralize-noun command-count "sub-command")))
+           (when (and command-count group-count)
+             " and ")
+           (when group-count
+             (list
+               (h/numberword group-count) " "
+               (inflect/pluralize-noun group-count "sub-group")))]))
       missing-doc))
 
 (defn- print-commands
@@ -861,8 +878,8 @@
 
             (not= 1 match-count)
             (let [body        (if (pos? match-count)
-                                (list "matches "
-                                      (compose-list matched-terms))
+                                (list "could match "
+                                      (compose-list matched-terms {:conjuction "or"}))
                                 (list "is not a command, expected "
                                       (compose-list matchable-terms {:conjuction "or"})))
                   help-suffix (list
