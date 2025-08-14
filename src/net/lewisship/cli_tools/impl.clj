@@ -962,7 +962,7 @@
 
 (defn expand-tool-options
   [dispatch-options]
-  (let [{:keys [tool-name]} dispatch-options
+  (let [{:keys [tool-name transformer]} dispatch-options
         tool-name' (or tool-name
                        (default-tool-name)
                        (throw (ex-info "No :tool-name specified" {:options dispatch-options})))
@@ -970,7 +970,8 @@
         root       (-> dispatch-options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
                        (build-command-group nil tool-name)
-                       :subs)]
+                       :subs
+                       (cond-> transformer #(transformer dispatch-options %)))]
     {:tool-name tool-name'
      :command-root root}))
 

@@ -25,6 +25,8 @@
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:
         * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
+        * :transformer provides a function to add additional commands and groups after namespaces are loaded
+        * :source-dirs specifies extra directories to consider when caching
 
 # 0.15.1 -- 27 Jan 2025
 
