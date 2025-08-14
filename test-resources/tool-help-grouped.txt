@@ -1,9 +1,9 @@
 Usage: [0;32;1mgroup-test[m [TOOL OPTIONS] COMMAND ...
 
 Tool options:
-[0;1m  -C, --color[m    Enable ANSI color output
-[0;1m  -N, --no-color[m Disable ANSI color output
-[0;1m  -h, --help[m     This tool summary
+  [0;1m-C, --color[m    Enable ANSI color output
+  [0;1m-N, --no-color[m Disable ANSI color output
+  [0;1m-h, --help[m     This tool summary
 
 Commands:
    [0;32;1mdefault[m: Default command summary

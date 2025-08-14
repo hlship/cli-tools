@@ -1,0 +1,15 @@
+Usage: [0;32;1mharness[m [TOOL OPTIONS] COMMAND ...
+
+Tool options:
+  [0;1m-C, --color[m    Enable ANSI color output
+  [0;1m-N, --no-color[m Disable ANSI color output
+  [0;1m-h, --help[m     This tool summary
+
+Commands:
+           [0;32;1mcollect[m: Collect key and value
+         [0;32;1mconfigure[m: Configures the system for some thing
+  [0;32;1mdefault-variants[m: Different option defaults
+              [0;32;1mhelp[m: List available commands
+          [0;32;1min-order[m: Execute remote command
+          [0;32;1mset-mode[m: Sets the execution mode
+          [0;32;1mvalidate[m: validate command

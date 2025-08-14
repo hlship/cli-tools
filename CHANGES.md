@@ -5,13 +5,16 @@
 * Groups are now defined in the options passed to `net.lewisship.cli-tools/dispatch`, not in
   namespace metadata
 * Command names are matched as prefixes (not substrings)
-* The tool's documentation must now be specified in top-level :doc option key.
+* The tool's documentation must now be specified in top-level :doc option key (not from namespace meta-data)
 * `net.lewisship.cli-tools`:
-    * In a `defcommand`, the :summary key has been renamed to :title
+    * In a `defcommand`:
+        * The :summary key has been renamed to :title
+        * The :as keyword is no longer supported
     * `abort` has been stripped down, it no longer writes the tool name, command path, etc.
-    * `defcommand`: the :as keyword is not longer supported.
-    * The two-arg variant of `print-errors` has been removed.
-    * 
+    * The two-arg variant of `print-errors` has been removed
+    * `dispatch*` function arguments have changed
+    * `expand-dispatch-options` has been removed
+  
 *Changes*
 
 * Groups may now be nested, to arbitrary depth
@@ -20,6 +23,8 @@
 * Tool help now displays just top-level commands by default (add --full to list nested commands)
 * net.lewisship.cli-tools
     * New `command-path` function returns a composed string of the tool name and command path
+    * `dispatch` function has new options:
+        * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
 
 # 0.15.1 -- 27 Jan 2025
 

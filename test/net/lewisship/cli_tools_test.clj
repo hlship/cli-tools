@@ -2,22 +2,23 @@
   (:require [clj-commons.ansi :as ansi :refer [compose]]
             [clojure.string :as string]
             [clojure.test :refer [deftest is use-fixtures are]]
-            [net.lewisship.cli-tools :as cli :refer [defcommand dispatch select-option]]
+            [net.lewisship.cli-tools :as cli-tools :refer [defcommand dispatch select-option]]
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
             net.lewisship.conflict
             matcher-combinators.clj-test                    ;; to enable (is (match? ..))
             [net.lewisship.cli-tools.impl :as impl]
+            [net.lewisship.cli-tools.aux :refer [with-err-str with-exit with-exit-errors]]
             [clojure.repl :as repl])
-  (:import
-    (java.io BufferedReader StringReader StringWriter)))
+  (:import (java.io BufferedReader StringReader)))
 
-(cli/set-prevent-exit! true)
+(cli-tools/set-prevent-exit! true)
 
 (use-fixtures
   :once
   (fn [f]
-    (binding [impl/*options* {:tool-name "harness"}]
+    (binding [impl/*tool-options*  {:tool-name "harness"
+                                    :cache-dir nil}]
       (f))))
 
 ;; An example to test around
@@ -50,32 +51,6 @@
    k ["KEY" "Key to set"]
    v ["VAL" "Value to set"]]
   [k v])
-
-(defn with-err-str*
-  [f]
-  (let [w (StringWriter.)]
-    (binding [*err* w]
-      (f))
-    (str w)))
-
-(defmacro with-err-str
-  [& body]
-  `(with-err-str* (fn [] ~@body)))
-
-(defmacro with-exit
-  [expected & body]
-  `(with-err-str
-     (when-let [e# (is (~'thrown? Exception ~@body))]
-       (is (= "Exit" (ex-message e#)))
-       (is (= {:status ~expected} (ex-data e#))))))
-
-(defmacro with-exit-errors
-  [expected-errors & body]
-  `(let [*errors# (atom nil)]
-     (with-redefs [cli/print-errors (fn [errors#]
-                                      (reset! *errors# errors#))]
-       (with-exit 1 ~@body))
-     (is (= @*errors# ~expected-errors))))
 
 (defn prep-input
   [input]
@@ -114,7 +89,7 @@
 
 (deftest exit-will-throw-exception-instead
   (with-exit 999
-             (cli/exit 999)))
+             (cli-tools/exit 999)))
 
 
 (defn invoke-command
@@ -126,6 +101,17 @@
 (deftest standard-help
   (is (= (slurp "test-resources/help.txt")
          (with-exit 0 (invoke-command "configure" "-h")))))
+
+(deftest help-with-no-color
+  (is (= (slurp "test-resources/help-with-no-color.txt")
+         (with-exit 0
+                    (invoke-command  "-N" "-h")))))
+
+(deftest help-with-color-enabled
+  (binding [ansi/*color-enabled* false]
+    (is (= (slurp "test-resources/help-with-color-enabled.txt")
+           (with-exit 0
+                      (invoke-command   "-C" "-h"))))))
 
 (deftest unknown-option
   (is (= (slurp "test-resources/unknown-option.txt")
@@ -270,7 +256,7 @@
 (deftest best-match
   (let [colors   #{:red :green :blue}
         commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}]
-    (are [input values expected] (= expected (cli/best-match input values))
+    (are [input values expected] (= expected (cli-tools/best-match input values))
 
       "r" colors :red                                        ; multiple matches
       "red" colors :red                                     ; exact match
@@ -290,7 +276,7 @@
 
 (deftest sorted-name-list
   (is (= "foxtrot, tango, whiskey"
-         (cli/sorted-name-list [:whiskey :tango :foxtrot]))))
+         (cli-tools/sorted-name-list [:whiskey :tango :foxtrot]))))
 
 (defn exec-group [& args]
   (dispatch {:tool-name  "group-test"
@@ -383,19 +369,19 @@
   (is (match? [true "Prompt? (yes/no) "]                    ; Note: no bold
               (with-result+err-str
                 (with-input "y"
-                            (cli/ask "Prompt?" cli/yes-or-no))))))
+                            (cli-tools/ask "Prompt?" cli-tools/yes-or-no))))))
 
 (deftest simple-ask-with-default
   (is (match? [true (compose "Prompt? (" [:bold "yes"] "/no) ")]
               (with-result+err-str
                 (with-input ""
-                            (cli/ask "Prompt?" cli/yes-or-no {:default true}))))))
+                            (cli-tools/ask "Prompt?" cli-tools/yes-or-no {:default true}))))))
 
 (deftest simple-ask-with-false-default
   (is (match? [false (compose "Prompt? (yes/" [:bold "no"] ") ")]
               (with-result+err-str
                 (with-input ""
-                            (cli/ask "Prompt?" cli/yes-or-no {:default false}))))))
+                            (cli-tools/ask "Prompt?" cli-tools/yes-or-no {:default false}))))))
 
 (deftest ask-with-keywords
   (let [expected (compose "Sort order? (name/address/phone) "
@@ -412,8 +398,8 @@
     (is (match? [:address expected]
                 (with-result+err-str
                   (with-input ["adz" "add"]
-                              (cli/ask "Sort order?"
-                                       [:name :address :phone])))))))
+                              (cli-tools/ask "Sort order?"
+                                             [:name :address :phone])))))))
 
 (deftest ask-invalid-just-two
   (let [expected (compose "Really? (" [:bold "yes"] "/no) "
@@ -431,9 +417,9 @@
     (is (match? [true expected]
                 (with-result+err-str
                   (with-input ["x" ""]
-                              (cli/ask "Really?"
-                                       cli/yes-or-no
-                                       {:default true})))))))
+                              (cli-tools/ask "Really?"
+                                             cli-tools/yes-or-no
+                                             {:default true})))))))
 
 (deftest ask-with-keywords-and-default
   (let [expected (compose "Sort order? (" [:bold "name"] "/address/phone) "
@@ -452,33 +438,34 @@
     (is (match? [:name expected]
                 (with-result+err-str
                   (with-input ["adz" ""]
-                              (cli/ask "Sort order?"
-                                       [:name :address :phone]
-                                       {:default :name})))))))
+                              (cli-tools/ask "Sort order?"
+                                             [:name :address :phone]
+                                             {:default :name})))))))
 
 (deftest ask-with-force
   (is (match? [:name ""]
               (with-result+err-str
-                (cli/ask "Sort order?"
-                         [:name :address :phone]
-                         {:default :name
+                (cli-tools/ask "Sort order?"
+                               [:name :address :phone]
+                               {:default :name
                           :force?  true})))))
 
 (deftest ask-with-force-but-no-default
   (when-let [e (is (thrown? Exception
-                            (cli/ask "Sort order?"
-                                     [:name :address :phone]
-                                     {:force? true})))]
+                            (cli-tools/ask "Sort order?"
+                                           [:name :address :phone]
+                                           {:force? true})))]
     (is (= ":force? option is set, but no :default" (ex-message e)))
     (is (match? {:opts {:force? true}}
                 (ex-data e)))))
 
 (deftest ask-when-default-does-not-match-a-possible-response
   (when-let [e (is (thrown? Exception
-                            (cli/ask "Really?"
-                                     cli/yes-or-no
-                                     {:default :maybe})))]
+                            (cli-tools/ask "Really?"
+                                           cli-tools/yes-or-no
+                                           {:default :maybe})))]
     (is (= ":default does not correspond to any value" (ex-message e)))
     (is (match? {:opts      {:default :maybe}
-                 :responses cli/yes-or-no}
+                 :responses cli-tools/yes-or-no}
                 (ex-data e)))))
+

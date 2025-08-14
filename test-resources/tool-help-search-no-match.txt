@@ -1,8 +1,8 @@
 Usage: [0;32;1mtest-harness[m [TOOL OPTIONS] COMMAND ...
 
 Tool options:
-[0;1m  -C, --color[m    Enable ANSI color output
-[0;1m  -N, --no-color[m Disable ANSI color output
-[0;1m  -h, --help[m     This tool summary
+  [0;1m-C, --color[m    Enable ANSI color output
+  [0;1m-N, --no-color[m Disable ANSI color output
+  [0;1m-h, --help[m     This tool summary
 
 No commands match [0;3mXyzzyx[m

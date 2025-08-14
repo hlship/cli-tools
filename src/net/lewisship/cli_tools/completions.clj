@@ -101,7 +101,7 @@
    output-path ["PATH" "File to write completions to."
                 :optional true]]
   (binding [impl/*introspection-mode* true]
-    (let [{:keys [command-root tool-name groups]} impl/*options*]
+    (let [{:keys [command-root tool-name groups]} impl/*tool-options*]
       (if output-path
         (do
           (with-open [w (-> output-path
