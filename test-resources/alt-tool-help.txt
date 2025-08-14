@@ -1,0 +1,11 @@
+Usage: [0;32;1malt-handler[m [TOOL OPTIONS] COMMAND ...
+
+Example of using a custom tool handler.
+
+Tool options:
+  [0;1m-g, --global VALUE[m Sets global state
+  [0;1m-h, --help[m         Help for the alt-handler tool
+
+Commands:
+         [0;32;1mhelp[m: List available commands
+  [0;32;1mprint-state[m: Prints the global state

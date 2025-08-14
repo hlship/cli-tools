@@ -1,11 +1,11 @@
 (ns net.lewisship.abort-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
             [clj-commons.ansi :as ansi :refer [compose]]
-            [net.lewisship.cli-tools :as cli :refer [abort command-path]]
-            [net.lewisship.cli-tools-test :refer [with-exit]]
+            [net.lewisship.cli-tools :as cli-tools :refer [abort command-path]]
+            [net.lewisship.cli-tools.aux :refer [with-exit]]
             [net.lewisship.cli-tools.impl :as impl]))
 
-(cli/set-prevent-exit! true)
+(cli-tools/set-prevent-exit! true)
 
 (use-fixtures :once
               (fn [f]
