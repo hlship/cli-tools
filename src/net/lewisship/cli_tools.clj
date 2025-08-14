@@ -179,7 +179,7 @@
                                          :doc
                                          :namespaces
                                          :groups])
-        cache-dir' (when (and cache-dir)
+        cache-dir' (when cache-dir
                      (fs/expand-home cache-dir))
         digest     (when cache-dir'
                      (cache/classpath-digest options'))

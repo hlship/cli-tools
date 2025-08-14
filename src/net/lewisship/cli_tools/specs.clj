@@ -14,7 +14,7 @@
 
 (s/def ::groups (s/map-of string? ::group))
 
-(s/def ::group (s/keys ::req-un [::namespaces]
+(s/def ::group (s/keys :req-un [::namespaces]
                        :opt-un [::doc ::groups]))
 
 ;; dispatch doesn't return

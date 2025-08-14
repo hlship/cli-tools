@@ -1,6 +1,5 @@
 (ns net.lewisship.cli-tools.alt-handler
   (:require [clojure.tools.cli :as cli]
-            [clj-commons.ansi :refer [perr]]
             [net.lewisship.cli-tools :as cli-tools :refer [defcommand]]))
 
 (def ^:dynamic *global-state* nil)
