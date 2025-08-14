@@ -515,7 +515,26 @@
   in the implementation of commands not defined by [[defcommand]]."
   {:added "0.16.0"}
   []
-  (impl/*command-map*))
+  impl/*command-map*)
+
+(defn- inject
+  [commands-map remaining-command-path path-to-here command-map]
+  (let [command    (first remaining-command-path)
+        remaining' (next remaining-command-path)
+        path'      (conj path-to-here command)]
+    (cond
+      (nil? remaining')
+      (assoc commands-map command command-map)
+
+      (contains? commands-map command)
+      (update-in commands-map [command :subs]
+                 inject remaining' path' command-map)
+
+      :else
+      (assoc commands-map command
+             {:command-path path'
+              :command      command
+              :subs         (inject {} remaining' path' command-map)}))))
 
 (defn inject-command
   "Injects a new command into the command root; presumably one not defined via
@@ -533,8 +552,8 @@
   "
   {:added "0.16.0"}
   [command-root command-path command-map]
-  (let [command-name (last command-path)
-        ks           (interpose :subs command-path)]
-    (assoc-in command-root ks (assoc command-map
-                                     :command command-name
-                                     :command-path command-path))))
+  (let [command-map' (assoc command-map
+                            :command (last command-path)
+                            :command-path command-path)]
+    (inject command-root command-path [] command-map')))
+

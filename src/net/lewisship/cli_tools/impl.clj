@@ -679,14 +679,17 @@
     ;; option and positional argument are verified to have unique symbols, so merge it all together
     (update command-map :options merge positional-arguments)))
 
+(defn- string-matches?
+  [s pattern]
+  (when s
+    (string/includes? (string/lower-case s) pattern)))
+
 (defn- command-match?
   [command search-term]
-  (let [{:keys [doc command-summary command-path]} command]
-    (or (string/includes? (string/lower-case doc) search-term)
-        (some #(string/includes? (string/lower-case %) search-term)
-              (map string/lower-case command-path))
-        (and command-summary
-             (string/includes? (string/lower-case command-summary) search-term)))))
+  (let [{:keys [doc title command-path]} command]
+    (or (string-matches? doc search-term)
+        (string-matches? title search-term)
+        (some #(string-matches? % search-term) command-path))))
 
 (defn- collect-subs
   [commands-map *result]
@@ -722,7 +725,8 @@
       (perr (when recurse? "\n")
             [:bold (string/join " " (:command-path container-map))]
             " - "
-            (-> container-map :doc cleanup-docstring)))
+            (or (some-> container-map :doc cleanup-docstring)
+                missing-doc)))
 
     (when (seq sorted-commands)
       (perr "\nCommands:"))
@@ -970,8 +974,9 @@
         root       (-> dispatch-options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
                        (build-command-group nil tool-name)
-                       :subs
-                       (cond-> transformer #(transformer dispatch-options %)))]
+                       :subs)
+        root'      (cond->> root
+                            transformer (transformer dispatch-options))]
     {:tool-name tool-name'
-     :command-root root}))
+     :command-root root'}))
 
