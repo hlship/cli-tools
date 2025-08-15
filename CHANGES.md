@@ -14,6 +14,8 @@
     * The two-arg variant of `print-errors` has been removed
     * `dispatch*` function arguments have changed
     * `expand-dispatch-options` has been removed
+* When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
+
   
 *Changes*
 
