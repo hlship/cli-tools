@@ -775,11 +775,11 @@
           {tool-doc :doc
            :keys    [tool-name command-root]} options
           _ (do
-              (perr "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
+              (perr "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
               (when tool-doc
                 (perr "\n"
                       (cleanup-docstring tool-doc)))
-              (perr "\nTool options:\n"
+              (perr "\nOptions:\n"
                     (-> options :tool-summary deref)))
           all-commands (collect-commands command-root)]
 
