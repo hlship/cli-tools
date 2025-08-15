@@ -190,3 +190,17 @@
       '([:cyan "alpha"] ", "
         [:cyan "bravo"] ", "
         [:cyan "charlie"] " (or one other)"))))
+
+(deftest first-sentence
+  (are [s expected] (= expected (impl/first-sentence s))
+
+    "  Quick, Simple " "Quick, Simple"
+
+    "\n\n The first.\nThe second." "The first"
+
+    "In namespace x.y.z, we do this thing." "In namespace x.y.z, we do this thing"
+
+    nil nil
+
+    "" nil
+    ))

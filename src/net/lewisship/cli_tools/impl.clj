@@ -128,16 +128,17 @@
            (when repeatable
              (if optional "*" "+")))))
 
-(defn- first-sentence
+(defn first-sentence
   [s]
   (when (string? s)
-    (-> s
-        string/trim
-        string/split-lines
-        first
-        (string/split #"\s*\.")
-        first
-        string/trim)))
+    (let [s' (-> s
+                 string/trim
+                 string/split-lines
+                 first
+                 (string/split #"\s*\.(?:\s+|$)")
+                 first)]
+      (when-not (string/blank? s')
+        s'))))
 
 (defn- indentation-of-line
   [line]

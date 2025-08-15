@@ -23,6 +23,7 @@
 * You may now enter `-h` or `--help` after a group to get help for just that group
 * Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
 * Tool help now displays just top-level commands by default (add --full to list nested commands)
+* When extracting the first sentence as the single-line index, embedded period are no longer considered the end of the sentence
 * net.lewisship.cli-tools
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:
