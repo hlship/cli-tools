@@ -1,7 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
-            [clj-commons.ansi :refer [compose perr]]
+            [clj-commons.ansi :refer [compose pout perr]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -80,9 +80,8 @@
   ([terms]
    (compose-list terms nil))
   ([terms opts]
-   (let [{:keys [conjuction max-terms font]
-          :or   {conjuction "and"
-                 font       :bold.green
+   (let [{:keys [max-terms font]
+          :or   {font       :bold.green
                  max-terms  3}} opts
          n    (count terms)
          terms' (sort terms)
@@ -99,7 +98,7 @@
        (= 2 n)
        (list
          (-> terms' first wrap)
-         (str " " conjuction " ")
+         " or "
          (-> terms' second wrap))
 
        (<= n max-terms)
@@ -108,14 +107,14 @@
              final-term    (nth terms' n')]
          (concat
            (inject-commas (map wrap leading-terms))
-           [(str ", " conjuction " ") (wrap final-term)]))
+           [", or " (wrap final-term)]))
 
        :else
        (let [listed-terms (take max-terms terms')
              n-unlisted   (- n max-terms)]
          (concat
            (inject-commas (map wrap listed-terms))
-           [(str " (" conjuction " "
+           [(str " (or "
                  (numberword n-unlisted) " "
                  (inflect/pluralize-noun n-unlisted "other") ")")]))))))
 
@@ -129,16 +128,17 @@
            (when repeatable
              (if optional "*" "+")))))
 
-(defn- first-sentence
+(defn first-sentence
   [s]
   (when (string? s)
-    (-> s
-        string/trim
-        string/split-lines
-        first
-        (string/split #"\s*\.")
-        first
-        string/trim)))
+    (let [s' (-> s
+                 string/trim
+                 string/split-lines
+                 first
+                 (string/split #"\s*\.(?:\s+|$)")
+                 first)]
+      (when-not (string/blank? s')
+        s'))))
 
 (defn- indentation-of-line
   [line]
@@ -173,13 +173,13 @@
              (mapv #(strip-indent indentation %))
              (string/join "\n"))))))
 
-(defn print-summary
+(defn- print-summary
   [command-doc command-map]
   (let [{:keys [tool-name]} *tool-options*
         {:keys [command-path]} *command-map*
         {:keys [command-name positional-specs summary]} command-map
         arg-strs (map arg-spec->str positional-specs)]
-    (perr
+    (pout
       "Usage: "
       ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
       (when tool-name
@@ -192,10 +192,10 @@
       " [OPTIONS]"
       (map list (repeat " ") arg-strs))
     (when command-doc
-      (-> command-doc cleanup-docstring perr))
+      (-> command-doc cleanup-docstring pout))
 
     ;; There's always at least -h/--help:
-    (perr "\nOptions:\n" summary)
+    (pout "\nOptions:\n" summary)
 
     (when (seq positional-specs)
       (let [max-label-width (->> positional-specs
@@ -210,8 +210,8 @@
                                  [:bold label]]
                                 ": "
                                 doc))]
-        (perr "\nArguments:")
-        (perr (interpose \newline lines))))))
+        (pout "\nArguments:")
+        (pout (interpose \newline lines))))))
 
 (defn print-errors
   [errors]
@@ -679,14 +679,17 @@
     ;; option and positional argument are verified to have unique symbols, so merge it all together
     (update command-map :options merge positional-arguments)))
 
+(defn- string-matches?
+  [s pattern]
+  (when s
+    (string/includes? (string/lower-case s) pattern)))
+
 (defn- command-match?
   [command search-term]
-  (let [{:keys [doc command-summary command-path]} command]
-    (or (string/includes? (string/lower-case doc) search-term)
-        (some #(string/includes? (string/lower-case %) search-term)
-              (map string/lower-case command-path))
-        (and command-summary
-             (string/includes? (string/lower-case command-summary) search-term)))))
+  (let [{:keys [doc title command-path]} command]
+    (or (string-matches? doc search-term)
+        (string-matches? title search-term)
+        (some #(string-matches? % search-term) command-path))))
 
 (defn- collect-subs
   [commands-map *result]
@@ -700,12 +703,30 @@
     (collect-subs command-root *result)
     (-> *result deref persistent!)))
 
-(def ^:private missing-doc [:red "(missing documentation)"])
+(def ^:private missing-doc [:yellow.italic "(missing documentation)"])
 
 (defn extract-command-title
   [command-map]
   (or (:title command-map)
       (-> command-map :doc first-sentence)
+      (when-not (:fn command-map)
+        (let [{command-count true
+               group-count   false} (->> command-map
+                                         :subs
+                                         vals
+                                         (map #(-> % :fn some?))
+                                         frequencies)]
+          [:faint
+           (when command-count
+             (list
+               (h/numberword command-count) " "
+               (inflect/pluralize-noun command-count "sub-command")))
+           (when (and command-count group-count)
+             " and ")
+           (when group-count
+             (list
+               (h/numberword group-count) " "
+               (inflect/pluralize-noun group-count "sub-group")))]))
       missing-doc))
 
 (defn- print-commands
@@ -719,17 +740,18 @@
                                      (map #(-> % :command count))
                                      (reduce max 0)))]
     (when container-map
-      (perr (when recurse? "\n")
+      (pout (when recurse? "\n")
             [:bold (string/join " " (:command-path container-map))]
             " - "
-            (-> container-map :doc cleanup-docstring)))
+            (or (some-> container-map :doc cleanup-docstring)
+                missing-doc)))
 
     (when (seq sorted-commands)
-      (perr "\nCommands:"))
+      (pout "\nCommands:"))
 
     ;; Commands (including sub-groups) inside this command
     (doseq [{:keys [fn command] :as command-map} sorted-commands]
-      (perr
+      (pout
         "  "
         [{:width command-name-width'} [:bold.green command]]
         ": "
@@ -754,11 +776,11 @@
           {tool-doc :doc
            :keys    [tool-name command-root]} options
           _ (do
-              (perr "Usage: " [:bold.green tool-name] " [TOOL OPTIONS] COMMAND ...")
+              (pout "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
               (when tool-doc
-                (perr "\n"
+                (pout "\n"
                       (cleanup-docstring tool-doc)))
-              (perr "\nTool options:\n"
+              (pout "\nOptions:\n"
                     (-> options :tool-summary deref)))
           all-commands (collect-commands command-root)]
 
@@ -778,7 +800,7 @@
                              (map command-path-width)
                              (reduce max 0))
           n (count matching-commands)]
-      (perr
+      (pout
         "\n"
         (-> n numberword string/capitalize)
         (if (= n 1)
@@ -787,14 +809,14 @@
         [:italic search-term]
         ":" "\n")
       (doseq [command (sort-by :command-path matching-commands)]
-        (perr [{:font  :bold.green
+        (pout [{:font  :bold.green
                 :width command-width}
                (string/join " " (:command-path command))]
               ": "
               (extract-command-title command))))
 
     :else
-    (perr "\nNo commands match " [:italic search-term]))
+    (pout "\nNo commands match " [:italic search-term]))
   (exit 0))
 
 (defn- to-matcher
@@ -857,8 +879,8 @@
 
             (not= 1 match-count)
             (let [body        (if (pos? match-count)
-                                (list "matches "
-                                      (compose-list matched-terms))
+                                (list "could match "
+                                      (compose-list matched-terms {:conjuction "or"}))
                                 (list "is not a command, expected "
                                       (compose-list matchable-terms {:conjuction "or"})))
                   help-suffix (list
@@ -962,7 +984,7 @@
 
 (defn expand-tool-options
   [dispatch-options]
-  (let [{:keys [tool-name]} dispatch-options
+  (let [{:keys [tool-name transformer]} dispatch-options
         tool-name' (or tool-name
                        (default-tool-name)
                        (throw (ex-info "No :tool-name specified" {:options dispatch-options})))
@@ -970,7 +992,9 @@
         root       (-> dispatch-options
                        (update :namespaces conj 'net.lewisship.cli-tools.builtins)
                        (build-command-group nil tool-name)
-                       :subs)]
+                       :subs)
+        root'      (cond->> root
+                            transformer (transformer dispatch-options))]
     {:tool-name tool-name'
-     :command-root root}))
+     :command-root root'}))
 

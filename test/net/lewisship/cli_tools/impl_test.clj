@@ -158,7 +158,7 @@
       nil
       '([:bold.green "alpha"] ", "
         [:bold.green "bravo"] ", "
-        [:bold.green "charlie"] " (and three others)")
+        [:bold.green "charlie"] " (or three others)")
 
       nil
       nil
@@ -170,25 +170,37 @@
 
       (take 2 base-terms)
       nil
-      '([:bold.green "alpha"] " and "
+      '([:bold.green "alpha"] " or "
         [:bold.green "bravo"])
 
       (take 3 base-terms)
       nil
       '([:bold.green "alpha"] ", "
-        [:bold.green "bravo"] ", and "
+        [:bold.green "bravo"] ", or "
         [:bold.green "charlie"])
 
       base-terms
       {:max-terms  1
-       :conjuction "or"
        :font       :cyan}
       '([:cyan "alpha"]
         " (or five others)")
 
       (take 4 base-terms)
-      {:conjuction "or"
-       :font       :cyan}
+      {:font       :cyan}
       '([:cyan "alpha"] ", "
         [:cyan "bravo"] ", "
         [:cyan "charlie"] " (or one other)"))))
+
+(deftest first-sentence
+  (are [s expected] (= expected (impl/first-sentence s))
+
+    "  Quick, Simple " "Quick, Simple"
+
+    "\n\n The first.\nThe second." "The first"
+
+    "In namespace x.y.z, we do this thing." "In namespace x.y.z, we do this thing"
+
+    nil nil
+
+    "" nil
+    ))

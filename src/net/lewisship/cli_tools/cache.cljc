@@ -62,14 +62,18 @@
     (str sb)))
 
 (defn classpath-digest
-  "Passed opts, return a hex string of the SHA-1 digest of the opts and the classpath."
-  ^String [opts]
-  (let [digest       (MessageDigest/getInstance "SHA-1")
+  "Passed digest options, return a hex string of the SHA-1 digest of the opts and the classpath."
+  ^String [digest-options]
+  (let [{:keys [source-dirs]} digest-options
+        digest       (MessageDigest/getInstance "SHA-1")
         ;; The options determine critical things such as the namespaces that
         ;; will be scanned for defcommands.
         digest-bytes (do
-                       (update-digest-from-string digest (pr-str opts))
+                       (update-digest-from-string digest (pr-str digest-options))
                        (run! #(update-digest digest %) (get-split-classpath))
+                       (->> source-dirs
+                            (map fs/file)
+                            (run! #(update-digest-recursively digest %)))
                        (.digest digest))]
     (hex-string digest-bytes)))
 

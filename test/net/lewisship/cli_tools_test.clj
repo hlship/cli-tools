@@ -2,17 +2,21 @@
   (:require [clj-commons.ansi :as ansi :refer [compose]]
             [clojure.string :as string]
             [clojure.test :refer [deftest is use-fixtures are]]
-            [net.lewisship.cli-tools :as cli-tools :refer [defcommand dispatch select-option]]
+            [net.lewisship.cli-tools :as cli-tools :refer [defcommand select-option]]
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
             net.lewisship.conflict
-            matcher-combinators.clj-test                    ;; to enable (is (match? ..))
             [net.lewisship.cli-tools.impl :as impl]
-            [net.lewisship.cli-tools.aux :refer [with-err-str with-exit with-exit-errors]]
+            [net.lewisship.cli-tools.aux :refer [with-err-str  with-exit-errors capture-result]]
             [clojure.repl :as repl])
   (:import (java.io BufferedReader StringReader)))
 
 (cli-tools/set-prevent-exit! true)
+
+(defn- dispatch
+  [options]
+  (capture-result
+    (cli-tools/dispatch options)))
 
 (use-fixtures
   :once
@@ -88,8 +92,9 @@
          (configure "http://myhost.com" "fred=flintstone" "barney=rubble"))))
 
 (deftest exit-will-throw-exception-instead
-  (with-exit 999
-             (cli-tools/exit 999)))
+  (is (match? {:status 999}
+              (capture-result
+                (cli-tools/exit 999)))))
 
 
 (defn invoke-command
@@ -99,35 +104,40 @@
              :arguments  args}))
 
 (deftest standard-help
-  (is (= (slurp "test-resources/help.txt")
-         (with-exit 0 (invoke-command "configure" "-h")))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/help.txt")}
+              (invoke-command "configure" "-h"))))
 
 (deftest help-with-no-color
-  (is (= (slurp "test-resources/help-with-no-color.txt")
-         (with-exit 0
-                    (invoke-command  "-N" "-h")))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/help-with-no-color.txt")}
+              (invoke-command "-N" "-h"))))
 
 (deftest help-with-color-enabled
   (binding [ansi/*color-enabled* false]
-    (is (= (slurp "test-resources/help-with-color-enabled.txt")
-           (with-exit 0
-                      (invoke-command   "-C" "-h"))))))
+    (is (match? {:status 0
+                 :out    (slurp "test-resources/help-with-color-enabled.txt")}
+                (invoke-command "-C" "-h")))))
 
 (deftest unknown-option
-  (is (= (slurp "test-resources/unknown-option.txt")
-         (with-exit 1 (invoke-command "configure" "--debug")))))
+  (is (match? {:status 1
+               :err    (slurp "test-resources/unknown-option.txt")}
+              (invoke-command "configure" "--debug"))))
 
 (deftest pos-arg-validation-failure
-  (is (= (slurp "test-resources/pos-arg-validation-failure.txt")
-         (with-exit 1 (invoke-command "configure" "myhost.com" "fred=flinstone")))))
+  (is (match? {:status 1
+               :err    (slurp "test-resources/pos-arg-validation-failure.txt")}
+              (invoke-command "configure" "myhost.com" "fred=flinstone"))))
 
 (deftest insuffient-values
-  (is (= (slurp "test-resources/insufficient-values.txt")
-         (with-exit 1 (invoke-command "collect" "just-key")))))
+  (is (match? {:status 1
+               :err    (slurp "test-resources/insufficient-values.txt")}
+              (invoke-command "collect" "just-key"))))
 
 (deftest excess-values
-  (is (= (slurp "test-resources/excess-values.txt")
-         (with-exit 1 (invoke-command "collect" "the-key" "the-value" "the-extra")))))
+  (is (match? {:status 1
+               :err    (slurp "test-resources/excess-values.txt")}
+              (invoke-command "collect" "the-key" "the-value" "the-extra"))))
 
 
 (defcommand default-variants
@@ -138,8 +148,9 @@
   [foo bar bazz])
 
 (deftest option-defaults
-  (is (= (slurp "test-resources/option-defaults.txt")
-         (with-exit 0 (invoke-command "default-variants" "-h")))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/option-defaults.txt")}
+              (invoke-command "default-variants" "-h"))))
 
 (defcommand in-order
   "Test of :in-order option"
@@ -164,44 +175,45 @@
 
 
 (deftest help-with-default-and-explicit-summary
-  (is (= (slurp "test-resources/tool-help.txt")
-         (with-exit 0
-                    (dispatch {:tool-name  "test-harness"
-                               :doc   "Example commands as part of unit test suite.
+  (is (match? {:status 0
+               :out    (slurp "test-resources/tool-help.txt")}
+              (dispatch {:tool-name  "test-harness"
+                         :doc        "Example commands as part of unit test suite.
 
   Even this docstring is part of the test."
-                               :namespaces '[net.lewisship.example-ns]
-                               :arguments  ["help"]})))))
+                         :namespaces '[net.lewisship.example-ns]
+                         :arguments  ["help"]}))))
 
 (deftest group-help-defaults-from-first-ns-meta
-  (is (= (slurp "test-resources/tool-help-group-default.txt")
-         (with-exit 0
-                    (dispatch {:tool-name  "test-harness"
-                               :groups
-                               {"group" {:namespaces '[net.lewisship.group-default-ns
-                                                       net.lewisship.example-ns]}}
-                               :arguments  ["help" "--full"]})))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/tool-help-group-default.txt")}
+              (dispatch {:tool-name "test-harness"
+                         :groups
+                         {"group" {:namespaces '[net.lewisship.group-default-ns
+                                                 net.lewisship.example-ns]}}
+                         :arguments ["help" "--full"]}))))
 
 (deftest help-with-search-term
-  (is (= (slurp "test-resources/tool-help-search.txt")
-         (with-exit 0
-                    (dispatch {:tool-name  "test-harness"
-                               :namespaces '[net.lewisship.example-ns]
-                               :arguments  ["help" "EXP"]})))))
+  (is (match?
+        {:status 0
+         :out    (slurp "test-resources/tool-help-search.txt")}
+        (dispatch {:tool-name  "test-harness"
+                   :namespaces '[net.lewisship.example-ns]
+                   :arguments  ["help" "EXP"]}))))
 
 (deftest help-with-search-term-no-match
-  (is (= (slurp "test-resources/tool-help-search-no-match.txt")
-         (with-exit 0
-                    (dispatch {:tool-name  "test-harness"
-                               :namespaces '[net.lewisship.example-ns]
-                               :arguments  ["help" "Xyzzyx"]})))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/tool-help-search-no-match.txt")}
+              (dispatch {:tool-name  "test-harness"
+                         :namespaces '[net.lewisship.example-ns]
+                         :arguments  ["help" "Xyzzyx"]}))))
 
 (deftest use-of-command-ns-meta
-  (is (= (slurp "test-resources/combo-help.txt")
-         (with-exit 0
-                    (dispatch {:tool-name  "combo"
-                               :namespaces '[net.lewisship.cli-tools.colors]
-                               :arguments  ["-h"]})))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/combo-help.txt")}
+              (dispatch {:tool-name  "combo"
+                         :namespaces '[net.lewisship.cli-tools.colors]
+                         :arguments  ["-h"]}))))
 
 (defcommand set-mode
   "Sets the execution mode"
@@ -214,9 +226,9 @@
 
 
 (deftest let-directive
-  (is (= (slurp "test-resources/let-directive.txt")
-         (with-exit 1
-                    (invoke-command "set-mode" "-m" "unknown")))))
+  (is (match? {:status 1
+               :err    (slurp "test-resources/let-directive.txt")}
+              (invoke-command "set-mode" "-m" "unknown"))))
 
 (defcommand validate
   "validate command"
@@ -278,7 +290,8 @@
   (is (= "foxtrot, tango, whiskey"
          (cli-tools/sorted-name-list [:whiskey :tango :foxtrot]))))
 
-(defn exec-group [& args]
+(defn exec-group
+  [& args]
   (dispatch {:tool-name  "group-test"
              :namespaces '[net.lewisship.example-ns]
              :groups {"group" {:namespaces '[net.lewisship.group-ns]
@@ -286,49 +299,41 @@
              :arguments  args}))
 
 (deftest help-with-default-and-explicit-summary-grouped
-  (is (= (slurp "test-resources/tool-help-grouped.txt")
-         (with-exit 0
-                    (exec-group "help" "-f")))))
+  (is (match? {:status 0
+               :out    (slurp "test-resources/tool-help-grouped.txt")}
+              (exec-group "help" "-f"))))
 
 (deftest help-for-group
   (let [expected (slurp "test-resources/sub-group-help.txt")]
-    (is (= expected
-           (with-exit 0
-                      (exec-group "group" "-h"))))
+    (is (match? {:status 0
+                 :out    expected}
+                (exec-group "group" "-h")))
 
-    (is (= expected
-           (with-exit 0
-                      (exec-group "gr" "--help"))))))
+    (is (match? {:status 0
+                 :out    expected}
+                (exec-group "gr" "--help")))))
 
 (deftest can-find-a-grouped-command
-  (is (= "echo: fancy\n"
-         (with-out-str
-           (exec-group "group" "echo" "fancy")))))
+  (is (match? {:out "echo: fancy\n"}
+              (exec-group "group" "echo" "fancy"))))
 
 (deftest suggest-help-when-name-incomplete
-  (is (= (slurp "test-resources/help-incomplete.txt")
-         (with-exit 1
-                    (exec-group "gr")))))
+  (is (match? {:status 1
+               :err    (slurp "test-resources/help-incomplete.txt")}
+              (exec-group "gr"))))
 
 
 (deftest can-use-group-abbreviations
-  (is (= "echo: abbreviated\n"
-         (with-out-str
-           (exec-group "g" "ec" "abbreviated")))))
-
-(defmacro with-abort
-  [& body]
-  `(with-redefs [impl/abort (fn [& inputs#] (throw (Exception. (apply ansi/compose inputs#))))]
-     (binding [ansi/*color-enabled* false]
-       (when-let [e# (is (~'thrown? Exception (do ~@body)))]
-         (ex-message e#)))))
+  (is (match? {:out "echo: abbreviated\n"}
+              (exec-group "g" "ec" "abbreviated"))))
 
 (deftest reports-group-match-failure
-  (is (= "group-test: group e matches echo and edit; use group-test group --help (or -h) to list commands"
-         (with-abort (exec-group "g" "e" "multiple"))))
+  (binding [ansi/*color-enabled* false]
+    (is (match? {:err "group-test: group e could match echo or edit; use group-test group --help (or -h) to list commands\n"}
+                (exec-group "g" "e" "multiple")))
 
-  (is (= "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test help to list commands"
-         (with-abort (exec-group "echo" "wrong-level")))))
+    (is (match? {:err "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test help to list commands\n"}
+                (exec-group "echo" "wrong-level")))))
 
 (deftest select-option-no-default
   (let [input-values #{:csv :json :yaml :edn}
@@ -412,8 +417,7 @@
                           ", or just enter for the default ("
                           [:bold "yes"]
                           ")\n"
-                          "Really? (" [:bold "yes"] "/no) ")
-        ]
+                          "Really? (" [:bold "yes"] "/no) ")]
     (is (match? [true expected]
                 (with-result+err-str
                   (with-input ["x" ""]

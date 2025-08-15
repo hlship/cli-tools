@@ -2,13 +2,14 @@
   (:require [clojure.test :refer [deftest is]]
             [net.lewisship.cli-tools :as cli-tools]
             [net.lewisship.cli-tools.alt-handler :as alt-handler]
-            [net.lewisship.cli-tools.aux :refer [with-exit]]))
+            [net.lewisship.cli-tools.aux :refer [capture-result]]))
 
 (cli-tools/set-prevent-exit! true)
 
 (deftest can-provide-an-alternative-handler
-  (is (= (slurp "test-resources/alt-tool-help.txt")
-         (with-exit 0
+  (is (match? {:status 0
+               :out    (slurp "test-resources/alt-tool-help.txt")}
+              (capture-result
                     (alt-handler/-main "-h")))))
 
 (deftest can-implement-tool-level-options

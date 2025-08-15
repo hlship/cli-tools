@@ -1,6 +1,6 @@
-Usage: harness [TOOL OPTIONS] COMMAND ...
+Usage: harness [OPTIONS] COMMAND ...
 
-Tool options:
+Options:
   -C, --color    Enable ANSI color output
   -N, --no-color Disable ANSI color output
   -h, --help     This tool summary

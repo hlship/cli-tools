@@ -4,18 +4,35 @@
             [net.lewisship.cli-tools :as cli-tools]))
 
 (s/def ::dispatch-options (s/keys :req-un [::namespaces]
-                                  :opt-un [::tool-name ::doc ::arguments ::groups]))
+                                  :opt-un [::tool-name
+                                           ::doc
+                                           ::arguments
+                                           ::groups
+                                           ::transformer
+                                           ::source-dirs
+                                           ::cache-dir]))
+
 (s/def ::non-blank-string (s/and string?
                                  #(not (str/blank? %))))
+
 (s/def ::tool-name ::non-blank-string)
+
 (s/def ::doc string?)
+
 (s/def ::arguments (s/coll-of string?))
+
 (s/def ::namespaces (s/coll-of simple-symbol?))
 
 (s/def ::groups (s/map-of string? ::group))
 
 (s/def ::group (s/keys :req-un [::namespaces]
                        :opt-un [::doc ::groups]))
+
+(s/def ::cache-dir (s/nilable string?))
+
+(s/def ::transformer fn?)
+
+(s/def ::source-dirs (s/coll-of string?))
 
 ;; dispatch doesn't return
 (s/fdef cli-tools/dispatch :args (s/cat :options ::dispatch-options))

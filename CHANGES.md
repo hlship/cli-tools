@@ -14,6 +14,8 @@
     * The two-arg variant of `print-errors` has been removed
     * `dispatch*` function arguments have changed
     * `expand-dispatch-options` has been removed
+* When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
+* Tool and command help is now printed to \*out\*, not \*err*\*
   
 *Changes*
 
@@ -21,10 +23,13 @@
 * You may now enter `-h` or `--help` after a group to get help for just that group
 * Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
 * Tool help now displays just top-level commands by default (add --full to list nested commands)
+* When extracting the first sentence as the single-line index, embedded period are no longer considered the end of the sentence
 * net.lewisship.cli-tools
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:
         * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
+        * :transformer provides a function to add additional commands and groups after namespaces are loaded
+        * :source-dirs specifies extra directories to consider when caching
 
 # 0.15.1 -- 27 Jan 2025
 

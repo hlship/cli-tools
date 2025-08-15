@@ -175,19 +175,21 @@
   "Expanded dispatch options into tool options, leveraging a cache."
   [options]
   (let [{:keys [cache-dir]} options
-        options'   (select-keys options [:tool-name
-                                         :doc
-                                         :namespaces
-                                         :groups])
-        cache-dir' (when cache-dir
-                     (fs/expand-home cache-dir))
-        digest     (when cache-dir'
-                     (cache/classpath-digest options'))
-        cached     (when digest
-                     (cache/read-from-cache cache-dir' digest))
-        result     (if cached
-                     cached
-                     (let [expanded (impl/expand-tool-options options')]
+        ;; Only include the options that should be part of the digest.
+        digest-options (select-keys options [:tool-name
+                                             :doc
+                                             :namespaces
+                                             :groups
+                                             :source-dirs])
+        cache-dir'     (when cache-dir
+                         (fs/expand-home cache-dir))
+        digest         (when cache-dir'
+                         (cache/classpath-digest digest-options))
+        cached         (when digest
+                         (cache/read-from-cache cache-dir' digest))
+        result         (if cached
+                         cached
+                         (let [expanded (impl/expand-tool-options options)]
                        (when cache-dir'
                          (cache/write-to-cache cache-dir' digest expanded))
                        expanded))]
@@ -271,6 +273,8 @@
   - :groups - map of group command (a string) to a group map
   - :handler - function to handle tool-level options, defaults to [[default-tool-handler]]
   - :cache-dir (optional, string) - directory to cache data in, or nil to disable cache
+  - :transformer (optional, function) - transforms the root command map
+  - :source-dirs (optional, seq of strings) - additional directories related to caching
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
@@ -293,6 +297,14 @@
   execution; subsequently, only the single namespace implementing the selected command will need to
   be loaded.  :cache-dir defaults to the value of the CLI_TOOLS_CACHE_DIR environment variable, or
   to the default value `~/.cli-tools-cache`.  If set to nil, then caching is disabled.
+
+  The :source-dirs option is typically used with the :transformer option; the source directories are
+  additional directories whose contents should be included by the cache digest (because the transformer
+  reads files in those directories).
+
+  The transformer function is passed the dispatch options and the root commands map and returns
+  an updated commands map; typically this involves identifying additional commands and adding them
+  via [[inject-command]].
 
   Returns nil."
   [dispatch-options]
@@ -496,3 +508,52 @@
     :value true}
    {:label "no"
     :value false}])
+
+(defn selected-command
+  "Returns a map defining the selected command. This will be nil until the end of
+  dispatch (i.e., just before the command function is invoked). This can be used
+  in the implementation of commands not defined by [[defcommand]]."
+  {:added "0.16.0"}
+  []
+  impl/*command-map*)
+
+(defn- inject
+  [commands-map remaining-command-path path-to-here command-map]
+  (let [command    (first remaining-command-path)
+        remaining' (next remaining-command-path)
+        path'      (conj path-to-here command)]
+    (cond
+      (nil? remaining')
+      (assoc commands-map command command-map)
+
+      (contains? commands-map command)
+      (update-in commands-map [command :subs]
+                 inject remaining' path' command-map)
+
+      :else
+      (assoc commands-map command
+             {:command-path path'
+              :command      command
+              :subs         (inject {} remaining' path' command-map)}))))
+
+(defn inject-command
+  "Injects a new command into the command root; presumably one not defined via
+   [[defcommand]].
+
+  command-path - a seq of command name strings leading to the new command
+  command-map - map that defines the command
+
+  The final term of the command path is the name of the command itself.
+
+  A command map has keys:
+  - :fn (keyword, required) - identifies function to invoke
+  - :doc (string, required) - long description of the command
+  - :title (string, optional) - short description of the command
+  "
+  {:added "0.16.0"}
+  [command-root command-path command-map]
+  (let [command-map' (assoc command-map
+                            :command (last command-path)
+                            :command-path command-path)]
+    (inject command-root command-path [] command-map')))
+
