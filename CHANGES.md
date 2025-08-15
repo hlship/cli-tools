@@ -15,7 +15,7 @@
     * `dispatch*` function arguments have changed
     * `expand-dispatch-options` has been removed
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
-
+* Tool and command help is now printed to \*out\*, not \*err*\*
   
 *Changes*
 

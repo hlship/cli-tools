@@ -1,7 +1,7 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
-            [clj-commons.ansi :refer [compose perr]]
+            [clj-commons.ansi :refer [compose pout perr]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -98,7 +98,7 @@
        (= 2 n)
        (list
          (-> terms' first wrap)
-         (str " or " )
+         " or "
          (-> terms' second wrap))
 
        (<= n max-terms)
@@ -172,13 +172,13 @@
              (mapv #(strip-indent indentation %))
              (string/join "\n"))))))
 
-(defn print-summary
+(defn- print-summary
   [command-doc command-map]
   (let [{:keys [tool-name]} *tool-options*
         {:keys [command-path]} *command-map*
         {:keys [command-name positional-specs summary]} command-map
         arg-strs (map arg-spec->str positional-specs)]
-    (perr
+    (pout
       "Usage: "
       ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
       (when tool-name
@@ -191,10 +191,10 @@
       " [OPTIONS]"
       (map list (repeat " ") arg-strs))
     (when command-doc
-      (-> command-doc cleanup-docstring perr))
+      (-> command-doc cleanup-docstring pout))
 
     ;; There's always at least -h/--help:
-    (perr "\nOptions:\n" summary)
+    (pout "\nOptions:\n" summary)
 
     (when (seq positional-specs)
       (let [max-label-width (->> positional-specs
@@ -209,8 +209,8 @@
                                  [:bold label]]
                                 ": "
                                 doc))]
-        (perr "\nArguments:")
-        (perr (interpose \newline lines))))))
+        (pout "\nArguments:")
+        (pout (interpose \newline lines))))))
 
 (defn print-errors
   [errors]
@@ -739,18 +739,18 @@
                                      (map #(-> % :command count))
                                      (reduce max 0)))]
     (when container-map
-      (perr (when recurse? "\n")
+      (pout (when recurse? "\n")
             [:bold (string/join " " (:command-path container-map))]
             " - "
             (or (some-> container-map :doc cleanup-docstring)
                 missing-doc)))
 
     (when (seq sorted-commands)
-      (perr "\nCommands:"))
+      (pout "\nCommands:"))
 
     ;; Commands (including sub-groups) inside this command
     (doseq [{:keys [fn command] :as command-map} sorted-commands]
-      (perr
+      (pout
         "  "
         [{:width command-name-width'} [:bold.green command]]
         ": "
@@ -775,11 +775,11 @@
           {tool-doc :doc
            :keys    [tool-name command-root]} options
           _ (do
-              (perr "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
+              (pout "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
               (when tool-doc
-                (perr "\n"
+                (pout "\n"
                       (cleanup-docstring tool-doc)))
-              (perr "\nOptions:\n"
+              (pout "\nOptions:\n"
                     (-> options :tool-summary deref)))
           all-commands (collect-commands command-root)]
 
@@ -799,7 +799,7 @@
                              (map command-path-width)
                              (reduce max 0))
           n (count matching-commands)]
-      (perr
+      (pout
         "\n"
         (-> n numberword string/capitalize)
         (if (= n 1)
@@ -808,14 +808,14 @@
         [:italic search-term]
         ":" "\n")
       (doseq [command (sort-by :command-path matching-commands)]
-        (perr [{:font  :bold.green
+        (pout [{:font  :bold.green
                 :width command-width}
                (string/join " " (:command-path command))]
               ": "
               (extract-command-title command))))
 
     :else
-    (perr "\nNo commands match " [:italic search-term]))
+    (pout "\nNo commands match " [:italic search-term]))
   (exit 0))
 
 (defn- to-matcher
