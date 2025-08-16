@@ -194,7 +194,7 @@
                          (cache/write-to-cache cache-dir' digest expanded))
                        expanded))]
     (merge result
-           (select-keys options [:tool-name :doc :arguments :tool-summary]))))
+           (select-keys options [:tool-name :doc :arguments :tool-summary :messy?]))))
 
 (defn dispatch*
   "Called from a tool handler to process remaining command line arguments.
@@ -276,6 +276,7 @@
   - :cache-dir (optional, string) - directory to cache data in, or nil to disable cache
   - :transformer (optional, function) - transforms the root command map
   - :source-dirs (optional, seq of strings) - additional directories related to caching
+  - :messy? (optional, boolean) - enables messy dispatch
 
   The :tool-name option is only semi-optional; in a Babashka script, it will default
   from the `babashka.file` system property, if any. An exception is thrown if :tool-name
@@ -289,6 +290,10 @@
 
   dispatch will always add the `net.lewiship.cli-tools.builtins` namespace to the root
   namespace list; this ensures the built-in `help` command is available.
+
+  Normally, when dispatching, once a command is identified, it is immediately invoked.
+  However, in messy mode, sometimes a command and a group overlap, so an attempt is made to
+  match additional terms from the command line to sub-groups and sub-commands. Use with caution.
 
   If option and argument parsing is unsuccessful, then
   an error message is written to \\*err\\*, and the program exits

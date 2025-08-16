@@ -11,7 +11,8 @@
                                            ::groups
                                            ::transformer
                                            ::source-dirs
-                                           ::cache-dir]))
+                                           ::cache-dir
+                                           ::messy?]))
 
 (s/def ::non-blank-string (s/and string?
                                  #(not (str/blank? %))))
@@ -34,6 +35,8 @@
 (s/def ::transformer fn?)
 
 (s/def ::source-dirs (s/coll-of string?))
+
+(s/def ::messy? boolean?)
 
 ;; dispatch doesn't return
 (s/fdef cli-tools/dispatch :args (s/cat :options ::dispatch-options))
