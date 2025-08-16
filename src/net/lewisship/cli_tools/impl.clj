@@ -686,8 +686,9 @@
 
 (defn- command-match?
   [command search-term]
-  (let [{:keys [doc title command-path]} command]
+  (let [{:keys [doc group-doc title command-path]} command]
     (or (string-matches? doc search-term)
+        (string-matches? group-doc search-term)
         (string-matches? title search-term)
         (some #(string-matches? % search-term) command-path))))
 
@@ -709,11 +710,13 @@
   [command-map]
   (or (:title command-map)
       (-> command-map :doc first-sentence)
-      (when-not (:fn command-map)
+      (-> command-map :group-doc first-sentence)
+      (when (-> command-map :subs seq)
         (let [{command-count true
                group-count   false} (->> command-map
                                          :subs
                                          vals
+                                         ;; Not quite accurate if messy (command and group at same time)
                                          (map #(-> % :fn some?))
                                          frequencies)]
           [:faint
@@ -743,7 +746,7 @@
       (pout (when recurse? "\n")
             [:bold (string/join " " (:command-path container-map))]
             " - "
-            (or (some-> container-map :doc cleanup-docstring)
+            (or (some-> container-map :group-doc cleanup-docstring)
                 missing-doc)))
 
     (when (seq sorted-commands)
@@ -982,7 +985,7 @@
                                            {:fn           (symbol command-var)
                                             ;; Commands have a full :doc and an optional short :title
                                             ;; (the title defaults to the first sentence of the :doc
-                                            ;; if not provided
+                                            ;; if not provided)
                                             :doc          doc
                                             :command      command-name
                                             :command-path (conj path command-name)}
@@ -1012,8 +1015,8 @@
              :command      command
              :command-path path'
              :subs         subs}
-      ; groups have just :doc, no :title
-      doc' (assoc :doc doc'))))
+      ; groups have just :group-doc, no :title
+      doc' (assoc :group-doc doc'))))
 
 (defn expand-tool-options
   [dispatch-options]

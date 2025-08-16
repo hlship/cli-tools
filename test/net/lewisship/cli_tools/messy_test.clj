@@ -13,7 +13,6 @@
       (cli/dispatch {:tool-name  "bigmess"
                      :namespaces '[net.lewisship.messy-commands]
                      :groups     {"messy" {:namespaces '[net.lewisship.messy]
-                                           #_ #_
                                            :doc "Messy command and group at same time"}}
                      :arguments  args
                      :cache-dir  nil
@@ -48,13 +47,14 @@
    (let [{:keys [out err]} (binding [ansi/*color-enabled* false]
                              (apply dispatch args))
          captured (if (string/blank? out)
-                    err)
+                    err
+                    out)
          out-path (str "test-resources/" f ".txt")]
      (spit out-path captured)
      (println (str out-path ":"))
      (print captured)))
 
- (dispatch "messy" )
+ (dispatch "help" "--full" )
 
  (capture "messy-full-help" "help" "--full")
 
