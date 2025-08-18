@@ -24,12 +24,14 @@
 * Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
 * Tool help now displays just top-level commands by default (add --full to list nested commands)
 * When extracting the first sentence as the single-line index, embedded period are no longer considered the end of the sentence
-* net.lewisship.cli-tools
+* `net.lewisship.cli-tools`:
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:
         * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
         * :transformer provides a function to add additional commands and groups after namespaces are loaded
         * :source-dirs specifies extra directories to consider when caching
+        * Can handle "messy" case where a command has the same name as a group
+* Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 
 # 0.15.1 -- 27 Jan 2025
 

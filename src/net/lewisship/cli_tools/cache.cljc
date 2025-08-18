@@ -90,7 +90,7 @@
 (defn write-to-cache
   [cache-root digest cache-data]
   (let [_ (when-not (fs/exists? cache-root)
-            (fs/create-dir cache-root))
+            (fs/create-dirs cache-root))
         f (fs/file cache-root (str digest ".edn"))]
     (spit f (pr-str cache-data))))
 

@@ -1,7 +1,8 @@
 (ns net.lewisship.cli-tools.specs
   (:require [clojure.spec.alpha :as s]
             [clojure.string :as str]
-            [net.lewisship.cli-tools :as cli-tools]))
+            [net.lewisship.cli-tools :as cli-tools])
+  (:import (java.nio.file Path)))
 
 (s/def ::dispatch-options (s/keys :req-un [::namespaces]
                                   :opt-un [::tool-name
@@ -28,7 +29,7 @@
 (s/def ::group (s/keys :req-un [::namespaces]
                        :opt-un [::doc ::groups]))
 
-(s/def ::cache-dir (s/nilable string?))
+(s/def ::cache-dir (s/nilable #(instance? Path %)))
 
 (s/def ::transformer fn?)
 

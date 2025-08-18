@@ -686,8 +686,9 @@
 
 (defn- command-match?
   [command search-term]
-  (let [{:keys [doc title command-path]} command]
+  (let [{:keys [doc group-doc title command-path]} command]
     (or (string-matches? doc search-term)
+        (string-matches? group-doc search-term)
         (string-matches? title search-term)
         (some #(string-matches? % search-term) command-path))))
 
@@ -709,11 +710,13 @@
   [command-map]
   (or (:title command-map)
       (-> command-map :doc first-sentence)
-      (when-not (:fn command-map)
+      (-> command-map :group-doc first-sentence)
+      (when (-> command-map :subs seq)
         (let [{command-count true
                group-count   false} (->> command-map
                                          :subs
                                          vals
+                                         ;; Not quite accurate if messy (command and group at same time)
                                          (map #(-> % :fn some?))
                                          frequencies)]
           [:faint
@@ -743,7 +746,7 @@
       (pout (when recurse? "\n")
             [:bold (string/join " " (:command-path container-map))]
             " - "
-            (or (some-> container-map :doc cleanup-docstring)
+            (or (some-> container-map :group-doc cleanup-docstring)
                 missing-doc)))
 
     (when (seq sorted-commands)
@@ -761,7 +764,7 @@
     ;; Recurse and print sub-groups
     (when recurse?
       (->> sorted-commands
-           (remove :fn)                                     ; Remove commands, leave groups
+           (filter #(-> % :subs seq))                       ; Remove commands, leave groups and messy command/groups
            (run! #(print-commands command-name-width' % (:subs %) true))))))
 
 (defn- command-path-width
@@ -840,18 +843,60 @@
   [tool-name]
   (list ", use " [:bold.green tool-name " help"] " to list commands"))
 
+(defn- no-command
+  [tool-name]
+  (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name)))
+
+(defn- incomplete
+  [tool-name command-path matchable-terms]
+  (abort
+    [:bold.green tool-name ": "
+     (string/join " " (butlast command-path))
+     [:red (last command-path)]]
+    " is incomplete; "
+    (compose-list matchable-terms)
+    " could follow; use "
+    [:bold [:green tool-name " " (string/join " " command-path) " --help (or -h)"]]
+    " to list commands"))
+
+(defn- no-match
+  [tool-name command-path term matched-terms matchable-terms]
+  (let [body        (if (-> matched-terms count pos?)
+                      (list "could match "
+                            (compose-list matched-terms {:conjuction "or"}))
+                      (list "is not a command, expected "
+                            (compose-list matchable-terms {:conjuction "or"})))
+        help-suffix (list
+                      "; use "
+                      [:bold [:green tool-name " "
+                              (if (seq command-path)
+                                (string/join " " command-path)
+                                "help")]]
+                      (when (seq command-path)
+                        " --help (or -h)")
+                      " to list commands")]
+    (abort
+      [:bold [:green tool-name] ": "
+       [:green (string/join " " command-path)]
+       (when (seq command-path) " ")
+       [:red term]]
+      " "
+      body
+      help-suffix)))
+
 (defn dispatch
   [{:keys [command-root arguments tool-name] :as options}]
   (binding [*tool-options* options]
     (let [command-name (first arguments)]
       (if (or (nil? command-name)
               (string/starts-with? command-name "-"))
-        (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name))
-        (loop [prefix            []                           ; Needed?
-               term              command-name
-               remaining-args    (next arguments)
-               container-map     nil
-               commands-map      command-root]
+        (no-command tool-name)
+        (loop [command-path           []
+               term                   command-name
+               remaining-args         (next arguments)
+               container-map          nil
+               commands-map           command-root
+               invoke-last-command-fn nil]
           (cond-let
             (#{"-h" "--help"} term)
             (do
@@ -864,50 +909,39 @@
             ;; Options start with a '-', but we're still looking for commands
             (or (nil? term)
                 (string/starts-with? term "-"))
-            (abort
-              [:bold.green tool-name ": "
-               (string/join " " (butlast prefix))
-               [:red (last prefix)]]
-              " is incomplete; "
-              (compose-list matchable-terms)
-              " could follow; use "
-              [:bold [:green tool-name " " (string/join " " prefix) " --help (or -h)"]]
-              " to list commands")
+            ;; In messy mode, this lets us backtrack to the containing command (which is also a group, that's
+            ;; why we call it messy) and invoke it as a command now that know the next term doesn't indentify
+            ;; another command or group.
+            (if invoke-last-command-fn
+              (invoke-last-command-fn)
+              (incomplete tool-name command-path matchable-terms))
 
             :let [matched-terms (find-matches term matchable-terms)
                   match-count (count matched-terms)]
 
             (not= 1 match-count)
-            (let [body        (if (pos? match-count)
-                                (list "could match "
-                                      (compose-list matched-terms {:conjuction "or"}))
-                                (list "is not a command, expected "
-                                      (compose-list matchable-terms {:conjuction "or"})))
-                  help-suffix (list
-                                "; use "
-                                [:bold [:green tool-name " "
-                                        (if (seq prefix)
-                                          (string/join " " prefix)
-                                          "help")]]
-                                (when (seq prefix)
-                                  " --help (or -h)")
-                                " to list commands")]
-              (abort
-                [:bold [:green tool-name] ": "
-                 [:green (string/join " " prefix)]
-                 (when (seq prefix) " ")
-                 [:red term]]
-                " "
-                body
-                help-suffix))
+            ;; Likewise, if the next term doesn't look like an option, but doesn't match a nested command or group
+            ;; then it must be a positional argument to the container command (that's also a messy group).
+            (if invoke-last-command-fn
+              (invoke-last-command-fn)
+              (no-match tool-name command-path term matched-terms matchable-terms))
 
             ;; Exactly one match
             :let [matched-term (first matched-terms)
                   matched-command (get possible-commands matched-term)]
 
             (:fn matched-command)
-            (binding [*command-map* matched-command]
-              (apply (-> matched-command :fn requiring-resolve) remaining-args))
+            (let [invoke-command #(binding [*command-map* matched-command]
+                                    (apply (-> matched-command :fn requiring-resolve) remaining-args))]
+              ;; It's a command, but has :subs, so it's also a group (this is the "messy" scenario)
+              (if (-> matched-command :subs seq)
+                (recur (:command-path matched-command)
+                       (first remaining-args)
+                       (rest remaining-args)
+                       matched-command
+                       (:subs matched-command)
+                       invoke-command)
+                (invoke-command)))
 
             ;; Otherwise, it was a command group.
             :else
@@ -915,7 +949,8 @@
                    (first remaining-args)
                    (rest remaining-args)
                    matched-command
-                   (:subs matched-command)))))))
+                   (:subs matched-command)
+                   invoke-last-command-fn))))))
   nil)
 
 (defn command-map?
@@ -951,7 +986,7 @@
                                            {:fn           (symbol command-var)
                                             ;; Commands have a full :doc and an optional short :title
                                             ;; (the title defaults to the first sentence of the :doc
-                                            ;; if not provided
+                                            ;; if not provided)
                                             :doc          doc
                                             :command      command-name
                                             :command-path (conj path command-name)}
@@ -971,16 +1006,18 @@
         ;; Mix in nested groups to form the subs for this group
         subs            (reduce-kv
                           (fn [commands group-command group-descriptor]
-                            (assoc commands group-command
+                            (update commands group-command merge
                                    (build-command-group group-descriptor path' group-command)))
                           direct-commands
                           groups)
         doc'            (or doc
                             (some #(-> % find-ns meta :doc) namespaces))]
-    {:doc          doc'                                     ; groups have just :doc, no :title
-     :command      command
-     :command-path path'
-     :subs         subs}))
+    (cond-> {
+             :command      command
+             :command-path path'
+             :subs         subs}
+      ; groups have just :group-doc, no :title
+      doc' (assoc :group-doc doc'))))
 
 (defn expand-tool-options
   [dispatch-options]

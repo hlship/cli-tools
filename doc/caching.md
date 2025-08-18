@@ -18,8 +18,9 @@ Our mockup of 1500 commands across 250 namespaces executes twice as fast using t
 
 Babashka is amazingly fast for these purposes; the same test executes in 0.23 seconds.
 
-By default, `dispatch` will store its cache in the `~/.cli-tools-cache` directory; the environment variable
-`CLI_TOOLS_CACHE_DIR` can override this default. 
+By default, `dispatch` will store its cache in the `~/.cache/net.lewisship.cli-tools` directory; the environment variable
+`CLI_TOOLS_CACHE_DIR` can override this default. (The `~/.cache` part is via
+`babaska.fs/xdg-cache-home`). 
 
-Alternately, you can also specify a path as the :cache-dir option.
+Alternately, you can also specify a java.nio.file.Path instance as the :cache-dir option.
 

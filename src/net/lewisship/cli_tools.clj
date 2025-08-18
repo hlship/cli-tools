@@ -256,8 +256,9 @@
                color-flag help)))
 
 (def ^:private default-dispatch-options
-  {:cache-dir (or (System/getenv "CLI_TOOLS_CACHE_DIR")
-                  "~/.cli-tools-cache")
+  {:cache-dir (or (some-> (System/getenv "CLI_TOOLS_CACHE_DIR")
+                          fs/expand-home)
+                  (fs/xdg-cache-home "net.lewisship.cli-tools"))
    :handler   default-tool-handler})
 
 (defn dispatch
