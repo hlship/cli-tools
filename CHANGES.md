@@ -30,7 +30,8 @@
         * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
         * :transformer provides a function to add additional commands and groups after namespaces are loaded
         * :source-dirs specifies extra directories to consider when caching
-        * :messy? is true when commands and group might overlap
+        * Can handle "messy" case where a command has the same name as a group
+* Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 
 # 0.15.1 -- 27 Jan 2025
 

@@ -885,7 +885,7 @@
       help-suffix)))
 
 (defn dispatch
-  [{:keys [command-root arguments tool-name messy?] :as options}]
+  [{:keys [command-root arguments tool-name] :as options}]
   (binding [*tool-options* options]
     (let [command-name (first arguments)]
       (if (or (nil? command-name)
@@ -933,7 +933,8 @@
             (:fn matched-command)
             (let [invoke-command #(binding [*command-map* matched-command]
                                     (apply (-> matched-command :fn requiring-resolve) remaining-args))]
-              (if (and messy? (-> matched-command :subs seq))
+              ;; It's a command, but has :subs, so it's also a group (this is the "messy" scenario)
+              (if (-> matched-command :subs seq)
                 (recur (:command-path matched-command)
                        (first remaining-args)
                        (rest remaining-args)
