@@ -26,11 +26,7 @@
 (deftest simple-commands-work
   (is (match? {:status 0
                :out    "simple: ok\n"}
-              (dispatch "simp")))
-
-  (is (match? {:status 0
-               :out    "messy: kiwi ok\n"}
-              (dispatch "messy" "kiwi"))))
+              (dispatch "simp"))))
 
 (deftest missing-positional-in-nested
   (is (match? {:status 1
@@ -41,11 +37,14 @@
   (is (match? {:out "nested: ok\n"}
               (dispatch "mess" "nest"))))
 
+(deftest matches-command-when-cant-find-sub-command
+  (is (match? {:out "messy: kiwi ok\n"}
+              (dispatch "mess" "kiwi"))))
+
 (comment
 
  (defn capture [f & args]
-   (let [{:keys [out err]} (binding [ansi/*color-enabled* false]
-                             (apply dispatch args))
+   (let [{:keys [out err]} (apply dispatch args)
          captured (if (string/blank? out)
                     err
                     out)
@@ -53,8 +52,6 @@
      (spit out-path captured)
      (println (str out-path ":"))
      (print captured)))
-
- (dispatch "help" "--full" )
 
  (capture "messy-full-help" "help" "--full")
 
