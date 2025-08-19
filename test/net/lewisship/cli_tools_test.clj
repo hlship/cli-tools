@@ -2,7 +2,7 @@
   (:require [clj-commons.ansi :as ansi :refer [compose]]
             [clojure.string :as string]
             [clojure.test :refer [deftest is use-fixtures are]]
-            [net.lewisship.cli-tools :as cli-tools :refer [defcommand select-option]]
+            [net.lewisship.cli-tools :as cli-tools :refer [defcommand select-option inject-command]]
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
             net.lewisship.conflict
@@ -486,4 +486,34 @@
     (is (match? {:opts      {:default :maybe}
                  :responses cli-tools/yes-or-no}
                 (ex-data e)))))
+
+(deftest inject-command-new
+  (is (match? {"foo"
+               {:command      "foo"
+                :command-path ["foo"]
+                ::custom      1}}
+              (inject-command nil ["foo"] {::custom 1}))))
+
+(deftest inject-will-merge
+  (is (match? {"foo"
+               {:command      "foo"
+                :command-path ["foo"]
+                ::custom      2
+                ::extra       3}}
+              (-> nil
+                  (inject-command ["foo"] {::custom 1})
+                  (inject-command ["foo"] {::custom 2
+                                           ::extra  3})))))
+
+(deftest inject-builds-groups
+  (is (match? {"foo"
+               {:command      "foo"
+                :command-path ["foo"]
+                :subs         {"bar"  {:command      "bar"
+                                       :command-path ["foo" "bar"]}
+                               "bazz" {:command      "bazz"
+                                       :command-path ["foo" "bazz"]}}}}
+              (-> nil
+                  (inject-command ["foo" "bar"] {})
+                  (inject-command ["foo" "bazz"] {})))))
 

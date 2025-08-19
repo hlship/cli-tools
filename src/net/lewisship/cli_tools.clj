@@ -525,17 +525,18 @@
         path'      (conj path-to-here command)]
     (cond
       (nil? remaining')
-      (assoc commands-map command command-map)
+      (update commands-map command merge command-map)
 
       (contains? commands-map command)
       (update-in commands-map [command :subs]
                  inject remaining' path' command-map)
 
       :else
-      (assoc commands-map command
-             {:command-path path'
-              :command      command
-              :subs         (inject {} remaining' path' command-map)}))))
+      (update commands-map command
+              assoc
+              :command-path path'
+              :command command
+              :subs (inject {} remaining' path' command-map)))))
 
 (defn inject-command
   "Injects a new command into the command root; presumably one not defined via
