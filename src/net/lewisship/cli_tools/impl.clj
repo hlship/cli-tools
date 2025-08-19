@@ -852,6 +852,7 @@
   (abort
     [:bold.green tool-name ": "
      (string/join " " (butlast command-path))
+     (when (> (count command-path) 1) " ")
      [:red (last command-path)]]
     " is incomplete; "
     (compose-list matchable-terms)
@@ -863,9 +864,9 @@
   [tool-name command-path term matched-terms matchable-terms]
   (let [body        (if (-> matched-terms count pos?)
                       (list "could match "
-                            (compose-list matched-terms {:conjuction "or"}))
+                            (compose-list matched-terms))
                       (list "is not a command, expected "
-                            (compose-list matchable-terms {:conjuction "or"})))
+                            (compose-list matchable-terms)))
         help-suffix (list
                       "; use "
                       [:bold [:green tool-name " "

@@ -1,5 +1,6 @@
 [0;1mgroup[m - Grouped commands
 
 Commands:
-  [0;32;1mecho[m: Echo a string
-  [0;32;1medit[m: Edit a whatever
+    [0;32;1mecho[m: Echo a string
+    [0;32;1medit[m: Edit a whatever
+  [0;32;1mnested[m: [0;3mNested commands inside group[m

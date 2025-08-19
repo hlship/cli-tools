@@ -6,13 +6,20 @@ Options:
   [0;1m-h, --help[m     This tool summary
 
 Commands:
-   [0;32;1mdefault[m: Default command summary
-  [0;32;1mexplicit[m: Explicit command summary
-     [0;32;1mgroup[m: [0;3mGrouped commands[m
-      [0;32;1mhelp[m: List available commands
+    [0;32;1mdefault[m: Default command summary
+   [0;32;1mexplicit[m: Explicit command summary
+      [0;32;1mgroup[m: [0;3mGrouped commands[m
+       [0;32;1mhelp[m: List available commands
 
 [0;1mgroup[m - Grouped commands
 
 Commands:
-      [0;32;1mecho[m: Echo a string
-      [0;32;1medit[m: Edit a whatever
+       [0;32;1mecho[m: Echo a string
+       [0;32;1medit[m: Edit a whatever
+     [0;32;1mnested[m: [0;3mNested commands inside group[m
+
+[0;1mgroup nested[m - Nested commands inside group
+
+Commands:
+  [0;32;1mbutterfly[m: Nested command butterfly
+       [0;32;1mleaf[m: Nested command leaf
