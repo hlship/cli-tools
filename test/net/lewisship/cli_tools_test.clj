@@ -295,7 +295,9 @@
   (dispatch {:tool-name  "group-test"
              :namespaces '[net.lewisship.example-ns]
              :groups {"group" {:namespaces '[net.lewisship.group-ns]
-                              :doc  "Grouped commands"}}
+                               :doc        "Grouped commands"
+                               :groups     {"nested" {:namespaces '[net.lewisship.cli-tools.group-nested]
+                                                      :doc        "Nested commands inside group"}}}}
              :arguments  args}))
 
 (deftest help-with-default-and-explicit-summary-grouped
@@ -313,6 +315,13 @@
                  :out    expected}
                 (exec-group "gr" "--help")))))
 
+(comment
+  (->> (exec-group "gr" "nested")
+       :err
+       (spit "test-resources/help-incomplete-nested.txt"))
+
+  )
+
 (deftest can-find-a-grouped-command
   (is (match? {:out "echo: fancy\n"}
               (exec-group "group" "echo" "fancy"))))
@@ -321,6 +330,11 @@
   (is (match? {:status 1
                :err    (slurp "test-resources/help-incomplete.txt")}
               (exec-group "gr"))))
+
+(deftest suggest-help-when-name-incomplete-nested
+  (is (match? {:status 1
+               :err    (slurp "test-resources/help-incomplete-nested.txt")}
+              (exec-group "gr" "nested"))))
 
 
 (deftest can-use-group-abbreviations

@@ -1,1 +1,1 @@
-[0;32;1mgroup-test: [0;31;1mgroup[m is incomplete; [0;32;1mecho[m or [0;32;1medit[m could follow; use [0;32;1mgroup-test group --help (or -h)[m to list commands
+[0;32;1mgroup-test: [0;31;1mgroup[m is incomplete; [0;32;1mecho[m, [0;32;1medit[m, or [0;32;1mnested[m could follow; use [0;32;1mgroup-test group --help (or -h)[m to list commands
