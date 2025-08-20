@@ -16,14 +16,15 @@
     * `expand-dispatch-options` has been removed
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
 * Tool and command help is now printed to \*out\*, not \*err*\*
+* The builtin `help` command now as an option, `-c` / `--commands`, that can be one of `none`, `root`, or `all`, and the `--flat` switch was removed.
   
 *Changes*
 
 * Groups may now be nested, to arbitrary depth
 * You may now enter `-h` or `--help` after a group to get help for just that group
 * Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
-* Tool help now displays just top-level commands by default (add --full to list nested commands)
-* When extracting the first sentence as the single-line index, embedded period are no longer considered the end of the sentence
+* Tool help now displays just root-level commands by default (add `--commands all` to list nested commands)
+* When extracting the first sentence as the single-line index, embedded periods are no longer considered the end of the sentence
 * `net.lewisship.cli-tools`:
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:

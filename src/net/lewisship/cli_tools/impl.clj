@@ -767,63 +767,61 @@
            (filter #(-> % :subs seq))                       ; Remove commands, leave groups and messy command/groups
            (run! #(print-commands command-name-width' % (:subs %) true))))))
 
-(defn- command-path-width
+(defn- join-command-path
   [path]
-  (apply + (count path) -1 (map count path)))
+  (string/join " " path))
+
+(defn print-search-results
+  [search-term]
+  (let [search-term'      (-> search-term string/trim string/lower-case)
+        all-commands      (collect-commands (:command-root *tool-options*))
+        matching-commands (->> (filter #(command-match? % search-term') all-commands)
+                               (map #(update % :command-path join-command-path)))]
+    (if-not (seq matching-commands)
+      (pout "No commands match " [:italic search-term'])
+      (let [command-width (->> matching-commands
+                               (map :command-path)
+                               (map count)
+                               (reduce max 0))
+            n             (count matching-commands)]
+        (pout
+          (-> n numberword string/capitalize)
+          (if (= n 1)
+            " command matches "
+            " commands match ")
+          [:italic search-term']
+          ":" "\n")
+        (doseq [{:keys [command-path] :as command} (sort-by :command-path matching-commands)]
+          (pout [{:font  :bold.green
+                  :width command-width}
+                 command-path]
+                ": "
+                (extract-command-title command)))))))
 
 (defn print-tool-help
-  [options search-term full?]
-  (cond-let
-    :let [search-term' (when search-term
-                         (string/lower-case search-term))
-          {tool-doc :doc
-           :keys    [tool-name command-root]} options
-          _ (do
-              (pout "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
-              (when tool-doc
-                (pout "\n"
-                      (cleanup-docstring tool-doc)))
-              (pout "\nOptions:\n"
-                    (-> options :tool-summary deref)))
-          all-commands (collect-commands command-root)]
+  [level]
+  (let [{tool-doc :doc
+         :keys    [tool-name command-root]} *tool-options*]
+    (pout "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
+    (when tool-doc
+      (pout "\n"
+            (cleanup-docstring tool-doc)))
+    (pout "\nOptions:\n"
+          (-> *tool-options* :tool-summary deref))
 
-    (nil? search-term')
-    (let [command-name-width (when full?
-                               (->> all-commands
-                                    (map :command)
-                                    (map count)
-                                    (apply max 0)))]
-      (print-commands command-name-width nil command-root full?))
-
-    :let [matching-commands (filter #(command-match? % search-term') all-commands)]
-
-    (seq matching-commands)
-    (let [command-width (->> matching-commands
-                             (map :command-path)
-                             (map command-path-width)
-                             (reduce max 0))
-          n (count matching-commands)]
-      (pout
-        "\n"
-        (-> n numberword string/capitalize)
-        (if (= n 1)
-          " command matches "
-          " commands match ")
-        [:italic search-term]
-        ":" "\n")
-      (doseq [command (sort-by :command-path matching-commands)]
-        (pout [{:font  :bold.green
-                :width command-width}
-               (string/join " " (:command-path command))]
-              ": "
-              (extract-command-title command))))
-
-    :else
-    (pout "\nNo commands match " [:italic search-term]))
-  (exit 0))
+    (when-not (= level :none)
+      (let [full?              (= :all level)
+            all-commands       (if full? (collect-commands command-root)
+                                         command-root)
+            command-name-width (when full?
+                                 (->> all-commands
+                                      (map :command)
+                                      (map count)
+                                      (apply max 0)))]
+        (print-commands command-name-width nil command-root full?)))))
 
 (defn- to-matcher
-  "A matcher for string s that is case insenstive and matches an initial prefix."
+  "A matcher for string s that is case-insenstive and matches an initial prefix."
   [s]
   (let [re-pattern (str "(?i)" (Pattern/quote s) ".*")
         re         (Pattern/compile re-pattern)]

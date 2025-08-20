@@ -1,10 +1,3 @@
-Usage: [0;32;1mtest-harness[m [OPTIONS] COMMAND ...
-
-Options:
-  [0;1m-C, --color[m    Enable ANSI color output
-  [0;1m-N, --no-color[m Disable ANSI color output
-  [0;1m-h, --help[m     This tool summary
-
-One command matches [0;3mEXP[m:
+One command matches [0;3mexp[m:
 
 [0;32;1mexplicit[m: Explicit command summary

@@ -191,7 +191,16 @@
                          :groups
                          {"group" {:namespaces '[net.lewisship.group-default-ns
                                                  net.lewisship.example-ns]}}
-                         :arguments ["help" "--full"]}))))
+                         :arguments ["help"]}))))
+
+(deftest group-help-full
+  (is (match? {:status 0
+               :out    (slurp "test-resources/tool-help-group-full.txt")}
+              (dispatch {:tool-name "test-harness"
+                         :groups
+                         {"group" {:namespaces '[net.lewisship.group-default-ns
+                                                 net.lewisship.example-ns]}}
+                         :arguments ["help" "-c" "all"]}))))
 
 (deftest help-with-search-term
   (is (match?
@@ -303,7 +312,7 @@
 (deftest help-with-default-and-explicit-summary-grouped
   (is (match? {:status 0
                :out    (slurp "test-resources/tool-help-grouped.txt")}
-              (exec-group "help" "-f"))))
+              (exec-group "help" "-c" "all"))))
 
 (deftest help-for-group
   (let [expected (slurp "test-resources/sub-group-help.txt")]
@@ -316,9 +325,13 @@
                 (exec-group "gr" "--help")))))
 
 (comment
-  (->> (exec-group "gr" "nested")
-       :err
-       (spit "test-resources/help-incomplete-nested.txt"))
+  (->> (dispatch {:tool-name "test-harness"
+                  :groups
+                  {"group" {:namespaces '[net.lewisship.group-default-ns
+                                          net.lewisship.example-ns]}}
+                  :arguments ["help" "-c" "all"]})
+       :out
+       (spit "test-resources/tool-help-grouped.txt"))
 
   )
 
