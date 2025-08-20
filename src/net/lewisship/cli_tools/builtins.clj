@@ -3,14 +3,18 @@
   {:command-category       "Built-in"
    :command-category-order 100}
   (:require [net.lewisship.cli-tools.impl :as impl]
-            [net.lewisship.cli-tools :refer [defcommand]]))
+            [net.lewisship.cli-tools :as cli :refer [defcommand]]))
 
 (defcommand help
-  "List available commands"
-  [full? ["-f" "--full" "Provide help for all commands, not just top-level"]
+  "List available commands.
+
+   If a search term is provided, the --commands option is ignored."
+  [output-level (cli/select-option "-c" "--commands FILTER" "Print commands: " #{:none :root :all}
+                                   :default :default)
    :args
    search-term ["SEARCH" "Filter shown commands to those that match this term"
          :optional true]]
-  ;; dispatch binds *options* for us
-  (impl/print-tool-help impl/*tool-options* search-term full?))
+  (if search-term
+    (impl/print-search-results search-term)
+    (impl/print-tool-help output-level)))
 

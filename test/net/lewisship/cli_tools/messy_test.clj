@@ -21,7 +21,7 @@
 (deftest full-help
   (is (match? {:status 0
                :out    (slurp "test-resources/messy-full-help.txt")}
-              (dispatch "help" "--full"))))
+              (dispatch "help" "-c" "all"))))
 
 (deftest simple-commands-work
   (is (match? {:status 0
@@ -53,7 +53,7 @@
      (println (str out-path ":"))
      (print captured)))
 
- (capture "messy-full-help" "help" "--full")
+ (capture "messy-full-help" "help" "-c" "all")
 
  (capture "messy-simple" "simple")
 
