@@ -5,10 +5,8 @@
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
-            [babashka.cli.exec :as cli-exec]
             [clojure.java.io :as io])
-  (:import (clojure.lang ExceptionInfo)
-           (java.util.regex Pattern)))
+  (:import (java.util.regex Pattern)))
 
 (def prevent-exit false)
 
@@ -456,7 +454,6 @@
 (defn abort
   [& compose-inputs]
   (apply perr compose-inputs)
-  (exit 1))
 
 (defn- fail
   [message state form]
@@ -985,32 +982,6 @@
          :command command-name}
         title (assoc :title title)))))
 
-(defn- bb-wrapper
-  [& args]
-  (if *introspection-mode*
-    ;; TODO: Might be able to look at the meta on the var to identify the cli spec
-    ;; and options from that.
-    (select-keys *command-map* :title)
-    (let [{::keys [cli-fn]
-           :keys  [command-path]} *command-map*]
-      (try
-        (binding [babashka.cli.exec/*basis* {}]
-          (apply cli-exec/main (str cli-fn) args))
-        (catch ExceptionInfo e
-          (let [{:keys [type msg option value]} (ex-data e)]
-            (when-not (= :org.babashka/cli type)
-              (throw e))
-            ;; Really need to expand this in the future
-            (abort [:red "Error in "
-                    (string/join " " command-path)
-                    ": "
-                    msg
-                    " (option "
-                    option
-                    ", value "
-                    (pr-str value)
-                    ")"])))))))
-
 (defn- bb-cli-command
   [command-var]
   (let [{:keys              [doc]
@@ -1018,8 +989,8 @@
         {:keys [command title]} cli
         command-name (or command (-> command-var meta :name str))]
     (when cli
-      (cond-> {:fn      `bb-wrapper
-               ::cli-fn (symbol command-var)
+      (cond-> {:fn                      'net.lewisship.cli-tools.bb-cli/wrapper
+               :org.babashka.cli/cli-fn (symbol command-var)
                :doc     doc
                :command command-name}
         title (assoc :title title)))))
