@@ -15,8 +15,7 @@
                      :groups     {"messy" {:namespaces '[net.lewisship.messy]
                                            :doc "Messy command and group at same time"}}
                      :arguments  args
-                     :cache-dir  nil
-                     :messy?     true}))))
+                     :cache-dir  nil}))))
 
 (deftest full-help
   (is (match? {:status 0

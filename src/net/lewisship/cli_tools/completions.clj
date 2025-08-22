@@ -61,6 +61,7 @@
         title   (binding [ansi/*color-enabled* false]
                   (impl/extract-command-title command-map))
         fn-name (simplify fn-prefix command-name)]
+    ;; TODO: Support messy group/command combos
     (if fn
       {:name    command-name
        :fn-name fn-name

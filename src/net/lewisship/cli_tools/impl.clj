@@ -5,8 +5,10 @@
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
+            [babashka.cli.exec :as cli-exec]
             [clojure.java.io :as io])
-  (:import (java.util.regex Pattern)))
+  (:import (clojure.lang ExceptionInfo)
+           (java.util.regex Pattern)))
 
 (def prevent-exit false)
 
@@ -969,28 +971,76 @@
        (mapcat (fn [[test expr]]
                  [(list not test) expr]))))
 
+(defn- cli-tools-command
+  [command-var]
+  (let [{:keys  [doc]
+         ::keys [command-name title]} (meta command-var)]
+    (when command-name
+      (cond->
+        {:fn      (symbol command-var)
+         ;; Commands have a full :doc and an optional short :title
+         ;; (the title defaults to the first sentence of the :doc
+         ;; if not provided)
+         :doc     doc
+         :command command-name}
+        title (assoc :title title)))))
+
+(defn- bb-wrapper
+  [& args]
+  (if *introspection-mode*
+    ;; TODO: Might be able to look at the meta on the var to identify the cli spec
+    ;; and options from that.
+    (select-keys *command-map* :title)
+    (let [{::keys [cli-fn]
+           :keys  [command-path]} *command-map*]
+      (try
+        (binding [babashka.cli.exec/*basis* {}]
+          (apply cli-exec/main (str cli-fn) args))
+        (catch ExceptionInfo e
+          (let [{:keys [type msg option value]} (ex-data e)]
+            (when-not (= :org.babashka/cli type)
+              (throw e))
+            ;; Really need to expand this in the future
+            (abort [:red "Error in "
+                    (string/join " " command-path)
+                    ": "
+                    msg
+                    " (option "
+                    option
+                    ", value "
+                    (pr-str value)
+                    ")"])))))))
+
+(defn- bb-cli-command
+  [command-var]
+  (let [{:keys              [doc]
+         :org.babashka/keys [cli]} (meta command-var)
+        {:keys [command title]} cli
+        command-name (or command (-> command-var meta :name str))]
+    (when cli
+      (cond-> {:fn      `bb-wrapper
+               ::cli-fn (symbol command-var)
+               :doc     doc
+               :command command-name}
+        title (assoc :title title)))))
+
 (defn- collect-nested-commands
   [path in-namespace]
   (require in-namespace)
-  (->> in-namespace
-       find-ns
-       ns-publics
-       vals
-       (reduce (fn [result command-var]
-                 (let [{:keys  [doc]
-                        ::keys [command-name title]} (meta command-var)]
-                   (cond-> result
-                     command-name (assoc command-name
-                                         (cond->
-                                           {:fn           (symbol command-var)
-                                            ;; Commands have a full :doc and an optional short :title
-                                            ;; (the title defaults to the first sentence of the :doc
-                                            ;; if not provided)
-                                            :doc          doc
-                                            :command      command-name
-                                            :command-path (conj path command-name)}
-                                           title (assoc :title title))))))
-               {})))
+  (let [ns-vals (->> in-namespace
+                     find-ns
+                     ns-publics
+                     vals)]
+    (reduce (fn [m command-var]
+              (let [command      (or (cli-tools-command command-var)
+                                     (bb-cli-command command-var))
+                    command-name (:command command)]
+                (cond-> m
+                  command-name (assoc command-name
+                                      (assoc command
+                                             :command-path (conj path command-name))))))
+            {}
+            ns-vals)))
 
 
 (defn- build-command-group

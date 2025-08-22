@@ -33,6 +33,7 @@
         * :source-dirs specifies extra directories to consider when caching
         * Can handle "messy" case where a command has the same name as a group
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
+* Added initial support for commands defined as Babashka CLI functions
 
 # 0.15.1 -- 27 Jan 2025
 
