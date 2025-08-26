@@ -37,7 +37,6 @@
 (defn- update-digest-from-file-contents
   [^MessageDigest digest f]
   (let [f'     (fs/file f)]
-    (update-digest-from-string digest (.getCanonicalPath f'))
     ;; Would be better to digest the 8 raw bytes, but this is easier.
     (update-digest-from-string digest (Long/toHexString (.lastModified f')))))
 
