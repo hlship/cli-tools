@@ -454,6 +454,7 @@
 (defn abort
   [& compose-inputs]
   (apply perr compose-inputs)
+  (exit 1))
 
 (defn- fail
   [message state form]
