@@ -116,7 +116,7 @@
   (assert (vector? interface)
           "defcommand expects a vector to define the interface")
   (let [symbol-meta        (meta fn-name)
-        parsed-interface   (impl/compile-interface  interface)
+        parsed-interface   (impl/compile-interface interface)
         {:keys [option-symbols title let-forms validate-cases]} parsed-interface
         command-map-symbol (gensym "command-map-")
         command-name'      (or (:command-name parsed-interface)
@@ -190,9 +190,9 @@
         result         (if cached
                          cached
                          (let [expanded (impl/expand-tool-options options)]
-                       (when cache-dir'
-                         (cache/write-to-cache cache-dir' digest expanded))
-                       expanded))]
+                           (when cache-dir'
+                             (cache/write-to-cache cache-dir' digest expanded))
+                           expanded))]
     (merge result
            (select-keys options [:tool-name :doc :arguments :tool-summary]))))
 
@@ -558,4 +558,3 @@
                             :command (last command-path)
                             :command-path command-path)]
     (inject command-root command-path [] command-map')))
-

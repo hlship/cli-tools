@@ -1,9 +1,12 @@
 {
 :cljdoc.doc/tree
  [["Readme" {:file "README.md"}]
-  ["Overview" {:file "overview.md"}]
+  ["Overview" {:file "doc/overview.md"}]
   ["Defcommand" {:file "doc/defcommand.md"}]
   ["Dispatch" {:file "doc/dispatch.md"}]
+  ["Babashka CLI" {:file "doc.bb-cli.md"}]
   ["Caching" {:file "doc/caching.md"}]
+  ["Transform" {:file "doc/transform.md"}]
+  ["Completions" {:file "doc/completions.md"}]
   ]
  }

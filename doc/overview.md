@@ -8,7 +8,7 @@ command function.
 
 A namespace may define any number of commands, and commands may be drawn from multiple namespaces.
 
-When you have many commands, you can create groups; a group is a containing of commands. Groups
+When you have many commands, you can create groups; a group is a container of commands. Groups
 can even contain nested groups.
 
 The top level command script's job is to make the call to `dispatch`, passing the options that
@@ -20,5 +20,3 @@ is the _code_ of the command executed, which is free to do whatever it needs to 
 Command names should be long and expressive; when parsing command and group names, `cli-tools` can recognize
 command and group names from shorter prefixes, as long as a prefix uniquely identifies a command (or group);
 when that isn't the case, `cli-tools` will prompt you with possible completions and a reminder on how to get more extensive help.
-
-

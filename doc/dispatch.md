@@ -51,10 +51,7 @@ The remaining items are groups (shown in italics); the text shown is the :title 
               
 The :doc and :title group options may be omitted.
 
-If :doc is omitted, then `dispatch` will search the provided namespaces, and use the first namespace docstring
+If :doc is omitted, then `dispatch` will search the group's namespaces, and use the first namespace docstring
 it finds.
 
 If :title is omitted, then the first line of the docstring, up to the first `.`, will be used as the title.
-
-
-

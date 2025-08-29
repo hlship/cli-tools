@@ -1,7 +1,7 @@
 # Building a Script
 
 So far, we can define commands in namespaces using [[defcommand]], and we know how we can use [[dispatch]] to roll
-all of that into a single tools, but what actually calls `dispatch?`.  This is where we create the actual command-line script.
+all of that into a single tools but what actually calls `dispatch`?.  This is where we create the actual command-line script.
 
 
 Following our prior example, we'll create a script named `app-admin`.  We'll put that in the `bin` directory of our project:
@@ -72,5 +72,3 @@ I like to get all the command line parsing concerns out of the way before workin
 Finally, `cli-tools` allows command names to be abbreviated, as long as the value on the command line is a unique prefix:
 
 ![app-admin abbreviated command](images/app-admin-abbrev.png)
-
-
