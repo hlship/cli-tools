@@ -1,9 +1,10 @@
 # defcommand
 
-The core of `cli-tools` is the [[net.lewisship.cli-tools/defcommand]] macro.  This is how you define commands.
+The core of `cli-tools` is the `net.lewisship.cli-tools/defcommand` macro.  This is how you define commands.
 
-`defcommand` defines a command as a special kind of function, in
-terms of a command-line interface, and a body that acts on the data collected from the command line.
+`defcommand` defines a command as a special kind of function; where you would normally define the 
+parameters of an ordinary function, with `defcommand`, you define the command line interface
+of your command, including how those options and arguments are mapped to local symbols. 
 
 The interface defines options as well as positional arguments; those options and arguments are available
 in the body of the command just as if they were parameters passed to the function.
@@ -53,7 +54,7 @@ command line arguments.
 An option definition always starts with three strings: the short option name, the long option name,
 and the option description; these are positional, and a nil may be supplied.
 
-The full details of an option definition are supplied by [tools.cli](https://github.com/clojure/tools.cli).
+The full details of an option definition are supplied by Clojure's [tools.cli](https://github.com/clojure/tools.cli) library.
 
 ## Positional Arguments
 

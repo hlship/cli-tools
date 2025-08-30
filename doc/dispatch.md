@@ -1,25 +1,31 @@
 # Dispatch
 
-The [[net.lewisship.cli-tools/dispatch]] function is the prime entrypoint for both Babashka and Clojure tools.
+The `net.lewisship.cli-tools/dispatch` function is the prime entrypoint for both Babashka and Clojure tools.
 
-`dispatch` is provided with a descriptor map for your tool; it reads the namespaces defined in the descriptor to build
+`dispatch` is provided with an options map for your tool that describes how `cli-tools` will operate; 
+`dispatch` reads the namespaces defined in the options to build
 up an index of all the commands and command groups in your tool.
 
 The `dispatch` function then starts to consume command line arguments, identifying groups and sub-groups until
-it reaches leaf nodes, the commands; the command is passed the remaining command line arguments which it can parse
-into options and positional arguments as defined by the [[net.lewisship.cli-tools/defcommand]] macro; these
+it reaches leaf nodes, the commands; the command is passed the remaining command line arguments.
+
+The individual command function parses those arguments using the `defcommand` interface, parsing the values
+into options and positional arguments as defined by the `defcommand` macro; these
 are ultimately exposed as local symbols that your command's code can act on.
 
+
+
 ```clojure
-{:namespaces [...]
- :doc "String that defines the tool, used in tool-level help."
- :groups {"my-group" {:title "One line title describing the group."
-                      :doc "Longer description of the group, used in group-level help."
-                      :namespaces [...]
-                      :groups {...}]}]}
+(dispatch 
+  {:namespaces [...]
+   :doc "String that defines the tool, used in tool-level help."
+   :groups {"my-group" {:title "One line title describing the group."
+                        :doc "Longer description of the group, used in group-level help."
+                        :namespaces [...]
+                        :groups {...}]}]})
 ```
 
-The top-level `:namespaces` is used to define any top-level ("Built-in") namespaces.
+The top-level `:namespaces` is used to define any top-level commands.
 Each namespace is a symbol for the namespace.
 
 This is optional and defaults to an empty list.
@@ -27,9 +33,7 @@ This is optional and defaults to an empty list.
 The namespace `net.lewiship.cli-tools.builtins` is always prefixed to the provided list; this provides
 the tool-level `help` command.
 
-The namespaces provide the top-level commands, but you may also specify _groups_.
-
-Groups are containers of sub-commands, and may themselves contain sub-groups.
+You may also specify groups; groups are containers of sub-commands, and may themselves contain sub-groups.
 
 Groups serve two purposes:
 
@@ -41,6 +45,8 @@ The group map is keyed on a command name, and its value defines the group; like 
 a group will contain keys for :namespaces, :title, :doc, and :groups (for more deeply nested groups).
 
 The group's :title is used in the tool help summary.
+
+Many of these options are optional; details in the [dispatch](dispatch.md) docs.
                
 ![Top Level Help](images/top-level-help.png)                              
 

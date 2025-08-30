@@ -1,6 +1,6 @@
 # Caching
 
-In order to operate, [[net.lewisship.cli-tools/dispatch]] has to load all namespaces, to execute the `defcommand` macros in each,
+In order to operate, `dispatch` has to load all namespaces, to execute the `defcommand` macros in each,
 and collect meta-data from all the namespaces and command functions.  Thanks to Babashka, this is extremely fast,
 but is made faster using caching.
 

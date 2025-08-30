@@ -3,8 +3,7 @@
 So far, we can define commands in namespaces using [[defcommand]], and we know how we can use [[dispatch]] to roll
 all of that into a single tools but what actually calls `dispatch`?.  This is where we create the actual command-line script.
 
-
-Following our prior example, we'll create a script named `app-admin`.  We'll put that in the `bin` directory of our project:
+Following our [prior example](defcommand.md), we'll create a script named `app-admin`.  We'll put that in the `bin` directory of our project:
 
 **bin/app-admin**:
 
