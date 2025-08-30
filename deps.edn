@@ -1,31 +1,22 @@
 {:paths ["src"
          "resources"]
- ;; Needed to build and test w/ clojure
- :deps  {org.clojure/clojure      {:mvn/version "1.12.1"}
-         org.clojure/tools.cli    {:mvn/version "1.1.230"}
-         org.clj-commons/pretty   {:mvn/version "3.6.2"}
-         org.clj-commons/humanize {:mvn/version "1.1"}
 
-         ;; Normally provided by Babashka, but needed when using cli-tools in a Clojure
-         ;; application:
-         babashka/fs              {:mvn/version "0.5.26"}
-         babashka/process         {:mvn/version "0.6.23"}
-         selmer/selmer            {:mvn/version "1.12.62"}}
+ :deps  {org.clj-commons/pretty   {:mvn/version "3.6.3"}
+         org.clj-commons/humanize {:mvn/version "1.1"}}
 
  :net.lewisship.build/scm
  {:url     "https://github.com/hlship/cli-tools"
   :license :asl}
 
  :aliases
- {
-  ;; clj -X:test
+ {;; clj -X:test
   :test
   {:extra-paths ["test" "test-resources"]
    :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
                                                        :git/sha "dfb30dd"}
                  io.github.hlship/trace               {:mvn/version "1.4"}
                  io.github.tonsky/clj-reload          {:mvn/version "0.9.8"}
-                 nubank/matcher-combinators           {:mvn/version "3.9.1"}
+                 nubank/matcher-combinators           {:mvn/version "3.9.2"}
                  babashka/babashka                    {:mvn/version "1.12.207"}}
    :exec-fn     cognitect.test-runner.api/test
    :jvm-opts    ["-Dclj-commons.ansi.enabled=true"]
@@ -33,7 +24,7 @@
    {:patterns [".*-tests?$"]}}
 
   :1.11
-  {:override-deps {org.clojure/clojure {:mvn/version "1.12.1"}}}
+  {:override-deps {org.clojure/clojure {:mvn/version "1.11.4"}}}
 
   :lint
   {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.07.28"}}

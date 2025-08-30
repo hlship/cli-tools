@@ -7,11 +7,10 @@
             net.lewisship.group-ns
             net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
-            [net.lewisship.cli-tools.aux :refer [with-err-str  with-exit-errors capture-result]]
+            [net.lewisship.cli-tools.test :refer [with-err-str  capture-result]]
+            [net.lewisship.cli-tools.aux :refer [with-exit-errors]]
             [clojure.repl :as repl])
   (:import (java.io BufferedReader StringReader)))
-
-(cli-tools/set-prevent-exit! true)
 
 (defn- dispatch
   [options]
@@ -529,4 +528,3 @@
               (-> nil
                   (inject-command ["foo" "bar"] {})
                   (inject-command ["foo" "bazz"] {})))))
-

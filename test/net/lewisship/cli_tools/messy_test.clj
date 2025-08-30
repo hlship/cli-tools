@@ -2,10 +2,8 @@
   (:require [clj-commons.ansi :as ansi]
             [clojure.string :as string]
             [net.lewisship.cli-tools :as cli]
-            [net.lewisship.cli-tools.aux :refer [capture-result]]
+            [net.lewisship.cli-tools.test :refer [capture-result]]
             [clojure.test :refer [deftest is]]))
-
-(cli/set-prevent-exit! true)
 
 (defn- dispatch [& args]
   (binding [ansi/*color-enabled* false]
@@ -58,5 +56,3 @@
 
  (capture "messy-nested-fail" "mess" "nomatch")
  )
-
-

@@ -17,6 +17,7 @@
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
 * Tool and command help is now printed to \*out\*, not \*err*\*
 * The builtin `help` command now as an option, `-c` / `--commands`, that can be one of `none`, `root`, or `all`, and the `--flat` switch was removed.
+* Dependencies no longer include those provided by Babashka itself (will need to add those for a Clojure project)
   
 *Changes*
 
@@ -34,6 +35,7 @@
         * Can handle "messy" case where a command has the same name as a group
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 * Added initial support for commands defined as Babashka CLI functions
+* Added `net.lewiship.cli-tools.test` namespace
 
 # 0.15.1 -- 27 Jan 2025
 
