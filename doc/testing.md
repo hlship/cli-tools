@@ -31,7 +31,7 @@ of the map to match the local symbols for the arguments and options.
 
 For testing purposes, you can bypass the parsing and validation, and just pass a single map to the function.
 The map must provide a keyword key for each option or positional argument; the keys match the option or argument symbols,
-even for options that normally have a default value. All normal option or argument validation is skipped.
+even for options that normally have a default value. All normal option or argument validation, parsing, and other processing is skipped.
 
 You may need to mock out `net.lewisship.cli-tools/print-errors` if your command
 invokes it, as that relies on some internal state from undocumented dynamically-bound vars.
@@ -47,3 +47,14 @@ throw an exception, which can be caught by tests.
 
 Further, application code should also invoke `net.lewisship.cli-tools/exit`
 rather than `System/exit`, for the same reasons.
+
+## net.lewisship.cli-tools.test
+
+This namespace contains a number of macros to assist when writing tests.
+
+Primarily, they are used to capture the standard output, standard error, or exit status when invoking a command function.
+
+> Add an example here.
+
+Using macros such as `with-split-out` works quite well with
+the [matcher-combinators](https://github.com/nubank/matcher-combinators) testing library.

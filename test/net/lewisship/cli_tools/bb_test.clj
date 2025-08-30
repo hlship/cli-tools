@@ -2,7 +2,7 @@
   (:require [clj-commons.ansi :as ansi]
             [clojure.test :refer [deftest is]]
             [net.lewisship.cli-tools :as cli]
-            [net.lewisship.cli-tools.aux :refer [capture-result]]))
+            [net.lewisship.cli-tools.test :refer [capture-result]]))
 
 (cli/set-prevent-exit! true)
 

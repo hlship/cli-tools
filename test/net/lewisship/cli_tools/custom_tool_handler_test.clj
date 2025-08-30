@@ -2,7 +2,7 @@
   (:require [clojure.test :refer [deftest is]]
             [net.lewisship.cli-tools :as cli-tools]
             [net.lewisship.cli-tools.alt-handler :as alt-handler]
-            [net.lewisship.cli-tools.aux :refer [capture-result]]))
+            [net.lewisship.cli-tools.test :refer [capture-result]]))
 
 (cli-tools/set-prevent-exit! true)
 
