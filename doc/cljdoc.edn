@@ -4,9 +4,13 @@
   ["Overview" {:file "doc/overview.md"}]
   ["Defcommand" {:file "doc/defcommand.md"}]
   ["Dispatch" {:file "doc/dispatch.md"}]
+  ["Script" {:file "doc/script.md"}]
+  ["Testing" {:file "doc/testing.md"}]
+  ["Linting" {:file "doc/lint.md"}]
+  ["Tips and Tricks" {:file "doc/tips.md"}]
   ["Babashka CLI" {:file "doc/babashka-cli.md"}]
   ["Caching" {:file "doc/caching.md"}]
   ["Transform" {:file "doc/transform.md"}]
-  ["Completions" {:file "doc/completions.md"}]
-  ]
- }
+  ["Experimental" {:file "doc/experimental.md"}
+   ["Completions" {:file "doc/completions.md"}]
+   ["Job Board" {:file "doc.jobs.md"}]]]}
