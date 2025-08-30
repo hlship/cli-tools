@@ -13,4 +13,4 @@
   ["Transform" {:file "doc/transform.md"}]
   ["Experimental" {:file "doc/experimental.md"}
    ["Completions" {:file "doc/completions.md"}]
-   ["Job Board" {:file "doc.jobs.md"}]]]}
+   ["Job Board" {:file "doc/jobs.md"}]]]}
