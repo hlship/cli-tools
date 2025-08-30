@@ -3,6 +3,7 @@
  [["Readme" {:file "README.md"}]
   ["Overview" {:file "doc/overview.md"}]
   ["Defcommand" {:file "doc/defcommand.md"}]
+  ["Babashka CLI" {:file "doc/babashka-cli.md"}]
   ["Dispatch" {:file "doc/dispatch.md"}]
   ["Babashka CLI" {:file "doc.bb-cli.md"}]
   ["Caching" {:file "doc/caching.md"}]

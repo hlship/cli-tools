@@ -969,28 +969,50 @@
        (mapcat (fn [[test expr]]
                  [(list not test) expr]))))
 
+(defn- cli-tools-command
+  [command-var]
+  (let [{:keys  [doc]
+         ::keys [command-name title]} (meta command-var)]
+    (when command-name
+      (cond->
+        {:fn      (symbol command-var)
+         ;; Commands have a full :doc and an optional short :title
+         ;; (the title defaults to the first sentence of the :doc
+         ;; if not provided)
+         :doc     doc
+         :command command-name}
+        title (assoc :title title)))))
+
+(defn- bb-cli-command
+  [command-var]
+  (let [{:keys              [doc]
+         :org.babashka/keys [cli]} (meta command-var)
+        {:keys [command title]} cli
+        command-name (or command (-> command-var meta :name str))]
+    (when cli
+      (cond-> {:fn                      'net.lewisship.cli-tools.bb-cli/wrapper
+               :org.babashka.cli/cli-fn (symbol command-var)
+               :doc     doc
+               :command command-name}
+        title (assoc :title title)))))
+
 (defn- collect-nested-commands
   [path in-namespace]
   (require in-namespace)
-  (->> in-namespace
-       find-ns
-       ns-publics
-       vals
-       (reduce (fn [result command-var]
-                 (let [{:keys  [doc]
-                        ::keys [command-name title]} (meta command-var)]
-                   (cond-> result
-                     command-name (assoc command-name
-                                         (cond->
-                                           {:fn           (symbol command-var)
-                                            ;; Commands have a full :doc and an optional short :title
-                                            ;; (the title defaults to the first sentence of the :doc
-                                            ;; if not provided)
-                                            :doc          doc
-                                            :command      command-name
-                                            :command-path (conj path command-name)}
-                                           title (assoc :title title))))))
-               {})))
+  (let [ns-vals (->> in-namespace
+                     find-ns
+                     ns-publics
+                     vals)]
+    (reduce (fn [m command-var]
+              (let [command      (or (cli-tools-command command-var)
+                                     (bb-cli-command command-var))
+                    command-name (:command command)]
+                (cond-> m
+                  command-name (assoc command-name
+                                      (assoc command
+                                             :command-path (conj path command-name))))))
+            {}
+            ns-vals)))
 
 
 (defn- build-command-group
