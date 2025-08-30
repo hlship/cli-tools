@@ -1,7 +1,6 @@
 (ns net.lewisship.cli-tools.impl-test
   (:require [clojure.test :refer [deftest is are use-fixtures]]
             [clj-commons.ansi :as ansi]
-            [net.lewisship.cli-tools :as cli]
             [net.lewisship.cli-tools.test :as test]
             [net.lewisship.cli-tools.impl :as impl :refer [compile-interface]]))
 
