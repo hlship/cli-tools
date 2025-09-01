@@ -5,8 +5,8 @@ sub-commands.
 
 At the core of `cli-tools` are two central components:
 
-* The `[defcommand](defcommand.md)` macro defined a special kind of function, a command function
-* The `[dispatch](dispatch.md)` function is the main entrypoint; it processes command line arguments and ultimately invokes the correct command function
+* The [defcommand](defcommand.md) macro defined a special kind of function, a command function
+* The [dispatch](dispatch.md) function is the main entrypoint; it processes command line arguments and ultimately invokes the correct command function
 
 A namespace may define any number of commands, and commands may be drawn from multiple namespaces.
 
