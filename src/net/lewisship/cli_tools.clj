@@ -239,11 +239,11 @@
   This function is passed the dispatch options, parses the default tool options, and delegates the rest to [[dispatch*]]."
   {:added "0.16.0"}
   [dispatch-options]
-  (let [{:keys [options arguments summary errors]
-         :as   result} (cli/parse-opts (:arguments dispatch-options)
-                                       default-tool-options
-                                       :in-order true
-                                       :summary-fn summarize-specs)
+  (let [{:keys [options arguments summary errors]}
+        (cli/parse-opts (:arguments dispatch-options)
+                        default-tool-options
+                        :in-order true
+                        :summary-fn summarize-specs)
         {:keys [color no-color help]} options
         color-flag (cond color true
                          no-color false)]
