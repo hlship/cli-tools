@@ -17,7 +17,7 @@
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
 * Tool and command help is now printed to \*out\*, not \*err*\*
 * The builtin `help` command now as an option, `-c` / `--commands`, that can be one of `none`, `root`, or `all`, and the `--flat` switch was removed.
-* Dependencies no longer include those provided by Babashka itself (will need to add those for a Clojure project)
+* Dependencies no longer include those provided by Babashka itself, reverting the change in 0.15.1; new documentation identifies what to add back in
   
 *Changes*
 
