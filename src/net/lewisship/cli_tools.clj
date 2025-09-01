@@ -247,8 +247,9 @@
         {:keys [color no-color help]} options
         color-flag (cond color true
                          no-color false)]
-    (when errors
-      (throw (ex-info "Tool parse sanity check" result)))
+    (when (seq errors)
+      (print-errors errors)
+      (exit 1))
 
     (dispatch* (-> dispatch-options
                    (assoc :arguments arguments
