@@ -49,6 +49,11 @@ a tool so that it can be installed as a Homebrew formula.
 
 > Note that dialog-tool uses a slightly earlier version of cli-tools.
 
+
+## Documentation
+
+Documentation starts with [the overview](doc/overview.md).
+
 ## Compatibility
 
 `cli-tools` is compatible with Clojure 1.11 and above, and w/ Babashka.
