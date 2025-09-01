@@ -7,7 +7,7 @@
             net.lewisship.group-ns
             net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
-            [net.lewisship.cli-tools.test :refer [with-err-str  capture-result]]
+            [net.lewisship.cli-tools.test :refer [with-err-str capture-result]]
             [net.lewisship.cli-tools.aux :refer [with-exit-errors]]
             [clojure.repl :as repl])
   (:import (java.io BufferedReader StringReader)))
@@ -20,8 +20,8 @@
 (use-fixtures
   :once
   (fn [f]
-    (binding [impl/*tool-options*  {:tool-name "harness"
-                                    :cache-dir nil}]
+    (binding [impl/*tool-options* {:tool-name "harness"
+                                   :cache-dir nil}]
       (f))))
 
 ;; An example to test around
@@ -101,6 +101,15 @@
   (dispatch {:tool-name  "harness"
              :namespaces ['net.lewisship.cli-tools-test]
              :arguments  args}))
+
+
+(deftest unknown-tool-option
+  (is (match? {:status 1
+               :out    ""
+               :err-lines
+               ["Error in harness: Unknown option: \"--unknown\""]}
+              (binding [ansi/*color-enabled* false]
+                (invoke-command "--unknown")))))
 
 (deftest standard-help
   (is (match? {:status 0
@@ -278,7 +287,7 @@
         commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}]
     (are [input values expected] (= expected (cli-tools/best-match input values))
 
-      "r" colors :red                                        ; multiple matches
+      "r" colors :red                                       ; multiple matches
       "red" colors :red                                     ; exact match
       "Red" colors :red                                     ; caseless
 
@@ -302,10 +311,10 @@
   [& args]
   (dispatch {:tool-name  "group-test"
              :namespaces '[net.lewisship.example-ns]
-             :groups {"group" {:namespaces '[net.lewisship.group-ns]
-                               :doc        "Grouped commands"
-                               :groups     {"nested" {:namespaces '[net.lewisship.cli-tools.group-nested]
-                                                      :doc        "Nested commands inside group"}}}}
+             :groups     {"group" {:namespaces '[net.lewisship.group-ns]
+                                   :doc        "Grouped commands"
+                                   :groups     {"nested" {:namespaces '[net.lewisship.cli-tools.group-nested]
+                                                          :doc        "Nested commands inside group"}}}}
              :arguments  args}))
 
 (deftest help-with-default-and-explicit-summary-grouped
@@ -478,7 +487,7 @@
                 (cli-tools/ask "Sort order?"
                                [:name :address :phone]
                                {:default :name
-                          :force?  true})))))
+                                :force?  true})))))
 
 (deftest ask-with-force-but-no-default
   (when-let [e (is (thrown? Exception
