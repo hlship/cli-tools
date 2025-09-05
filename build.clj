@@ -8,7 +8,8 @@
 (def version "0.16.0-alpha-7")
 
 (def jar-params {:project-name lib
-                 :version version})
+                 :version      version
+                 :aliases      [:pom]})
 
 (defn clean
   [_params]
