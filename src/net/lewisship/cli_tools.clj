@@ -30,6 +30,32 @@
   []
   (impl/command-path))
 
+(defn tool-name
+  "Returns the name of the command as a simple string."
+  {:added "0.16.0"}
+  []
+  (:tool-name impl/*tool-options*))
+
+(defn command-root
+  "Returns a map of the root-level commands, keyed on string (the command or group name) to
+  a command map.
+
+  A command map describes a command, group, or command/group combo:
+
+  :command - name of the command (e.g. `\"create\"`)
+  :command-path - seq of commands leading to this command (e.g. `[\"customer\" \"create\"]`)
+  :fn - If a command, symbol for function to invoked
+  :subs - map of string to sub-command (if a group or command/group combo)
+  :doc - long documentation for this command
+  :group-doc - long documentation for this group
+  :title - optional short documentation for command or group
+
+  This is useful for code that needs visibility into all available commands (such as
+  the built-in help command)."
+  {:added "0.16.0"}
+  []
+  (:command-root impl/*tool-options*))
+
 (defn abort
   "Invoked when a tool has a runtime failure.  The messages, composed strings, are
   printed to `*err*` and then [[exit]] is invoked.
