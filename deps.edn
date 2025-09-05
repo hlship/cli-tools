@@ -1,7 +1,7 @@
 {:paths ["src"
          "resources"]
 
- :deps  {org.clj-commons/pretty   {:mvn/version "3.6.3"}
+ :deps  {org.clj-commons/pretty   {:mvn/version "3.6.4"}
          org.clj-commons/humanize {:mvn/version "1.1"}}
 
  :net.lewisship.build/scm
@@ -17,7 +17,7 @@
                  io.github.hlship/trace               {:mvn/version "1.4"}
                  io.github.tonsky/clj-reload          {:mvn/version "0.9.8"}
                  nubank/matcher-combinators           {:mvn/version "3.9.2"}
-                 babashka/babashka                    {:mvn/version "1.12.207"}}
+                 babashka/babashka                    {:mvn/version "1.12.208"}}
    :exec-fn     cognitect.test-runner.api/test
    :jvm-opts    ["-Dclj-commons.ansi.enabled=true"]
    :exec-args
@@ -25,7 +25,7 @@
 
   :pom
   {:extra-deps {org.clojure/tools.cli {:mvn/version "1.1.230" :optional true}
-                babashka/fs           {:mvn/version "0.5.26" :optional true}
+                babashka/fs           {:mvn/version "0.5.27" :optional true}
                 babashka/process      {:mvn/version "0.6.23" :optional true}
                 selmer/selmer         {:mvn/version "1.12.62" :optional true}
                 org.babashka/cli      {:mvn/version "0.8.66" :optional true}}}
