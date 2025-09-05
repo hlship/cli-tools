@@ -42,7 +42,7 @@
 
 (defn- update-digest-recursively
   [digest ^File root]
-  (let [paths (fs/glob root "**.clj*")]
+  (let [paths (fs/glob root "**")]
     (run! #(update-digest-from-file-contents digest %) paths)))
 
 (defn- update-digest
@@ -103,4 +103,3 @@
   (get-classpath)
   (get-split-classpath)
   )
-
