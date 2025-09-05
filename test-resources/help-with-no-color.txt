@@ -12,4 +12,5 @@ Commands:
               help: List available commands
           in-order: Execute remote command
           set-mode: Sets the execution mode
+         tool-info: Echoes the tool name and root command map keys
           validate: validate command

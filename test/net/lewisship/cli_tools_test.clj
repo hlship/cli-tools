@@ -55,6 +55,15 @@
    v ["VAL" "Value to set"]]
   [k v])
 
+(defcommand tool-info
+  "Echoes the tool name and root command map keys."
+  []
+  (println "Tool name:" (cli-tools/tool-name))
+  (println "Commands:" (->> (cli-tools/command-root)
+                            keys
+                            sort
+                            (string/join ", "))))
+
 (defn prep-input
   [input]
   (-> (str (if (vector? input)
@@ -102,6 +111,12 @@
              :namespaces ['net.lewisship.cli-tools-test]
              :arguments  args}))
 
+
+(deftest tool-options-access
+  (is (match? {:status    0
+               :out-lines ["Tool name: harness"
+                           "Commands: collect, configure, default-variants, help, in-order, set-mode, tool-info, validate"]}
+              (invoke-command "tool-info"))))
 
 (deftest unknown-tool-option
   (is (match? {:status 1
