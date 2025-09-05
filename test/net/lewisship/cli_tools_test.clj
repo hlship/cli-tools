@@ -2,7 +2,6 @@
   (:require [clj-commons.ansi :as ansi :refer [compose]]
             [clojure.string :as string]
             [clojure.test :refer [deftest is use-fixtures are]]
-            [net.lewisship.cli-tools :as cli]
             [net.lewisship.cli-tools :as cli-tools :refer [defcommand select-option inject-command]]
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
@@ -59,8 +58,8 @@
 (defcommand tool-info
   "Echoes the tool name and root command map keys."
   []
-  (println "Tool name:" (cli/tool-name))
-  (println "Commands:" (->> (cli/command-root)
+  (println "Tool name:" (cli-tools/tool-name))
+  (println "Commands:" (->> (cli-tools/command-root)
                             keys
                             sort
                             (string/join ", "))))
