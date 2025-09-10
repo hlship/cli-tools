@@ -130,7 +130,7 @@
       (impl/dispatch {:tool-name    "loco"
                       :command-root {"help" {:fn ::placeholder}}
                       :arguments    ["-no-such-option"]})
-      (is (= "loco: no command provided, use loco help to list commands"
+      (is (= "loco: no command provided, use loco --help (or -h) to list commands"
              @*message*))
 
       (reset! *message* nil)

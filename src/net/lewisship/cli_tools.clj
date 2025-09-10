@@ -195,7 +195,7 @@
   "Default tool command line options."
   [["-C" "--color" "Enable ANSI color output"]
    ["-N" "--no-color" "Disable ANSI color output"]
-   ["-h" "--help" "This tool summary"]])
+   ["-h" "--help" "This command summary"]])
 
 (defn- expand-tool-options
   "Expanded dispatch options into tool options, leveraging a cache."

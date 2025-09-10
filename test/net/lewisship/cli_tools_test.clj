@@ -356,9 +356,9 @@
        :out
        (spit "test-resources/tool-help-grouped.txt"))
 
-  (->> (exec-group "gr")
+  (->> (exec-group "gr" "nested")
        :err
-       (spit "test-resources/help-incomplete.txt"))
+       (spit "test-resources/help-incomplete-nested.txt"))
 
   )
 

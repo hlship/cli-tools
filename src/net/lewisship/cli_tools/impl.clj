@@ -840,32 +840,29 @@
       ;; Otherwise, treat s as a match string and find any values that loosely match it.
       (sort (filter (to-matcher s) values')))))
 
+(def ^:private help
+  (list
+    [:bold.green "--help"] " (or " [:bold.green "-h"] ") to list commands"))
+
 (defn- use-help-message
   [tool-name]
-  (list ", use " [:bold.green tool-name " help"] " to list commands"))
+  (list ", use " [:bold.green tool-name] " " help))
 
 (defn- no-command
   [tool-name]
   (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name)))
 
-(def ^:private help
-  (list
-    [:bold.green "--help"] " (or " [:bold.green "-h"] ")"))
-
 (defn- incomplete
   [tool-name command-path matchable-terms]
   (abort
     [:bold.green tool-name ": "
-     (string/join " " (butlast command-path))
-     (when (> (count command-path) 1) " ")
-     [:red (last command-path)]]
+     (string/join " " command-path)]
     " is incomplete; "
     (compose-list matchable-terms)
     " could follow; use "
     (compose-command-path tool-name command-path)
     " "
-    help
-    " to list commands"))
+    help))
 
 (defn- no-match
   [tool-name command-path term matched-terms matchable-terms]
@@ -878,8 +875,7 @@
                       "; use "
                       (compose-command-path tool-name command-path)
                       " "
-                      help
-                      " to list commands")]
+                      help)]
     (abort
       [:bold [:green tool-name] ": "
        [:green (string/join " " command-path)]
