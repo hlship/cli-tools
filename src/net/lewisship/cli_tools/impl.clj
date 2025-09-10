@@ -25,17 +25,20 @@
 
 (def ^:private supported-keywords #{:in-order :args :options :command :title :let :validate})
 
+(defn- compose-command-path
+  [tool-name command-path]
+  (when tool-name
+    [:bold.green
+     tool-name
+     (when (seq command-path)
+       (list
+         " "
+         (string/join " " command-path)))]))
+
 (defn command-path
   []
-  (let [{:keys [tool-name]} *tool-options*
-        path (:command-path *command-map*)]
-    (when tool-name
-      [:bold.green
-       tool-name
-       (when (seq path)
-         (list
-           " "
-           (string/join " " path)))])))
+  (compose-command-path (:tool-name *tool-options*)
+                        (:command-path *command-map*)))
 
 (defn exit
   [status]
@@ -837,9 +840,13 @@
       ;; Otherwise, treat s as a match string and find any values that loosely match it.
       (sort (filter (to-matcher s) values')))))
 
+(def ^:private help
+  (list
+    [:bold.green "--help"] " (or " [:bold.green "-h"] ") to list commands"))
+
 (defn- use-help-message
   [tool-name]
-  (list ", use " [:bold.green tool-name " help"] " to list commands"))
+  (list ", use " [:bold.green tool-name] " " help))
 
 (defn- no-command
   [tool-name]
@@ -849,14 +856,13 @@
   [tool-name command-path matchable-terms]
   (abort
     [:bold.green tool-name ": "
-     (string/join " " (butlast command-path))
-     (when (> (count command-path) 1) " ")
-     [:red (last command-path)]]
+     (string/join " " command-path)]
     " is incomplete; "
     (compose-list matchable-terms)
     " could follow; use "
-    [:bold [:green tool-name " " (string/join " " command-path) " --help (or -h)"]]
-    " to list commands"))
+    (compose-command-path tool-name command-path)
+    " "
+    help))
 
 (defn- no-match
   [tool-name command-path term matched-terms matchable-terms]
@@ -867,13 +873,9 @@
                             (compose-list matchable-terms)))
         help-suffix (list
                       "; use "
-                      [:bold [:green tool-name " "
-                              (if (seq command-path)
-                                (string/join " " command-path)
-                                "help")]]
-                      (when (seq command-path)
-                        " --help (or -h)")
-                      " to list commands")]
+                      (compose-command-path tool-name command-path)
+                      " "
+                      help)]
     (abort
       [:bold [:green tool-name] ": "
        [:green (string/join " " command-path)]
@@ -1055,4 +1057,3 @@
                             transformer (transformer dispatch-options))]
     {:tool-name tool-name'
      :command-root root'}))
-

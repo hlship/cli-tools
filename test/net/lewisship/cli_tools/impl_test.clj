@@ -130,7 +130,7 @@
       (impl/dispatch {:tool-name    "loco"
                       :command-root {"help" {:fn ::placeholder}}
                       :arguments    ["-no-such-option"]})
-      (is (= "loco: no command provided, use loco help to list commands"
+      (is (= "loco: no command provided, use loco --help (or -h) to list commands"
              @*message*))
 
       (reset! *message* nil)
@@ -139,7 +139,7 @@
                       :command-root {"help" {:fn ::placeholder}}
                       :arguments    ["no-such-command"]})
 
-      (is (= "bravo: no-such-command is not a command, expected help; use bravo help to list commands"
+      (is (= "bravo: no-such-command is not a command, expected help; use bravo --help (or -h) to list commands"
              @*message*)))))
 
 (deftest compose-list-tests

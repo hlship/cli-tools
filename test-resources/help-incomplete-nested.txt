@@ -1,1 +1,1 @@
-[0;32;1mgroup-test: group [0;31;1mnested[m is incomplete; [0;32;1mbutterfly[m or [0;32;1mleaf[m could follow; use [0;32;1mgroup-test group nested --help (or -h)[m to list commands
+[0;32;1mgroup-test: group nested[m is incomplete; [0;32;1mbutterfly[m or [0;32;1mleaf[m could follow; use [0;32;1mgroup-test group nested[m [0;32;1m--help[m (or [0;32;1m-h[m) to list commands
