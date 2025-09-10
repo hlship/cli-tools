@@ -356,6 +356,10 @@
        :out
        (spit "test-resources/tool-help-grouped.txt"))
 
+  (->> (exec-group "gr")
+       :err
+       (spit "test-resources/help-incomplete.txt"))
+
   )
 
 (deftest can-find-a-grouped-command
@@ -382,7 +386,7 @@
     (is (match? {:err "group-test: group e could match echo or edit; use group-test group --help (or -h) to list commands\n"}
                 (exec-group "g" "e" "multiple")))
 
-    (is (match? {:err "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test help to list commands\n"}
+    (is (match? {:err "group-test: echo is not a command, expected default, explicit, group (or one other); use group-test --help (or -h) to list commands\n"}
                 (exec-group "echo" "wrong-level")))))
 
 (deftest select-option-no-default

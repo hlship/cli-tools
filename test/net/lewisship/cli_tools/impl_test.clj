@@ -139,7 +139,7 @@
                       :command-root {"help" {:fn ::placeholder}}
                       :arguments    ["no-such-command"]})
 
-      (is (= "bravo: no-such-command is not a command, expected help; use bravo help to list commands"
+      (is (= "bravo: no-such-command is not a command, expected help; use bravo --help (or -h) to list commands"
              @*message*)))))
 
 (deftest compose-list-tests

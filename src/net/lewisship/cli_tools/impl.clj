@@ -25,17 +25,20 @@
 
 (def ^:private supported-keywords #{:in-order :args :options :command :title :let :validate})
 
+(defn- compose-command-path
+  [tool-name command-path]
+  (when tool-name
+    [:bold.green
+     tool-name
+     (when (seq command-path)
+       (list
+         " "
+         (string/join " " command-path)))]))
+
 (defn command-path
   []
-  (let [{:keys [tool-name]} *tool-options*
-        path (:command-path *command-map*)]
-    (when tool-name
-      [:bold.green
-       tool-name
-       (when (seq path)
-         (list
-           " "
-           (string/join " " path)))])))
+  (compose-command-path (:tool-name *tool-options*)
+                        (:command-path *command-map*)))
 
 (defn exit
   [status]
@@ -845,6 +848,10 @@
   [tool-name]
   (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name)))
 
+(def ^:private help
+  (list
+    [:bold.green "--help"] " (or " [:bold.green "-h"] ")"))
+
 (defn- incomplete
   [tool-name command-path matchable-terms]
   (abort
@@ -855,7 +862,9 @@
     " is incomplete; "
     (compose-list matchable-terms)
     " could follow; use "
-    [:bold [:green tool-name " " (string/join " " command-path) " --help (or -h)"]]
+    (compose-command-path tool-name command-path)
+    " "
+    help
     " to list commands"))
 
 (defn- no-match
@@ -867,12 +876,9 @@
                             (compose-list matchable-terms)))
         help-suffix (list
                       "; use "
-                      [:bold [:green tool-name " "
-                              (if (seq command-path)
-                                (string/join " " command-path)
-                                "help")]]
-                      (when (seq command-path)
-                        " --help (or -h)")
+                      (compose-command-path tool-name command-path)
+                      " "
+                      help
                       " to list commands")]
     (abort
       [:bold [:green tool-name] ": "
@@ -1055,4 +1061,3 @@
                             transformer (transformer dispatch-options))]
     {:tool-name tool-name'
      :command-root root'}))
-
