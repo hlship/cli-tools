@@ -575,7 +575,7 @@
   The final term of the command path is the name of the command itself.
 
   A command map has keys:
-  - :fn (keyword, required) - identifies function to invoke
+  - :fn (symbol, required) - identifies function to invoke
   - :doc (string, required) - long description of the command
   - :title (string, optional) - short description of the command
   "
