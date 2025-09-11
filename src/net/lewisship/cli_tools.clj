@@ -585,3 +585,40 @@
                             :command (last command-path)
                             :command-path command-path)]
     (inject command-root command-path [] command-map')))
+
+(defn read-password
+  "Reads a line of password input from the console.  This will abort if there is no console, or
+  (by default) if the input is blank.
+
+  Returns the value input, with newlines trimmed.
+
+  The prompt is a composed string that is printed before input is read; it often ends in \": \".
+
+  Input from the console is not echoed.  On some platforms, the cursor may change to indicate
+  that a password is being read (on OS X, the cursor is changed to a key),
+
+  Options:
+
+  allow-blank? - if true, do not abort if the input is a blank string."
+  {:added "0.16.0"}
+  ([prompt]
+   (read-password prompt nil))
+  ([prompt opts]
+   (let [{:keys [allow-blank?]
+          :or   {allow-blank? false}} opts
+         console (System/console)
+         _       (do
+                   (when-not console
+                     (abort [:bold.red "Error:"] " no console to read password from"))
+
+                   (print (ansi/compose prompt))
+                   (flush))
+         chs     (.readPassword console)
+         s       (if chs
+                   (-> (String. chs)
+                       string/trim-newline)
+                   "")]
+     (when (and (string/blank? s)
+                (not allow-blank?))
+       (abort [:bold.red "Error:"] " password input may not be blank"))
+     s)))

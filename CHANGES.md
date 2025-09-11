@@ -14,9 +14,6 @@
     * The two-arg variant of `print-errors` has been removed
     * `dispatch*` function arguments have changed
     * `expand-dispatch-options` has been removed
-    * Added function `tool-name`
-    * Added function `command-root`
-    * Added function `command-path`
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
 * Tool and command help is now printed to \*out\*, not \*err*\*
 * The builtin `help` command now as an option, `-c` / `--commands`, that can be one of `none`, `root`, or `all`, and the `--flat` switch was removed.
@@ -30,12 +27,15 @@
 * Tool help now displays just root-level commands by default (add `--commands all` to list nested commands)
 * When extracting the first sentence as the single-line index, embedded periods are no longer considered the end of the sentence
 * `net.lewisship.cli-tools`:
+    * Added function `tool-name`
+    * Added function `command-root`
+    * Added function `read-password`
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:
         * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
         * :transformer provides a function to add additional commands and groups after namespaces are loaded
         * :source-dirs specifies extra directories to consider when caching
-        * Can handle "messy" case where a command has the same name as a group
+        * Can now handle "messy" case where a command has the same name as a group
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 * Added initial support for commands defined as Babashka CLI functions
 * Added `net.lewiship.cli-tools.test` namespace
