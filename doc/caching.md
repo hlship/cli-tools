@@ -27,10 +27,11 @@ to [[dispatch]].
 
 ## Cache Keys
 
-Inside `dispatch`, a cache key is generated from:
+Inside `dispatch`, a cache key is a digest generated from:
 
 - The paths of all libraries on the classpath
-- The last-modified timestamp of all source files on the classpath
+- The last-modified timestamp of all files on the classpath (i.e., the `src` directory)
+- The last-modified timestamp of all files inside an _extra_ source directory
 - A subset of the values in the `dispatch` options map
 
 Once a key is generated, the fully expanded dispatch data is read from the corresponding file, if it exists.
@@ -51,4 +52,4 @@ The :cache-dir may also be a java.nio.file.Path instance for where the cache fil
 
 ## Extra Caching
 
-The :source-dirs `dispatch` option may be a seq of path names; the files in these directories will be added to the cache key; this might be used by the :transform `dispatch` option if some commands are defined externally.
+The :source-dirs `dispatch` option may be a seq of path names; the files in these directories will be reflected in the cache digest key; this might be used by the :transform `dispatch` option if some commands are defined externally.
