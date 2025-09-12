@@ -238,43 +238,6 @@
       (continuation))
     (continuation)))
 
-(defn- default-tool-handler
-  "Calls cli/parse-opts to parse arguments into an options map and additional arguments
-  (the command path, and the arguments and options of the command).
-
-  Support for:
-  - :extra-tool-options - vector of parse options at the tool level, prefixes the defaults
-  - :tool-options-handler - passed the parsed options map and the dispatch options and a callback
-
-  Handles the -C / -N color options, and the -h help option (by changing the arguments to be just \"help\")."
-  [dispatch-options]
-  (let [{:keys [extra-tool-options tool-options-handler]} dispatch-options
-        full-options      (concat extra-tool-options default-tool-options)
-        {:keys [options arguments summary errors]}
-        (cli/parse-opts (:arguments dispatch-options)
-                        full-options
-                        :in-order true
-                        :summary-fn summarize-specs)
-        {:keys [color no-color help]} options
-        color-flag (cond color true
-                         no-color false)
-        arguments'        (if help
-                            ["help"]
-                            arguments)
-        dispatch-options' (assoc dispatch-options :arguments arguments'
-                                 :tool-summary summary)]
-    (color-wrapper color-flag
-                   (fn []
-                     (when (seq errors)
-                       (print-errors errors)
-                       (exit 1))
-
-                     (if tool-options-handler
-                       (tool-options-handler options
-                                             dispatch-options'
-                                             dispatch*)
-                       (dispatch* dispatch-options'))))))
-
 (def ^:private default-dispatch-options
   {:cache-dir (or (some-> (System/getenv "CLI_TOOLS_CACHE_DIR")
                           fs/expand-home)
@@ -330,11 +293,37 @@
 
   Returns nil."
   [dispatch-options]
-  (let [options' (merge {:arguments *command-line-args*}
-                        default-dispatch-options
-                        dispatch-options)
-        {:keys [handler]} options']
-    (default-tool-handler options')))
+  (let [merged-options    (merge {:arguments *command-line-args*}
+                                 default-dispatch-options
+                                 dispatch-options)
+        {:keys [extra-tool-options tool-options-handler]} merged-options
+        full-options      (concat extra-tool-options default-tool-options)
+        {:keys [options arguments summary errors]}
+        (cli/parse-opts (:arguments merged-options)
+                        full-options
+                        :in-order true
+                        :summary-fn summarize-specs)
+        {:keys [color no-color help]} options
+        color-flag        (cond color true
+                                no-color false)
+        arguments'        (if help
+                            ["help"]
+                            arguments)
+        dispatch-options' (assoc merged-options :arguments arguments'
+                                 :tool-summary summary)
+        callback          (fn ([]
+                               (dispatch* dispatch-options'))
+                            ([arguments]
+                             (dispatch* (assoc dispatch-options' :arguments arguments))))]
+    (color-wrapper color-flag
+                   (fn []
+                     (when (seq errors)
+                       (print-errors errors)
+                       (exit 1))
+
+                     (if tool-options-handler
+                       (tool-options-handler options dispatch-options' callback)
+                       (dispatch* dispatch-options'))))))
 
 (defn select-option
   "Builds a standard option spec for selecting from a list of possible values.

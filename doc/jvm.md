@@ -18,4 +18,4 @@ If using [zsh completions](completions.md):
 
 If [defining commands using babaska.cli](babashka-cli.md):
 
-    org.babashka/cli {:mvn/version "0.8.66"}
+    org.babashka/cli         {:mvn/version "0.8.66"}

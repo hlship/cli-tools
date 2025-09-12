@@ -6,6 +6,7 @@
   ["Dispatch" {:file "doc/dispatch.md"}]
   ["Script" {:file "doc/script.md"}]
   ["Testing" {:file "doc/testing.md"}]
+  ["Extra Options" {:file "doc/extra-options.md"}]
   ["JVM Specific" {:file "doc/jvm.md"}]
   ["Linting" {:file "doc/lint.md"}]
   ["Tips and Tricks" {:file "doc/tips.md"}]

@@ -4,9 +4,9 @@
 (def ^:dynamic *global-state* nil)
 
 (defn- my-handler
-  [{:keys [global]} dispatch-options callback]
+  [{:keys [global]} _dispatch-options callback]
   (binding [*global-state* global]
-    (callback dispatch-options)))
+    (callback)))
 
 (defcommand print-state
   "Prints the global state."
