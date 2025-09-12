@@ -61,14 +61,12 @@
     (str sb)))
 
 (defn classpath-digest
-  "Passed digest options, return a hex string of the SHA-1 digest of the opts and the classpath."
-  ^String [digest-options]
-  (let [{:keys [source-dirs]} digest-options
+  "Passed the tool options, return a hex string of the SHA-1 digest of the files from the classpath and
+  extra source directories."
+  ^String [tool-options]
+  (let [{:keys [source-dirs]} tool-options
         digest       (MessageDigest/getInstance "SHA-1")
-        ;; The options determine critical things such as the namespaces that
-        ;; will be scanned for defcommands.
         digest-bytes (do
-                       (update-digest-from-string digest (pr-str digest-options))
                        (run! #(update-digest digest %) (get-split-classpath))
                        (->> source-dirs
                             (map fs/file)
@@ -77,29 +75,19 @@
     (hex-string digest-bytes)))
 
 (defn read-from-cache
-  [cache-root digest]
-  (let [f (fs/file cache-root (str digest ".edn"))]
-    (when (fs/exists? f)
+  [cache-root tool-name digest]
+  (let [cache-file (fs/file cache-root tool-name (str digest ".edn"))]
+    (when (fs/exists? cache-file)
       (try
-        (-> f slurp edn/read-string)
+        (-> cache-file slurp edn/read-string)
         (catch Exception e
           (perr [:yellow "Exception reading from cache: " (ex-message e)])
           nil)))))
 
 (defn write-to-cache
-  [cache-root digest cache-data]
-  (let [_ (when-not (fs/exists? cache-root)
-            (fs/create-dirs cache-root))
-        f (fs/file cache-root (str digest ".edn"))]
-    (spit f (pr-str cache-data))))
-
-(comment
-  (hash-classpath {:foo 1})
-
-  (-> (System/getProperties) keys sort)
-
-  (fs/glob (fs/file "target") "**.clj*")
-
-  (get-classpath)
-  (get-split-classpath)
-  )
+  [cache-root tool-name digest cache-data]
+  (let [cache-file (fs/file cache-root tool-name (str digest ".edn"))
+        dir        (fs/parent cache-file)]
+    (when-not (fs/exists? dir)
+      (fs/create-dirs dir))
+    (spit cache-file (pr-str cache-data))))
