@@ -12,7 +12,7 @@
         * The :as keyword is no longer supported
     * `abort` has been stripped down, it no longer writes the tool name, command path, etc.
     * The two-arg variant of `print-errors` has been removed
-    * `dispatch*` function arguments have changed
+    * `dispatch*` has been removed
     * `expand-dispatch-options` has been removed
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
 * Tool and command help is now printed to \*out\*, not \*err*\*
@@ -32,7 +32,8 @@
     * Added function `read-password`
     * New `command-path` function returns a composed string of the tool name and command path
     * `dispatch` function has new options:
-        * :handler is a function to handle top-level tool options (then delegate to `dispatch*`)
+        * :extra-tool-options - vector of additional tool options to prefix the default
+        * :tool-options-handler - callback function for handling extra tool options
         * :transformer provides a function to add additional commands and groups after namespaces are loaded
         * :source-dirs specifies extra directories to consider when caching
         * Can now handle "messy" case where a command has the same name as a group

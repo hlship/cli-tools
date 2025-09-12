@@ -10,6 +10,8 @@
                                            ::arguments
                                            ::groups
                                            ::transformer
+                                           ::tool-options-handler
+                                           ::extra-tool-options
                                            ::source-dirs
                                            ::cache-dir]))
 
@@ -32,6 +34,10 @@
 (s/def ::cache-dir (s/nilable #(instance? Path %)))
 
 (s/def ::transformer fn?)
+
+(s/def ::extra-tool-options vector?)
+
+(s/def ::tool-options-handler fn?)
 
 (s/def ::source-dirs (s/coll-of string?))
 

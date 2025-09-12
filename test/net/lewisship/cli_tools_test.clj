@@ -15,7 +15,7 @@
 (defn- dispatch
   [options]
   (capture-result
-    (cli-tools/dispatch options)))
+    (cli-tools/dispatch (assoc options :cache-dir nil))))
 
 (use-fixtures
   :once
