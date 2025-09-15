@@ -9,7 +9,7 @@
   "List available commands.
 
    If a search term is provided, the --commands option is ignored."
-  [output-level (cli/select-option "-c" "--commands FILTER" "Print commands: " #{:none :root :all}
+  [output-level (cli/select-option "-c" "--commands FILTER" "Print commands:" #{:none :root :all}
                                    :default :default)
    :args
    search-term ["SEARCH" "Filter shown commands to those that match this term"

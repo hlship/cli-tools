@@ -2,7 +2,7 @@
   "Commands defined using babashka.cli")
 
 (defn alpha
-  "This command take a symbol and a long."
+  "This command takes a symbol and a long."
   {:org.babashka/cli {:coerce {:a :symbol
                                :b :long}}}
   [args]

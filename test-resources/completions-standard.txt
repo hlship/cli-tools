@@ -42,7 +42,7 @@ _standard_colors() {
 
 _standard_help() {
     _arguments -s  \
-      '(-c --commands)'{-c,--commands}$'[Print commands:  all, none, root]':FILTER  \
+      '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
       '(-h --help)'{-h,--help}$'[This command summary]' 
 }
 

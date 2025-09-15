@@ -1,0 +1,70 @@
+#compdef _bb bb
+
+_bb() {
+  local line state
+
+  _arguments -C \
+    "1: :->cmds" \
+    "*::arg:->args"
+
+   case "$state" in
+     cmds)
+        _values "bb command"  \
+            "completions[Generate zsh command completions]"  \
+            "help[List available commands]"  \
+            "bb-cli[Commands defined using babashka.cli]" 
+        ;;
+     args)
+       case $line[1] in 
+         completions) _bb_completions ;;
+
+         help) _bb_help ;;
+
+         bb-cli) _bb_bb_cli ;;
+
+       esac
+       ;;
+   esac
+}
+
+_bb_completions() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_bb_help() {
+    _arguments -s  \
+      '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_bb_bb_cli() {
+  local state line
+
+  _arguments -C \
+      "1: :->cmds" \
+      "*::arg:->args"
+
+  case "$state" in
+     cmds)
+       _values "bb bb-cli subcommands"  \
+         "find[Find by id]"  \
+         "alpha[This command takes a symbol and a long]" 
+       ;;
+     args)
+       case $line[1] in 
+         find) _bb_bb_cli_find ;; 
+         alpha) _bb_bb_cli_alpha ;; 
+       esac
+       ;;
+  esac
+}
+
+_bb_bb_cli_find() {
+    _arguments -s 
+}
+
+_bb_bb_cli_alpha() {
+    _arguments -s 
+}
+
