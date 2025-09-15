@@ -7,15 +7,14 @@
 
   case "$state" in
      cmds)
-       _values "{{tool}} {{group.name}} subcommands" {% for sub in group.subs %} \
+       _values "{{tool}} {{group.name}} subcommands" {% for sub in group.subs | sort-by:name %} \
          "{{sub.name}}[{{sub.summary}}]" {% endfor %}
        ;;
      args)
-       case $line[1] in {% for sub in group.subs %}
+       case $line[1] in {% for sub in group.subs | sort-by:name %}
          {{sub.name}}) {{sub.fn-name}} ;; {% endfor %}
        esac
        ;;
   esac
 }
-
 

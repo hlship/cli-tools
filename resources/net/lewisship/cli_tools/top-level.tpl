@@ -9,11 +9,11 @@ _{{tool}}() {
 
    case "$state" in
      cmds)
-        _values "{{tool}} command" {% for cmd in commands %} \
+        _values "{{tool}} command" {% for cmd in commands | sort-by:name %} \
             "{{cmd.name}}[{{cmd.summary}}]" {% endfor %}
         ;;
      args)
-       case $line[1] in {% for cmd in commands %}
+       case $line[1] in {% for cmd in commands | sort-by:name %}
          {{cmd.name}}) {{cmd.fn-name}} ;;
 {% endfor %}
        esac

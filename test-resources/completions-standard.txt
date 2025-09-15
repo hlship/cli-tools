@@ -1,0 +1,80 @@
+#compdef _standard standard
+
+_standard() {
+  local line state
+
+  _arguments -C \
+    "1: :->cmds" \
+    "*::arg:->args"
+
+   case "$state" in
+     cmds)
+        _values "standard command"  \
+            "completions[Generate zsh command completions]"  \
+            "colors[Shows available foreground and background colors]"  \
+            "help[List available commands]"  \
+            "group-a[Group example namespace]" 
+        ;;
+     args)
+       case $line[1] in 
+         completions) _standard_completions ;;
+
+         colors) _standard_colors ;;
+
+         help) _standard_help ;;
+
+         group-a) _standard_group_a ;;
+
+       esac
+       ;;
+   esac
+}
+
+_standard_completions() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_standard_colors() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_standard_help() {
+    _arguments -s  \
+      '(-c --commands)'{-c,--commands}$'[Print commands:  all, none, root]':FILTER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_standard_group_a() {
+  local state line
+
+  _arguments -C \
+      "1: :->cmds" \
+      "*::arg:->args"
+
+  case "$state" in
+     cmds)
+       _values "standard group-a subcommands"  \
+         "edit[Edit a whatever]"  \
+         "echo[Echo a string]" 
+       ;;
+     args)
+       case $line[1] in 
+         edit) _standard_group_a_edit ;; 
+         echo) _standard_group_a_echo ;; 
+       esac
+       ;;
+  esac
+}
+
+_standard_group_a_edit() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_standard_group_a_echo() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
