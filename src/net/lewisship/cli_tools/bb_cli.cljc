@@ -9,10 +9,9 @@
 
 (defn wrapper
   [& args]
-  (if impl/*introspection-mode*
+  (when-not impl/*introspection-mode*
     ;; TODO: Might be able to look at the meta on the var to identify the cli spec
     ;; and options from that.
-    (select-keys impl/*command-map* [:title])
     (let [{:org.babashka.cli/keys [cli-fn]
            :keys                  [command-path]} impl/*command-map*]
       (try

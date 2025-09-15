@@ -19,7 +19,7 @@
 (deftest can-find-cli-commands
   (is (match?
         {:status 0
-         :out    "bb - BB CLI commands\n\nCommands:\n  alpha: This command take a symbol and a long\n   find: Find by id\n"}
+         :out    "bb - BB CLI commands\n\nCommands:\n  alpha: This command takes a symbol and a long\n   find: Find by id\n"}
         (dispatch "bb" "-h"))))
 
 (deftest can-invoke-command-with-default-name
