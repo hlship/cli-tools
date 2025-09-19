@@ -198,13 +198,14 @@
    ["-h" "--help" "This command summary"]])
 
 (defn- expand-tool-options
-  "Expanded dispatch options into tool options, leveraging a cache."
+  "Expand dispatch options into tool options, leveraging a cache."
   [options]
-  (let [{:keys [tool-name cache-dir]} options
+  (let [{:keys [tool-name cache-dir cache-digest]} options
         cache-dir'     (when cache-dir
                          (fs/expand-home cache-dir))
         digest         (when cache-dir'
-                         (cache/classpath-digest options))
+                         (or cache-digest
+                             (cache/classpath-digest options)))
         cached         (when digest
                          (cache/read-from-cache cache-dir' tool-name digest))
         result         (if cached
@@ -214,12 +215,17 @@
                              (cache/write-to-cache cache-dir' tool-name digest expanded))
                            expanded))]
     (merge result
-           (select-keys options [:tool-name :doc :arguments :tool-summary]))))
+           {:cache-digest digest}
+           (select-keys options [:tool-name :doc :arguments :tool-summary :pre-dispatch]))))
 
 (defn- dispatch*
   "Called (indirectly/anonymously) from a tool handler to process remaining command line arguments."
   [dispatch-options]
-  (-> dispatch-options expand-tool-options impl/dispatch))
+  (let [dispatch-options' (-> dispatch-options expand-tool-options)
+        {:keys [pre-dispatch]} dispatch-options']
+    (when pre-dispatch
+      (pre-dispatch dispatch-options'))
+    (impl/dispatch dispatch-options')))
 
 (defn- summarize-specs
   "Converts a tools.cli command specification to a description of the options; this is an enhanced version of
