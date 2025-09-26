@@ -959,7 +959,7 @@
   (and (= 1 (count arguments))
        (-> arguments first map?)))
 
-(defn- default-tool-name
+(defn default-tool-name
   []
   (when-let [path (System/getProperty "babashka.file")]
     (-> path io/file .getName)))
@@ -1042,18 +1042,13 @@
       ; groups have just :group-doc, no :title
       doc' (assoc :group-doc doc'))))
 
-(defn expand-tool-options
-  [dispatch-options]
-  (let [{:keys [tool-name transformer]} dispatch-options
-        tool-name' (or tool-name
-                       (default-tool-name)
-                       (throw (ex-info "No :tool-name specified" {:options dispatch-options})))
+(defn build-command-root
+  [tool-name dispatch-options]
+  (let [{:keys [transformer]} dispatch-options
         ;; options are also the root descriptor for the built-in namespace
-        root       (-> dispatch-options
-                       (update :namespaces conj 'net.lewisship.cli-tools.builtins)
-                       (build-command-group nil tool-name)
-                       :subs)
-        root'      (cond->> root
-                            transformer (transformer dispatch-options))]
-    {:tool-name tool-name'
-     :command-root root'}))
+        root (-> dispatch-options
+                 (update :namespaces conj 'net.lewisship.cli-tools.builtins)
+                 (build-command-group nil tool-name)
+                 :subs)]
+    (cond->> root
+             transformer (transformer dispatch-options))))
