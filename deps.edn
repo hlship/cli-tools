@@ -1,7 +1,7 @@
 {:paths ["src"
          "resources"]
 
- :deps  {org.clj-commons/pretty   {:mvn/version "3.6.4"}
+ :deps  {org.clj-commons/pretty   {:mvn/version "3.6.5"}
          org.clj-commons/humanize {:mvn/version "1.1"}}
 
  :net.lewisship.build/scm
@@ -15,7 +15,7 @@
    :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
                                                        :git/sha "dfb30dd"}
                  io.github.hlship/trace               {:mvn/version "1.4"}
-                 io.github.tonsky/clj-reload          {:mvn/version "0.9.8"}
+                 io.github.tonsky/clj-reload          {:mvn/version "1.0.0"}
                  nubank/matcher-combinators           {:mvn/version "3.9.2"}
                  babashka/babashka                    {:mvn/version "1.12.208"}}
    :exec-fn     cognitect.test-runner.api/test
@@ -34,7 +34,7 @@
   {:override-deps {org.clojure/clojure ^:antq/exclude {:mvn/version "1.11.4"}}}
 
   :lint
-  {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.07.28"}}
+  {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.09.22"}}
    :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
 
   :build
