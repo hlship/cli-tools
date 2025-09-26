@@ -201,22 +201,26 @@
   "Expand dispatch options into tool options, leveraging a cache."
   [options]
   (let [{:keys [tool-name cache-dir cache-digest]} options
-        cache-dir'     (when cache-dir
-                         (fs/expand-home cache-dir))
-        digest         (when cache-dir'
-                         (or cache-digest
-                             (cache/classpath-digest options)))
-        cached         (when digest
-                         (cache/read-from-cache cache-dir' tool-name digest))
-        result         (if cached
-                         cached
-                         (let [expanded (impl/expand-tool-options options)]
-                           (when cache-dir'
-                             (cache/write-to-cache cache-dir' tool-name digest expanded))
-                           expanded))]
-    (merge result
-           {:cache-digest digest}
-           (select-keys options [:tool-name :doc :arguments :tool-summary :pre-dispatch]))))
+        tool-name'          (or tool-name
+                                (impl/default-tool-name)
+                                (throw (ex-info "No :tool-name specified" {:options options})))
+        cache-dir'          (when cache-dir
+                              (fs/expand-home cache-dir))
+        digest              (when cache-dir'
+                              (or cache-digest
+                                  (cache/classpath-digest options)))
+        cached-command-root (when digest
+                              (cache/read-from-cache cache-dir' tool-name' digest))
+        command-root        (if cached-command-root
+                              cached-command-root
+                              (let [built-command-root (impl/build-command-root tool-name' options)]
+                                (when cache-dir'
+                                  (cache/write-to-cache cache-dir' tool-name' digest built-command-root))
+                                built-command-root))]
+    (merge {:tool-name    tool-name'
+            :cache-digest digest
+            :command-root command-root}
+           (select-keys options [:doc :arguments :tool-summary :pre-dispatch]))))
 
 (defn- dispatch*
   "Called (indirectly/anonymously) from a tool handler to process remaining command line arguments."
