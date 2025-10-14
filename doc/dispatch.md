@@ -61,3 +61,19 @@ If :doc is omitted, then `dispatch` will search the group's namespaces, and use 
 it finds.
 
 If :title is omitted, then the first line of the docstring, up to the first `.`, will be used as the title.
+
+## Callbacks
+
+Certain options define callbacks that will be invoked during dispatch.  These are optional.
+
+Any return value from the callbacks is ignored.
+
+The :pre-dispatch callback is invoked once all command data has been assembled (possibly, by loading from cache).
+It is passed the full dispatch options. 
+
+After :pre-dispatch, `dispatch` will start to consume command line arguments to identify the specific command function
+to invoke.
+
+The :pre-invoke callback is invoked once a specific command function is identified.
+The callback is invoked immediately before the command function is invoked; it is passed the 
+command map, and a seq of remaining arguments (that will be passed to the command function).

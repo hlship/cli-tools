@@ -247,6 +247,20 @@
                          :namespaces '[net.lewisship.cli-tools.colors]
                          :arguments  ["-h"]}))))
 
+(deftest pre-invoke-callback
+  (let [*args    (atom nil)
+        callback (fn [command-map remaining-args]
+                   (reset! *args [command-map remaining-args]))]
+    (is (match? {:status 0}
+                (dispatch {:tool-name  "callback"
+                           :pre-invoke callback
+                           :namespaces '[net.lewisship.cli-tools.colors]
+                           :arguments  ["colors" "-h"]})))
+
+    (is (match? [{:command-path ["colors"]}
+                 ["-h"]]
+                @*args))))
+
 (defcommand set-mode
   "Sets the execution mode"
   [mode ["-m" "--mode MODE" (str "Execution mode, one of " mode-names)

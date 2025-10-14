@@ -13,7 +13,9 @@
                                            ::tool-options-handler
                                            ::extra-tool-options
                                            ::source-dirs
-                                           ::cache-dir]))
+                                           ::cache-dir
+                                           ::pre-dispatch
+                                           ::pre-invoke]))
 
 (s/def ::non-blank-string (s/and string?
                                  #(not (str/blank? %))))
@@ -38,6 +40,10 @@
 (s/def ::extra-tool-options vector?)
 
 (s/def ::tool-options-handler fn?)
+
+(s/def ::pre-dispatch fn?)
+
+(s/def ::pre-invoke fn?)
 
 (s/def ::source-dirs (s/coll-of string?))
 
