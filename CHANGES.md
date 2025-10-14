@@ -36,6 +36,8 @@
         * :tool-options-handler - callback function for handling extra tool options
         * :transformer provides a function to add additional commands and groups after namespaces are loaded
         * :source-dirs specifies extra directories to consider when caching
+        * :pre-dispatch - callback function invoked before dispatch
+        * :pre-invoke - callback function invoked before the dispatched command function is invoked 
         * Can now handle "messy" case where a command has the same name as a group
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 * Added initial support for commands defined as Babashka CLI functions

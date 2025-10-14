@@ -220,7 +220,7 @@
     (merge {:tool-name    tool-name'
             :cache-digest digest
             :command-root command-root}
-           (select-keys options [:doc :arguments :tool-summary :pre-dispatch]))))
+           (select-keys options [:doc :arguments :tool-summary :pre-dispatch :pre-invoke]))))
 
 (defn- dispatch*
   "Called (indirectly/anonymously) from a tool handler to process remaining command line arguments."
@@ -258,7 +258,7 @@
   (as identified by the first command line argument) and processes CLI options and arguments.
 
   dispatch-options:
-  
+
   - :tool-name (optional, string) - used in command summary and errors
   - :doc (optional, string) - used in help summary
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
