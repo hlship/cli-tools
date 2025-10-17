@@ -1,0 +1,67 @@
+#compdef _subgroup subgroup
+
+_subgroup() {
+  local line state
+
+  _arguments -C \
+    "1: :->cmds" \
+    "*::arg:->args"
+
+   case "$state" in
+     cmds)
+        _values "subgroup command"  \
+            "completions[Generate zsh command completions]"  \
+            "help[List available commands]"  \
+            "subgroup[[:faint ("one" " " "sub-command") nil nil]]" 
+        ;;
+     args)
+       case $line[1] in 
+         completions) _subgroup_completions ;;
+
+         help) _subgroup_help ;;
+
+         subgroup) _subgroup_subgroup ;;
+
+       esac
+       ;;
+   esac
+}
+
+_subgroup_completions() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_subgroup_help() {
+    _arguments -s  \
+      '(-c --commands)'{-c,--commands}$'[Print commands:  all, none, root]':FILTER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_subgroup_subgroup() {
+  local state line
+
+  _arguments -C \
+      "1: :->cmds" \
+      "*::arg:->args"
+
+  case "$state" in
+     cmds)
+       _values "subgroup subgroup subcommands"  \
+         "example[Does something interesting]" 
+       ;;
+     args)
+       case $line[1] in 
+         example) _subgroup_subgroup_example ;; 
+       esac
+       ;;
+  esac
+}
+
+
+_subgroup_subgroup_example() {
+    _arguments -s  \
+      '(-v --verbose)'{-v,--verbose}$'[Extra output]'  \
+      '(-l --limit)'{-l,--limit}$'[Maximum globnars to frobnicate]':NUMBER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
