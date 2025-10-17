@@ -4,4 +4,7 @@
 (defcommand example
   "Does something interesting."
   [verbose? ["-v" "--verbose" "Extra output"]
-   limit ["-l" "--limit NUMBER" "Maximum globnars to frobnicate"]])
+   limit ["-l" "--limit NUMBER" "Maximum globnars to frobnicate"]]
+  ;; Make linter happy
+  {:verbose? verbose?
+   :limit    limit})
