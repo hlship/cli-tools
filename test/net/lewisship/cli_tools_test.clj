@@ -8,14 +8,10 @@
             net.lewisship.conflict
             [net.lewisship.cli-tools.impl :as impl]
             [net.lewisship.cli-tools.test :refer [with-err-str capture-result]]
-            [net.lewisship.cli-tools.aux :refer [with-exit-errors]]
+            [net.lewisship.cli-tools.aux :refer [with-exit-errors dispatch-with-result]]
             [clojure.repl :as repl])
   (:import (java.io BufferedReader StringReader)))
 
-(defn- dispatch
-  [options]
-  (capture-result
-    (cli-tools/dispatch (assoc options :cache-dir nil))))
 
 (use-fixtures
   :once
@@ -107,9 +103,9 @@
 
 (defn invoke-command
   [& args]
-  (dispatch {:tool-name  "harness"
-             :namespaces ['net.lewisship.cli-tools-test]
-             :arguments  args}))
+  (dispatch-with-result {:tool-name  "harness"
+                         :namespaces ['net.lewisship.cli-tools-test]
+                         :arguments  args}))
 
 
 (deftest tool-options-access
@@ -200,62 +196,62 @@
 (deftest help-with-default-and-explicit-summary
   (is (match? {:status 0
                :out    (slurp "test-resources/tool-help.txt")}
-              (dispatch {:tool-name  "test-harness"
-                         :doc        "Example commands as part of unit test suite.
+              (dispatch-with-result {:tool-name  "test-harness"
+                                     :doc        "Example commands as part of unit test suite.
 
   Even this docstring is part of the test."
-                         :namespaces '[net.lewisship.example-ns]
-                         :arguments  ["help"]}))))
+                                     :namespaces '[net.lewisship.example-ns]
+                                     :arguments  ["help"]}))))
 
 (deftest group-help-defaults-from-first-ns-meta
   (is (match? {:status 0
                :out    (slurp "test-resources/tool-help-group-default.txt")}
-              (dispatch {:tool-name "test-harness"
+              (dispatch-with-result {:tool-name "test-harness"
                          :groups
                          {"group" {:namespaces '[net.lewisship.group-default-ns
                                                  net.lewisship.example-ns]}}
-                         :arguments ["help"]}))))
+                                     :arguments ["help"]}))))
 
 (deftest group-help-full
   (is (match? {:status 0
                :out    (slurp "test-resources/tool-help-group-full.txt")}
-              (dispatch {:tool-name "test-harness"
+              (dispatch-with-result {:tool-name "test-harness"
                          :groups
                          {"group" {:namespaces '[net.lewisship.group-default-ns
                                                  net.lewisship.example-ns]}}
-                         :arguments ["help" "-c" "all"]}))))
+                                     :arguments ["help" "-c" "all"]}))))
 
 (deftest help-with-search-term
   (is (match?
         {:status 0
          :out    (slurp "test-resources/tool-help-search.txt")}
-        (dispatch {:tool-name  "test-harness"
-                   :namespaces '[net.lewisship.example-ns]
-                   :arguments  ["help" "EXP"]}))))
+        (dispatch-with-result {:tool-name  "test-harness"
+                               :namespaces '[net.lewisship.example-ns]
+                               :arguments  ["help" "EXP"]}))))
 
 (deftest help-with-search-term-no-match
   (is (match? {:status 0
                :out    (slurp "test-resources/tool-help-search-no-match.txt")}
-              (dispatch {:tool-name  "test-harness"
-                         :namespaces '[net.lewisship.example-ns]
-                         :arguments  ["help" "Xyzzyx"]}))))
+              (dispatch-with-result {:tool-name  "test-harness"
+                                     :namespaces '[net.lewisship.example-ns]
+                                     :arguments  ["help" "Xyzzyx"]}))))
 
 (deftest use-of-command-ns-meta
   (is (match? {:status 0
                :out    (slurp "test-resources/combo-help.txt")}
-              (dispatch {:tool-name  "combo"
-                         :namespaces '[net.lewisship.cli-tools.colors]
-                         :arguments  ["-h"]}))))
+              (dispatch-with-result {:tool-name  "combo"
+                                     :namespaces '[net.lewisship.cli-tools.colors]
+                                     :arguments  ["-h"]}))))
 
 (deftest pre-invoke-callback
   (let [*args    (atom nil)
         callback (fn [command-map remaining-args]
                    (reset! *args [command-map remaining-args]))]
     (is (match? {:status 0}
-                (dispatch {:tool-name  "callback"
-                           :pre-invoke callback
-                           :namespaces '[net.lewisship.cli-tools.colors]
-                           :arguments  ["colors" "-h"]})))
+                (dispatch-with-result {:tool-name  "callback"
+                                       :pre-invoke callback
+                                       :namespaces '[net.lewisship.cli-tools.colors]
+                                       :arguments  ["colors" "-h"]})))
 
     (is (match? [{:command-path ["colors"]}
                  ["-h"]]
@@ -338,13 +334,13 @@
 
 (defn exec-group
   [& args]
-  (dispatch {:tool-name  "group-test"
-             :namespaces '[net.lewisship.example-ns]
-             :groups     {"group" {:namespaces '[net.lewisship.group-ns]
+  (dispatch-with-result {:tool-name  "group-test"
+                         :namespaces '[net.lewisship.example-ns]
+                         :groups     {"group" {:namespaces '[net.lewisship.group-ns]
                                    :doc        "Grouped commands"
                                    :groups     {"nested" {:namespaces '[net.lewisship.cli-tools.group-nested]
                                                           :doc        "Nested commands inside group"}}}}
-             :arguments  args}))
+                         :arguments  args}))
 
 (deftest help-with-default-and-explicit-summary-grouped
   (is (match? {:status 0
@@ -362,11 +358,11 @@
                 (exec-group "gr" "--help")))))
 
 (comment
-  (->> (dispatch {:tool-name "test-harness"
+  (->> (dispatch-with-result {:tool-name "test-harness"
                   :groups
                   {"group" {:namespaces '[net.lewisship.group-default-ns
                                           net.lewisship.example-ns]}}
-                  :arguments ["help" "-c" "all"]})
+                              :arguments ["help" "-c" "all"]})
        :out
        (spit "test-resources/tool-help-grouped.txt"))
 

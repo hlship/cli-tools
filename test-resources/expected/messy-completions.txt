@@ -1,0 +1,53 @@
+#compdef _messy messy
+
+_messy() {
+  local line state
+
+  _arguments -C \
+    "1: :->cmds" \
+    "*::arg:->args"
+
+   case "$state" in
+     cmds)
+        _values "messy command"  \
+            "completions[Generate zsh command completions]"  \
+            "simple[Simple command]"  \
+            "messy[Messy command]"  \
+            "help[List available commands]" 
+        ;;
+     args)
+       case $line[1] in 
+         completions) _messy_completions ;;
+
+         simple) _messy_simple ;;
+
+         messy) _messy_messy ;;
+
+         help) _messy_help ;;
+
+       esac
+       ;;
+   esac
+}
+
+_messy_completions() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_messy_simple() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_messy_messy() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_messy_help() {
+    _arguments -s  \
+      '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+

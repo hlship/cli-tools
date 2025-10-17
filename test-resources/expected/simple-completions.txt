@@ -1,0 +1,45 @@
+#compdef _simple simple
+
+_simple() {
+  local line state
+
+  _arguments -C \
+    "1: :->cmds" \
+    "*::arg:->args"
+
+   case "$state" in
+     cmds)
+        _values "simple command"  \
+            "colors[Shows available foreground and background colors]"  \
+            "completions[Generate zsh command completions]"  \
+            "help[List available commands]" 
+        ;;
+     args)
+       case $line[1] in 
+         colors) _simple_colors ;;
+
+         completions) _simple_completions ;;
+
+         help) _simple_help ;;
+
+       esac
+       ;;
+   esac
+}
+
+_simple_colors() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_simple_completions() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_simple_help() {
+    _arguments -s  \
+      '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+

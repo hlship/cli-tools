@@ -724,7 +724,7 @@
                                          frequencies)]
           [:faint
            (when command-count
-             (list
+             (str
                (h/numberword command-count) " "
                (inflect/pluralize-noun command-count "sub-command")))
            (when (and command-count group-count)
