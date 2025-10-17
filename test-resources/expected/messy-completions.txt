@@ -1,6 +1,6 @@
-#compdef _simple simple
+#compdef _messy messy
 
-_simple() {
+_messy() {
   local line state
 
   _arguments -C \
@@ -9,35 +9,43 @@ _simple() {
 
    case "$state" in
      cmds)
-        _values "simple command"  \
-            "colors[Shows available foreground and background colors]"  \
+        _values "messy command"  \
             "completions[Generate zsh command completions]"  \
+            "simple[Simple command]"  \
+            "messy[Messy command]"  \
             "help[List available commands]" 
         ;;
      args)
        case $line[1] in 
-         colors) _simple_colors ;;
+         completions) _messy_completions ;;
 
-         completions) _simple_completions ;;
+         simple) _messy_simple ;;
 
-         help) _simple_help ;;
+         messy) _messy_messy ;;
+
+         help) _messy_help ;;
 
        esac
        ;;
    esac
 }
 
-_simple_colors() {
+_messy_completions() {
     _arguments -s  \
       '(-h --help)'{-h,--help}$'[This command summary]' 
 }
 
-_simple_completions() {
+_messy_simple() {
     _arguments -s  \
       '(-h --help)'{-h,--help}$'[This command summary]' 
 }
 
-_simple_help() {
+_messy_messy() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_messy_help() {
     _arguments -s  \
       '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
       '(-h --help)'{-h,--help}$'[This command summary]' 

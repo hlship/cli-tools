@@ -9,17 +9,19 @@
   (-> (str "expected/" file)
       io/resource
       slurp
-      string/trim))
+      string/split-lines))
 
 (defn- dispatch
   ([options]
    (-> options
        (assoc :arguments ["completions"])
        dispatch-with-result
-       :out
-       string/trim))
+       :out-lines))
   ([to options]
-   (let [result (dispatch options)]
+   (let [result (-> options
+                    (assoc :arguments ["completions"])
+                    dispatch-with-result
+                    :out)]
      (-> (str "test-resources/expected/" to)
          io/file
          (spit result))
@@ -31,10 +33,21 @@
                           :namespaces [net.lewisship.cli-tools.colors
                                        net.lewisship.cli-tools.completions]}))))
 
-(deftest subgroup-completions
+(deftest subgroup-completion
   (is (match? (expected "subgroup-completions.txt")
               (dispatch
                 '{:tool-name  "subgroup"
                   :namespaces [net.lewisship.cli-tools.completions]
                   :groups
                   {"subgroup" {:namespaces [net.lewisship.cli-tools.completion-group]}}}))))
+
+(deftest messy-completions
+  ;; where command name and group name collide
+  ;; Not sure the current behavior is correct
+  (is (match? (expected "messy-completions.txt")
+              (dispatch
+                {:tool-name  "messy"
+                 :namespaces '[net.lewisship.cli-tools.completions
+                               net.lewisship.messy-commands]
+                 :groups     {"messy" {:namespaces '[net.lewisship.messy]
+                                       :doc        "Messy command and group at same time"}}}))))

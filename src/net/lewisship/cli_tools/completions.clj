@@ -58,8 +58,9 @@
 (defn- extract-command
   [fn-prefix [command-name command-map]]
   (let [{:keys [fn]} command-map
-        title   (binding [ansi/*color-enabled* false]
-                  (impl/extract-command-title command-map))
+        title   (-> (impl/extract-command-title command-map)
+                    ansi/compose
+                    string/trim)
         fn-name (simplify fn-prefix command-name)]
     ;; TODO: Support messy group/command combos
     (if fn
@@ -110,7 +111,8 @@
                             io/output-stream
                             io/writer)]
             (try
-              (binding [*out* w]
+              (binding [*out*                w
+                        ansi/*color-enabled* false]
                 (print-tool tool-name command-root groups))
               (catch Throwable t
                 (abort 1 [:red
@@ -119,5 +121,5 @@
                               (class t))]))))
           (perr [:cyan "Wrote " output-path]))
         ;; Just write to standard output
-        (print-tool tool-name command-root groups)))))
-
+        (binding [ansi/*color-enabled* false]
+          (print-tool tool-name command-root groups))))))

@@ -12,7 +12,7 @@ _subgroup() {
         _values "subgroup command"  \
             "completions[Generate zsh command completions]"  \
             "help[List available commands]"  \
-            "subgroup[[:faint ("one" " " "sub-command") nil nil]]" 
+            "subgroup[one sub-command]" 
         ;;
      args)
        case $line[1] in 
@@ -34,7 +34,7 @@ _subgroup_completions() {
 
 _subgroup_help() {
     _arguments -s  \
-      '(-c --commands)'{-c,--commands}$'[Print commands:  all, none, root]':FILTER  \
+      '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
       '(-h --help)'{-h,--help}$'[This command summary]' 
 }
 
@@ -65,3 +65,4 @@ _subgroup_subgroup_example() {
       '(-l --limit)'{-l,--limit}$'[Maximum globnars to frobnicate]':NUMBER  \
       '(-h --help)'{-h,--help}$'[This command summary]' 
 }
+
