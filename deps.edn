@@ -9,7 +9,7 @@
   :license :asl}
 
  :aliases
- {;; clj -X:teBst
+ {;; clj -X:test
   :test
   {:extra-paths ["test" "test-resources"]
    :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
@@ -27,14 +27,14 @@
   {:extra-deps {org.clojure/tools.cli {:mvn/version "1.2.245" :optional true}
                 babashka/fs           {:mvn/version "0.5.27" :optional true}
                 babashka/process      {:mvn/version "0.6.23" :optional true}
-                selmer/selmer         {:mvn/version "1.12.64" :optional true}
+                selmer/selmer         {:mvn/version "1.12.65" :optional true}
                 org.babashka/cli      {:mvn/version "0.8.66" :optional true}}}
 
   :1.11
   {:override-deps {org.clojure/clojure ^:antq/exclude {:mvn/version "1.11.4"}}}
 
   :lint
-  {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.09.22"}}
+  {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.10.23"}}
    :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
 
   :build

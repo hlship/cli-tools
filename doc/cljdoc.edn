@@ -13,6 +13,7 @@
   ["Babashka CLI" {:file "doc/babashka-cli.md"}]
   ["Caching" {:file "doc/caching.md"}]
   ["Transform" {:file "doc/transform.md"}]
+  ["Styles" {:file "doc/styles.md"}]
   ["Experimental" {:file "doc/experimental.md"}
    ["Completions" {:file "doc/completions.md"}]
    ["Job Board" {:file "doc/jobs.md"}]]]}

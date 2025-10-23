@@ -42,6 +42,7 @@
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 * Added initial support for commands defined as Babashka CLI functions
 * Added `net.lewiship.cli-tools.test` namespace
+* Added `net.lewisship.cli-tools.styles` namespace
 
 # 0.15.1 -- 27 Jan 2025
 

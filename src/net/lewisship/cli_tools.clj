@@ -5,7 +5,8 @@
             [clojure.string :as string]
             [net.lewisship.cli-tools.impl :as impl :refer [cond-let]]
             [clojure.tools.cli :as cli]
-            [net.lewisship.cli-tools.cache :as cache]))
+            [net.lewisship.cli-tools.cache :as cache]
+            [net.lewisship.cli-tools.styles :refer [style]]))
 
 (defn exit
   "An indirect call to System/exit, passing a numeric status code (0 for success, non-zero for
@@ -426,7 +427,7 @@
 
             :else
             (do
-              (ansi/perr "Input '" [:yellow input] "' not recognized; enter "
+              (ansi/perr "Input '" [(style :invalid-input) input] "' not recognized; enter "
                          (map-indexed
                            (fn [i {:keys [label]}]
                              (list
@@ -445,12 +446,12 @@
 
                                  :else
                                  ", or ")
-                               [:italic label]))
+                               [(style :possible-completion) label]))
                            response-maps)
                          (when default-label
                            (list
                              ", or just enter for the default ("
-                             [:bold default-label]
+                             [(style :default-value) default-label]
                              ")")))
               (recur))))))))
 
@@ -602,7 +603,7 @@
          console (System/console)
          _       (do
                    (when-not console
-                     (abort [:bold.red "Error:"] " no console to read password from"))
+                     (abort [(style :error-label) "Error:"] " no console to read password from"))
 
                    (print (ansi/compose prompt))
                    (flush))
@@ -613,5 +614,5 @@
                    "")]
      (when (and (string/blank? s)
                 (not allow-blank?))
-       (abort [:bold.red "Error:"] " password input may not be blank"))
+       (abort [(style :error-label) "Error:"] " password input may not be blank"))
      s)))

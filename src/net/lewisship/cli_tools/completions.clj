@@ -1,6 +1,5 @@
 (ns net.lewisship.cli-tools.completions
   "Support for generating zsh command completion scripts for a command."
-  {:command-ns 'net.lewisship.cli-tools.builtins}
   (:require [babashka.fs :as fs]
             [clojure.java.io :as io]
             [net.lewisship.cli-tools :refer [defcommand abort command-path]]
