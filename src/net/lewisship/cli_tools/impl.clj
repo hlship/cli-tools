@@ -2,6 +2,7 @@
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
             [clj-commons.ansi :refer [compose pout perr]]
+            [net.lewisship.cli-tools.styles :refer [style]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -186,12 +187,13 @@
       "Usage: "
       ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
       (when tool-name
-        [:bold.green tool-name " "])
+        [(style :tool-name) tool-name " "])
       ;; A stand-alone tool will use its command-name, a command within
       ;; a multi-command tool will have a command-path.
-      [:bold.green (if command-path
-                     (string/join " " command-path)
-                     command-name)]
+      [(style :command-path)
+       (if command-path
+         (string/join " " command-path)
+         command-name)]
       " [OPTIONS]"
       (map list (repeat " ") arg-strs))
     (when command-doc
@@ -210,7 +212,7 @@
             lines           (for [{:keys [label doc]} positional-specs]
                               (list
                                 [{:width max-label-width}
-                                 [:bold label]]
+                                 [(style :option-label) label]]
                                 ": "
                                 doc))]
         (pout "\nArguments:")
@@ -220,7 +222,7 @@
   [errors]
   (let [{:keys [tool-name]} *tool-options*]
     (perr
-      [:red
+      [(style :parse-error)
        (inflect/pluralize-noun (count errors) "Error")
        (when tool-name
          (list
@@ -266,9 +268,9 @@
                            (when default-fn "<computed>")
                            "")
                        "")]
-    {:opt-label     [:bold opt-label]
+    {:opt-label     [(style :option-label) opt-label]
      :opt-width     (.length opt-label)
-     :default       [:italic default-desc]
+     :default       [(style :option-default) default-desc]
      :default-width (.length default-desc)
      :opt-desc      desc}))
 
@@ -707,7 +709,9 @@
     (collect-subs command-root *result)
     (-> *result deref persistent!)))
 
-(def ^:private missing-doc [:yellow.italic "(missing documentation)"])
+(defn- missing-doc
+  []
+  [(style :missing-doc) "(missing documentation)"])
 
 (defn extract-command-title
   [command-map]
@@ -733,7 +737,7 @@
              (list
                (h/numberword group-count) " "
                (inflect/pluralize-noun group-count "sub-group")))]))
-      missing-doc))
+      (missing-doc)))
 
 (defn- print-commands
   [command-name-width container-map commands-map recurse?]
@@ -747,10 +751,10 @@
                                      (reduce max 0)))]
     (when container-map
       (pout (when recurse? "\n")
-            [:bold (string/join " " (:command-path container-map))]
+            [(style :command) (string/join " " (:command-path container-map))]
             " - "
             (or (some-> container-map :group-doc cleanup-docstring)
-                missing-doc)))
+                (missing-doc))))
 
     (when (seq sorted-commands)
       (pout "\nCommands:"))
@@ -759,9 +763,9 @@
     (doseq [{:keys [fn command] :as command-map} sorted-commands]
       (pout
         "  "
-        [{:width command-name-width'} [:bold.green command]]
+        [{:width command-name-width'} [(style :command-path) command]]
         ": "
-        [(when-not fn :italic)
+        [(when-not fn (style :subgroup-label))
          (extract-command-title command-map)]))
 
     ;; Recurse and print sub-groups
@@ -781,7 +785,7 @@
         matching-commands (->> (filter #(command-match? % search-term') all-commands)
                                (map #(update % :command-path join-command-path)))]
     (if-not (seq matching-commands)
-      (pout "No commands match " [:italic search-term'])
+      (pout "No commands match " [(style :search-term) search-term'])
       (let [command-width (->> matching-commands
                                (map :command-path)
                                (map count)
@@ -792,10 +796,10 @@
           (if (= n 1)
             " command matches "
             " commands match ")
-          [:italic search-term']
+          [(style :search-term) search-term']
           ":" "\n")
         (doseq [{:keys [command-path] :as command} (sort-by :command-path matching-commands)]
-          (pout [{:font  :bold.green
+          (pout [{:font  (style :command-path)
                   :width command-width}
                  command-path]
                 ": "
@@ -805,7 +809,7 @@
   [level]
   (let [{tool-doc :doc
          :keys    [tool-name command-root]} *tool-options*]
-    (pout "Usage: " [:bold.green tool-name] " [OPTIONS] COMMAND ...")
+    (pout "Usage: " [(style :tool-name) tool-name] " [OPTIONS] COMMAND ...")
     (when tool-doc
       (pout "\n"
             (cleanup-docstring tool-doc)))
@@ -841,21 +845,22 @@
       (sort (filter (to-matcher s) values')))))
 
 (def ^:private help
-  (list
-    [:bold.green "--help"] " (or " [:bold.green "-h"] ") to list commands"))
+  (let [option-style (style :option-name)]
+    (list
+      [option-style "--help"] " (or " [option-style "-h"] ") to list commands")))
 
 (defn- use-help-message
   [tool-name]
-  (list ", use " [:bold.green tool-name] " " help))
+  (list ", use " [(style :tool-name) tool-name] " " help))
 
 (defn- no-command
   [tool-name]
-  (abort [:bold.green tool-name] ": no command provided" (use-help-message tool-name)))
+  (abort [(style :tool-name) tool-name] ": no command provided" (use-help-message tool-name)))
 
 (defn- incomplete
   [tool-name command-path matchable-terms]
   (abort
-    [:bold.green tool-name ": "
+    [(style :tool-name) tool-name ": "
      (string/join " " command-path)]
     " is incomplete; "
     (compose-list matchable-terms)
@@ -877,10 +882,11 @@
                       " "
                       help)]
     (abort
-      [:bold [:green tool-name] ": "
-       [:green (string/join " " command-path)]
+      [(style :no-command-match)
+       [(style :tool-name) tool-name] ": "
+       [(style :command-path) (string/join " " command-path)]
        (when (seq command-path) " ")
-       [:red term]]
+       [(style :unknown-term) term]]
       " "
       body
       help-suffix)))

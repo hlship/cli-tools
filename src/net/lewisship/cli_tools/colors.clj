@@ -1,5 +1,4 @@
 (ns net.lewisship.cli-tools.colors
-  {:command-ns 'net.lewisship.cli-tools.builtins}
   (:require [clj-commons.ansi :refer [pout]]
             [clojure.string :as string]
             [net.lewisship.cli-tools :refer [defcommand]]))

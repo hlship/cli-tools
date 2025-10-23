@@ -4,8 +4,8 @@
             [net.lewisship.cli-tools.job-status :as j]))
 
 (defn sleep
-  ([ms] (Thread/sleep ms))
-  ([job-id ms]
+  ([^long ms] (Thread/sleep ms))
+  ([job-id ^long ms]
    (Thread/sleep ms)
    job-id))
 
@@ -68,4 +68,4 @@
       (j/summary "Please fasten your Bat-seatbelts")
       done)
 
-  (Thread/sleep 3000))
+  (sleep 3000))

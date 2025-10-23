@@ -9,7 +9,7 @@
   :license :asl}
 
  :aliases
- {;; clj -X:teBst
+ {;; clj -X:test
   :test
   {:extra-paths ["test" "test-resources"]
    :extra-deps  {io.github.cognitect-labs/test-runner {:git/tag "v0.5.1"
