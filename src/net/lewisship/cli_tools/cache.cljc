@@ -8,13 +8,13 @@
             [clojure.string :as str]
             [clj-commons.ansi :refer [perr]]
             #?(:bb [babashka.classpath :as cp]))
-  (:import [java.io File]
-           [java.security MessageDigest]))
+  (:import (java.io File)
+           (java.nio ByteBuffer)
+           (java.security MessageDigest)))
 
 (defn- get-classpath
   []
-  #?(
-     :bb  (cp/get-classpath)
+  #?(:bb  (cp/get-classpath)
      :clj (System/getProperty "java.class.path")))
 
 (defn- get-split-classpath
@@ -22,7 +22,6 @@
   (let [sep   fs/path-separator
         paths (-> (get-classpath)
                   (str/split (re-pattern sep)))]
-
     (->> paths
          sort
          (mapv io/file))))
@@ -34,16 +33,19 @@
   (let [bytes (.getBytes value "UTF-8")]
     (.update digest bytes)))
 
-(defn- update-digest-from-file-contents
+(defn- update-digest-from-file
   [^MessageDigest digest f]
-  (let [f'     (fs/file f)]
-    ;; Would be better to digest the 8 raw bytes, but this is easier.
-    (update-digest-from-string digest (Long/toHexString (.lastModified f')))))
+  (let [f'            (fs/file f)
+        last-modified (.lastModified f')
+        b             (ByteBuffer/allocate 8)]
+    (.putLong b last-modified)
+    (.flip b)
+    (.update digest b)))
 
 (defn- update-digest-recursively
   [digest ^File root]
   (let [paths (fs/glob root "**")]
-    (run! #(update-digest-from-file-contents digest %) paths)))
+    (run! #(update-digest-from-file digest %) paths)))
 
 (defn- update-digest
   [digest source]
@@ -52,7 +54,8 @@
       ;; The assumption is that files are .jar files and the name will change if
       ;; the contents change.
       (update-digest-from-string digest (.getCanonicalPath f))
-      ;; But for a source directory, find all the sources (and digest their contents).
+      ;; But for a source directory, find all the sources (and digest their file time stamps).
+      ;; Adding or removing a file (even if no other files are touched) will change the digest.
       (update-digest-recursively digest f))))
 
 (defn- hex-string [^bytes input]
