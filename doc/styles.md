@@ -4,14 +4,24 @@ Beauty is in the eye of the beholder; `cli-tools` makes a default
 set of choices for what kind of colors and fonts to use
 for its output, but this can be overridden.
 
-The `net.lewisship.cli-tools.styles` contains a dynamic var, `*default-styles*`, that is used by the rest of `cli-tools`
-when
-formatting output. By overriding or rebinding this var, the fonts can be overridden.
+Styles are defined by two vars in namespace `net.lewisship.cli-tools.styles`; each is a
+map from a usage name (such as :tool-name-label) to a
+[font definition](https://cljdoc.org/d/org.clj-commons/pretty/3.6.7/api/clj-commons.ansi#compose).
 
-The most common to override are:
+* `default-styles` are the defaults for all usages
+* `*style-overrides*` contains overrides for `default-styles` (and is dynamic)
 
-- :tool-name-label (default :bold.green) used when writing the name of the tool itself
+By overriding or rebinding this var, the fonts can be overridden.
+
+The most common usages to override are:
+
+- :tool-name (default :bold.green) used when writing the name of the tool itself
 - :command-path (default :bold.green) used when writing the command path
 
-When overriding `*default-styles*`, you can just provide overrides of what's in `default-styles`; anything not found in
-the dynamic var is then searched for in the non-dynamic var.
+Example:
+
+```clojure
+    (binding [style/*style-overrides* {:tool-name :inverse.bold}]
+      (cli-tools/dispatch { ... }))
+
+```

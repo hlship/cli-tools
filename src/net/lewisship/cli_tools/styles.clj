@@ -20,10 +20,10 @@
    :no-command-match    :bold
    :unknown-term        :red})
 
-(def ^:dynamic *default-styles* default-styles)
+(def ^:dynamic *style-overrides* default-styles)
 
 (defn style
   "Retrieves a style; searches in *default-styles* first and, if not found, then in the default-styles."
   [k]
-  (or (get *default-styles* k)
+  (or (get *style-overrides* k)
       (get default-styles k)))
