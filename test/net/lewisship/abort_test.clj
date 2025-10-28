@@ -15,9 +15,12 @@
 (deftest abort-with-message
   (binding [ansi/*color-enabled* true]
     (is (match? {:status 1
-                 :err    (compose [:bold.green "tool category command"] ": base message" "\n")}
+                 :err    (compose [:bold.green "tool"]
+                                  " "
+                                  [:bold.green "category command"]
+                                  ": base message" "\n")}
                 (capture-result
-                      (abort (command-path) ": " "base message"))))))
+                  (abort (command-path) ": " "base message"))))))
 
 
 (deftest abort-with-several-messages

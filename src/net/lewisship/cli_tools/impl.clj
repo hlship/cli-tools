@@ -29,12 +29,12 @@
 (defn- compose-command-path
   [tool-name command-path]
   (when tool-name
-    [:bold.green
-     tool-name
-     (when (seq command-path)
-       (list
-         " "
-         (string/join " " command-path)))]))
+    (list
+      [(style :tool-name) tool-name]
+      (when (seq command-path)
+        (list " "
+              [(style :command-path)
+               (string/join " " command-path)])))))
 
 (defn command-path
   []
@@ -751,7 +751,8 @@
                                      (reduce max 0)))]
     (when container-map
       (pout (when recurse? "\n")
-            [(style :command) (string/join " " (:command-path container-map))]
+            (compose-command-path (:tool-name *tool-options*)
+                                  (:command-path container-map))
             " - "
             (or (some-> container-map :group-doc cleanup-docstring)
                 (missing-doc))))

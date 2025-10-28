@@ -1,4 +1,4 @@
-[0;1mgroup[m - Grouped commands
+[0;32;1mgroup-test[m [0;32;1mgroup[m - Grouped commands
 
 Commands:
     [0;32;1mecho[m: Echo a string

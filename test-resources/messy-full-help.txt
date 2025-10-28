@@ -10,7 +10,7 @@ Commands:
    messy: Messy command
   simple: Simple command
 
-messy - Messy command and group at same time
+bigmess messy - Messy command and group at same time
 
 Commands:
   nested: Command nested under messy group/command

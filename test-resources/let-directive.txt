@@ -1,1 +1,1 @@
-[0;31mError in [0;32;1mharness set-mode[0;31m: Failed to validate "-m unknown": Must be one of async, batch, real-time[m
+[0;31mError in [0;32;1mharness[0;31m [0;32;1mset-mode[0;31m: Failed to validate "-m unknown": Must be one of async, batch, real-time[m

@@ -9,7 +9,7 @@ Commands:
      [0;32;1mgroup[m: [0;3mThis provides the default documentation for the entire group[m
       [0;32;1mhelp[m: List available commands
 
-[0;1mgroup[m - This provides the default documentation for the entire group.
+[0;32;1mtest-harness[m [0;32;1mgroup[m - This provides the default documentation for the entire group.
 
 The full doc may span multiple lines.
 
