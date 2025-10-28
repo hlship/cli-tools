@@ -11,14 +11,14 @@ Commands:
       [0;32;1mgroup[m: [0;3mGrouped commands[m
        [0;32;1mhelp[m: List available commands
 
-[0;1mgroup[m - Grouped commands
+[0;32;1mgroup-test[m [0;32;1mgroup[m - Grouped commands
 
 Commands:
        [0;32;1mecho[m: Echo a string
        [0;32;1medit[m: Edit a whatever
      [0;32;1mnested[m: [0;3mNested commands inside group[m
 
-[0;1mgroup nested[m - Nested commands inside group
+[0;32;1mgroup-test[m [0;32;1mgroup nested[m - Nested commands inside group
 
 Commands:
   [0;32;1mbutterfly[m: Nested command butterfly

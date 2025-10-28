@@ -1,1 +1,1 @@
-[0;31mError in [0;32;1mharness collect[0;31m: No value for required argument VAL[m
+[0;31mError in [0;32;1mharness[0;31m [0;32;1mcollect[0;31m: No value for required argument VAL[m

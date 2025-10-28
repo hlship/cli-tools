@@ -1,1 +1,1 @@
-[0;31mError in [0;32;1mharness configure[0;31m: HOST: must be a URL[m
+[0;31mError in [0;32;1mharness[0;31m [0;32;1mconfigure[0;31m: HOST: must be a URL[m

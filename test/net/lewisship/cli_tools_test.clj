@@ -20,6 +20,15 @@
                                    :cache-dir nil}]
       (f))))
 
+(defn- capture
+  "Used when output changes to capture new output (the embedded ANSI sequences are hard to work with."
+  ([file result]
+   (capture file :out result))
+  ([file k result]
+   (let [content (get result k)]
+     (print content)
+     (spit (str "test-resources/" file ".txt") content))))
+
 ;; An example to test around
 
 (defcommand configure
@@ -216,9 +225,9 @@
   (is (match? {:status 0
                :out    (slurp "test-resources/tool-help-group-full.txt")}
               (dispatch-with-result {:tool-name "test-harness"
-                         :groups
-                         {"group" {:namespaces '[net.lewisship.group-default-ns
-                                                 net.lewisship.example-ns]}}
+                                     :groups
+                                     {"group" {:namespaces '[net.lewisship.group-default-ns
+                                                             net.lewisship.example-ns]}}
                                      :arguments ["help" "-c" "all"]}))))
 
 (deftest help-with-search-term
