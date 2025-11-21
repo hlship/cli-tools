@@ -20,6 +20,7 @@
                                    :cache-dir nil}]
       (f))))
 
+#_{:clj-kondo/ignore [:unused-private-var]}
 (defn- capture
   "Used when output changes to capture new output (the embedded ANSI sequences are hard to work with."
   ([file result]
