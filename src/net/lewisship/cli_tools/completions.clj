@@ -114,7 +114,8 @@
                             io/output-stream
                             io/writer)]
             (try
-              (generator)
+              (binding [*out* w]
+                (generator))
               (catch Throwable t
                 (abort 1 [:red
                           (command-path) ": "
