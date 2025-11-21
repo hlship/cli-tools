@@ -65,12 +65,12 @@
     (if fn
       {:name    command-name
        :fn-name fn-name
-       :summary title
+       :title   title
        :options (options command-map)}
       {:name    (->> command-map
                      :command-path
                      (string/join " "))
-       :summary title
+       :title   title
        :fn-name fn-name
        :subs    (map #(extract-command fn-name %) (:subs command-map))})))
 
@@ -86,12 +86,14 @@
                          :command command}))))
 
 (defn- print-tool
-  [tool-name command-root _groups]
+  [tool-name command-root extra-options]
   (let [prefix   (str "_" tool-name)
+        options  (map #(apply to-opt %) (concat extra-options impl/default-tool-options))
         commands (->> command-root
                       (keep #(extract-command prefix %)))]
     (selmer.util/without-escaping
       (render "top-level" {:tool     tool-name
+                           :options  options
                            :commands commands})
       (render-commands tool-name commands))))
 
@@ -102,7 +104,9 @@
    output-path ["PATH" "File to write completions to."
                 :optional true]]
   (binding [impl/*introspection-mode* true]
-    (let [{:keys [command-root tool-name groups]} impl/*tool-options*]
+    (let [{:keys [command-root tool-name extra-tool-options]} impl/*tool-options*
+          generator #(binding [ansi/*color-enabled* false]
+                       (print-tool tool-name command-root extra-tool-options))]
       (if output-path
         (do
           (with-open [w (-> output-path
@@ -110,9 +114,8 @@
                             io/output-stream
                             io/writer)]
             (try
-              (binding [*out*                w
-                        ansi/*color-enabled* false]
-                (print-tool tool-name command-root groups))
+              (binding [*out* w]
+                (generator))
               (catch Throwable t
                 (abort 1 [:red
                           (command-path) ": "
@@ -120,5 +123,4 @@
                               (class t))]))))
           (perr [:cyan "Wrote " output-path]))
         ;; Just write to standard output
-        (binding [ansi/*color-enabled* false]
-          (print-tool tool-name command-root groups))))))
+        (generator)))))

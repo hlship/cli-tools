@@ -27,8 +27,8 @@
   {:extra-deps {org.clojure/tools.cli {:mvn/version "1.2.245" :optional true}
                 babashka/fs           {:mvn/version "0.5.27" :optional true}
                 babashka/process      {:mvn/version "0.6.23" :optional true}
-                selmer/selmer         {:mvn/version "1.12.65" :optional true}
-                org.babashka/cli      {:mvn/version "0.8.66" :optional true}}}
+                selmer/selmer         {:mvn/version "1.12.69" :optional true}
+                org.babashka/cli      {:mvn/version "0.8.67" :optional true}}}
 
   :1.11
   {:override-deps {org.clojure/clojure ^:antq/exclude {:mvn/version "1.11.4"}}}

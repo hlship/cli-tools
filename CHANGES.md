@@ -25,7 +25,7 @@
 * You may now enter `-h` or `--help` after a group to get help for just that group
 * Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
 * Tool help now displays just root-level commands by default (add `--commands all` to list nested commands)
-* When extracting the first sentence as the single-line index, embedded periods are no longer considered the end of the sentence
+* When extracting the first sentence as the single-line title, embedded periods are no longer considered the end of the sentence
 * `net.lewisship.cli-tools`:
     * Added function `tool-name`
     * Added function `command-root`
@@ -38,7 +38,7 @@
         * :source-dirs specifies extra directories to consider when caching
         * :pre-dispatch - callback function invoked before dispatch
         * :pre-invoke - callback function invoked before the dispatched command function is invoked 
-        * Can now handle "messy" case where a command has the same name as a group
+        * Can now handle the case where a command has the same name as a group
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 * Added initial support for commands defined as Babashka CLI functions
 * Added `net.lewiship.cli-tools.test` namespace
