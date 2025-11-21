@@ -190,14 +190,6 @@
                ~validations)
              ~@body))))))
 
-
-(def ^:private
-  default-tool-options
-  "Default tool command line options."
-  [["-C" "--color" "Enable ANSI color output"]
-   ["-N" "--no-color" "Disable ANSI color output"]
-   ["-h" "--help" "This command summary"]])
-
 (defn- expand-tool-options
   "Expand dispatch options into tool options, leveraging a cache."
   [options]
@@ -221,7 +213,7 @@
     (merge {:tool-name    tool-name'
             :cache-digest digest
             :command-root command-root}
-           (select-keys options [:doc :arguments :tool-summary :pre-dispatch :pre-invoke]))))
+           (select-keys options [:doc :arguments :tool-summary :pre-dispatch :pre-invoke :extra-tool-options]))))
 
 (defn- dispatch*
   "Called (indirectly/anonymously) from a tool handler to process remaining command line arguments."
@@ -308,7 +300,7 @@
                                  default-dispatch-options
                                  dispatch-options)
         {:keys [extra-tool-options tool-options-handler]} merged-options
-        full-options      (concat extra-tool-options default-tool-options)
+        full-options      (concat extra-tool-options impl/default-tool-options)
         {:keys [options arguments summary errors]}
         (cli/parse-opts (:arguments merged-options)
                         full-options
@@ -334,7 +326,7 @@
 
                      (if tool-options-handler
                        (tool-options-handler options dispatch-options' callback)
-                       (dispatch* dispatch-options'))))))
+                       (callback))))))
 
 (defn select-option
   "Builds a standard option spec for selecting from a list of possible values.

@@ -8,7 +8,7 @@
   case "$state" in
      cmds)
        _values "{{tool}} {{group.name}} subcommands" {% for sub in group.subs %} \
-         "{{sub.name}}[{{sub.summary}}]" {% endfor %}
+         "{{sub.name}}[{{sub.title}}]" {% endfor %}
        ;;
      args)
        case $line[1] in {% for sub in group.subs %}
@@ -17,5 +17,3 @@
        ;;
   esac
 }
-
-

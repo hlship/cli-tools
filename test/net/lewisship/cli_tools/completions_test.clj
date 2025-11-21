@@ -45,9 +45,17 @@
   ;; where command name and group name collide
   ;; Not sure the current behavior is correct
   (is (match? (expected "messy-completions.txt")
-              (dispatch
+              (dispatch  
                 {:tool-name  "messy"
                  :namespaces '[net.lewisship.cli-tools.completions
                                net.lewisship.messy-commands]
                  :groups     {"messy" {:namespaces '[net.lewisship.messy]
                                        :doc        "Messy command and group at same time"}}}))))
+
+(deftest tool-options
+  (is (match? (expected "tool-options.txt")
+              (dispatch
+                {:tool-name          "options"
+                 :namespaces         '[net.lewisship.cli-tools.completions]
+                 :extra-tool-options [["-d" "--debug" "Enable debug mode"]
+                                      ["-o" "--output-path FILE" "Write output to file, not stdout"]]}))))

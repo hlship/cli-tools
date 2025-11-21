@@ -1061,3 +1061,9 @@
                  :subs)]
     (cond->> root
              transformer (transformer dispatch-options))))
+
+(def default-tool-options
+  "Default tool command line options."
+  [["-C" "--color" "Enable ANSI color output"]
+   ["-N" "--no-color" "Disable ANSI color output"]
+   ["-h" "--help" "This command summary"]])

@@ -3,14 +3,15 @@
 _{{tool}}() {
   local line state
 
-  _arguments -C \
+  _arguments -C {% for opt in options %} \
+    {{ opt }} {% endfor %} \
     "1: :->cmds" \
-    "*::arg:->args"
+    "*::args:->args"
 
    case "$state" in
      cmds)
         _values "{{tool}} command" {% for cmd in commands %} \
-            "{{cmd.name}}[{{cmd.summary}}]" {% endfor %}
+            "{{cmd.name}}[{{cmd.title}}]" {% endfor %}
         ;;
      args)
        case $line[1] in {% for cmd in commands %}
@@ -20,4 +21,3 @@ _{{tool}}() {
        ;;
    esac
 }
-
