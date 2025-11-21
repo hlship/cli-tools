@@ -44,6 +44,8 @@
 * Added `net.lewiship.cli-tools.test` namespace
 * Added `net.lewisship.cli-tools.styles` namespace
 
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/9?closed=1)
+
 # 0.15.1 -- 27 Jan 2025
 
 Changes:
