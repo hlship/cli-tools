@@ -241,7 +241,7 @@
       (continuation))
     (continuation)))
 
-(def ^:private default-dispatch-options
+(defn- default-dispatch-options []
   {:cache-dir (or (some-> (System/getenv "CLI_TOOLS_CACHE_DIR")
                           fs/expand-home)
                   (fs/xdg-cache-home "net.lewisship.cli-tools"))})
@@ -297,7 +297,7 @@
   Returns nil."
   [dispatch-options]
   (let [merged-options    (merge {:arguments *command-line-args*}
-                                 default-dispatch-options
+                                 (default-dispatch-options)
                                  dispatch-options)
         {:keys [extra-tool-options tool-options-handler]} merged-options
         full-options      (concat extra-tool-options impl/default-tool-options)
