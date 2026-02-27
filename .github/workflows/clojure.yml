@@ -24,12 +24,12 @@ jobs:
           distribution: 'corretto'
 
       - name: Install clojure tools
-        uses: DeLaGuardo/setup-clojure@13.4
+        uses: DeLaGuardo/setup-clojure@13.5.2
         with:
-          cli: 1.12.3.1577
+          cli: 1.12.4.1602
 
       - name: Cache clojure dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.m2/repository

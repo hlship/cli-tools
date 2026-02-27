@@ -1,7 +1,7 @@
 {:paths ["src"
          "resources"]
 
- :deps  {org.clj-commons/pretty   {:mvn/version "3.6.7"}
+ :deps  {org.clj-commons/pretty   {:mvn/version "3.6.8"}
          org.clj-commons/humanize {:mvn/version "1.1"}}
 
  :net.lewisship.build/scm
@@ -16,25 +16,25 @@
                                                        :git/sha "dfb30dd"}
                  io.github.hlship/trace               {:mvn/version "1.4"}
                  io.github.tonsky/clj-reload          {:mvn/version "1.0.0"}
-                 nubank/matcher-combinators           {:mvn/version "3.9.2"}
-                 babashka/babashka                    {:mvn/version "1.12.209"}}
+                 nubank/matcher-combinators           {:mvn/version "3.10.0"}
+                 babashka/babashka                    {:mvn/version "1.12.215"}}
    :exec-fn     cognitect.test-runner.api/test
    :jvm-opts    ["-Dclj-commons.ansi.enabled=true"]
    :exec-args
    {:patterns [".*-tests?$"]}}
 
   :pom
-  {:extra-deps {org.clojure/tools.cli {:mvn/version "1.2.245" :optional true}
-                babashka/fs           {:mvn/version "0.5.27" :optional true}
-                babashka/process      {:mvn/version "0.6.23" :optional true}
-                selmer/selmer         {:mvn/version "1.12.69" :optional true}
+  {:extra-deps {org.clojure/tools.cli {:mvn/version "1.3.250" :optional true}
+                babashka/fs           {:mvn/version "0.5.31" :optional true}
+                babashka/process      {:mvn/version "0.6.25" :optional true}
+                selmer/selmer         {:mvn/version "1.13.1" :optional true}
                 org.babashka/cli      {:mvn/version "0.8.67" :optional true}}}
 
   :1.11
   {:override-deps {org.clojure/clojure ^:antq/exclude {:mvn/version "1.11.4"}}}
 
   :lint
-  {:deps      {clj-kondo/clj-kondo {:mvn/version "2025.10.23"}}
+  {:deps      {clj-kondo/clj-kondo {:mvn/version "2026.01.19"}}
    :main-opts ["-m" "clj-kondo.main" "--lint" "src" "test"]}
 
   :build
