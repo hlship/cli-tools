@@ -8,26 +8,26 @@
 (defn- dispatch [& args]
   (binding [ansi/*color-enabled* false]
     (capture-result
-      (cli/dispatch {:tool-name  "bigmess"
-                     :namespaces '[net.lewisship.messy-commands]
-                     :groups     {"messy" {:namespaces '[net.lewisship.messy]
-                                           :doc "Messy command and group at same time"}}
-                     :arguments  args
-                     :cache-dir  nil}))))
+     (cli/dispatch {:tool-name "bigmess"
+                    :namespaces '[net.lewisship.messy-commands]
+                    :groups {"messy" {:namespaces '[net.lewisship.messy]
+                                      :doc "Messy command and group at same time"}}
+                    :arguments args
+                    :cache-dir nil}))))
 
 (deftest full-help
   (is (match? {:status 0
-               :out    (slurp "test-resources/messy-full-help.txt")}
+               :out (slurp "test-resources/messy-full-help.txt")}
               (dispatch "help" "-c" "all"))))
 
 (deftest simple-commands-work
   (is (match? {:status 0
-               :out    "simple: ok\n"}
+               :out "simple: ok\n"}
               (dispatch "simp"))))
 
 (deftest missing-positional-in-nested
   (is (match? {:status 1
-               :err    "Error in bigmess messy: No value for required argument NAME\n"}
+               :err "Error in bigmess messy: No value for required argument NAME\n"}
               (dispatch "messy"))))
 
 (deftest commands-nested-inside-commands
@@ -38,21 +38,27 @@
   (is (match? {:out "messy: kiwi ok\n"}
               (dispatch "mess" "kiwi"))))
 
+(deftest help-for-messy-command-shows-command-help
+  (let [{:keys [status out]} (dispatch "mess" "-h")]
+    (is (= 0 status))
+    (is (string/includes? out "Usage:"))
+    (is (string/includes? out "NAME"))
+    (is (not (string/includes? out "nested")))))
+
 (comment
 
- (defn capture [f & args]
-   (let [{:keys [out err]} (apply dispatch args)
-         captured (if (string/blank? out)
-                    err
-                    out)
-         out-path (str "test-resources/" f ".txt")]
-     (spit out-path captured)
-     (println (str out-path ":"))
-     (print captured)))
+  (defn capture [f & args]
+    (let [{:keys [out err]} (apply dispatch args)
+          captured (if (string/blank? out)
+                     err
+                     out)
+          out-path (str "test-resources/" f ".txt")]
+      (spit out-path captured)
+      (println (str out-path ":"))
+      (print captured)))
 
- (capture "messy-full-help" "help" "-c" "all")
+  (capture "messy-full-help" "help" "-c" "all")
 
- (capture "messy-simple" "simple")
+  (capture "messy-simple" "simple")
 
- (capture "messy-nested-fail" "mess" "nomatch")
- )
+  (capture "messy-nested-fail" "mess" "nomatch"))
