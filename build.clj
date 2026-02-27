@@ -2,10 +2,13 @@
 
 (ns build
   (:require [clojure.tools.build.api :as build]
+            [clojure.string :as string]
             [net.lewisship.build :as b]))
 
 (def lib 'io.github.hlship/cli-tools)
-(def version "0.16.0-beta-3")
+(def version (-> "version.txt"
+                 slurp
+                 string/trim))
 
 (def jar-params {:project-name lib
                  :version      version
