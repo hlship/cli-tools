@@ -9,6 +9,7 @@
             [clj-commons.ansi :refer [perr]]
             #?(:bb [babashka.classpath :as cp]))
   (:import (java.io File)
+           (java.util HexFormat)
            (java.nio ByteBuffer)
            (java.security MessageDigest)))
 
@@ -58,10 +59,10 @@
       ;; Adding or removing a file (even if no other files are touched) will change the digest.
       (update-digest-recursively digest f))))
 
-(defn- hex-string [^bytes input]
-  (let [sb (StringBuilder.)]
-    (run! #(.append sb (format "%X" %)) input)
-    (str sb)))
+(defn- hex-string 
+  [^bytes input]
+  (-> (HexFormat/of)
+      (.formatHex input)))
 
 (defn classpath-digest
   "Passed the tool options, return a hex string of the SHA-1 digest of the files from the classpath and
