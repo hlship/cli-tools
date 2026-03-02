@@ -56,7 +56,8 @@ Documentation starts with [the overview](doc/overview.md).
 
 ## Compatibility
 
-`cli-tools` is compatible with Clojure 1.11 and above, and w/ Babashka.
+`cli-tools` is compatible with Clojure 1.11 and above, and w/ Babashka.  
+For Clojure, it requires JDK 17 or above.
 
 ## License
 

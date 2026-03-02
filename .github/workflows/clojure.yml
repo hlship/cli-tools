@@ -20,7 +20,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'corretto'
 
       - name: Install clojure tools
@@ -46,7 +46,3 @@ jobs:
 
       - name: Lint
         run: clojure -M:lint
-
-
-
-
