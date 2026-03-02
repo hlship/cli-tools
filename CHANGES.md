@@ -2,6 +2,7 @@
 
 *BREAKING CHANGES*
 
+* JDK 17 is now required when using Clojure
 * Groups are now defined in the options passed to `net.lewisship.cli-tools/dispatch`, not in
   namespace metadata
 * Command names are matched as prefixes (not substrings)
