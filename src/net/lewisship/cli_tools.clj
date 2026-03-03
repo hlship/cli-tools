@@ -170,16 +170,12 @@
              ;; it can also be a map with key :options
              test-mode?# (impl/command-map? args#)
              command-spec# ~(select-keys parsed-interface parse-cli-keys)]
+         ;; introspection mode is used primarily by completions; it invokes the function with no arguments
+         ;; (but with the flag on) and the command-spec is returned, from which completions are generated.
          (if impl/*introspection-mode*
            command-spec#
-           (let [~command-map-symbol (cond
-                                       test-mode?#
+           (let [~command-map-symbol (if test-mode?#
                                        {:options (first args#)}
-
-                                       impl/*introspection-mode*
-                                       command-spec#
-
-                                       :else
                                        (impl/parse-cli ~command-name'
                                                        ~docstring
                                                        args#
