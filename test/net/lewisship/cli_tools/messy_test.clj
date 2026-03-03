@@ -39,11 +39,21 @@
               (dispatch "mess" "kiwi"))))
 
 (deftest help-for-messy-command-shows-command-help
-  (let [{:keys [status out]} (dispatch "mess" "-h")]
-    (is (= 0 status))
-    (is (string/includes? out "Usage:"))
-    (is (string/includes? out "NAME"))
-    (is (not (string/includes? out "nested")))))
+  (is (match? {:status    0
+               :out-lines ["bigmess messy - Messy command and group at same time"
+                           ""
+                           "Commands:"
+                           "  nested: Command nested under messy group/command"
+                           ""
+                           "Usage: bigmess messy [OPTIONS] NAME"
+                           "Messy command."
+                           ""
+                           "Options:"
+                           "  -h, --help This command summary"
+                           ""
+                           "Arguments:"
+                           "  NAME: Name to print"]}
+              (dispatch "mess" "-h"))))
 
 (comment
 

@@ -906,11 +906,14 @@
                invoke-last-command-fn nil]
           (cond-let
            (#{"-h" "--help"} term)
-           (if invoke-last-command-fn
-             (invoke-last-command-fn)
-             (do
-               (print-commands nil container-map commands-map false)
-               (exit 0)))
+           (do
+             (print-commands nil container-map commands-map false)
+             ;; This is the ugly mixed case where its a group and a command; we present
+             ;; the group first then the command.
+             (when invoke-last-command-fn
+               (println)
+               (invoke-last-command-fn))
+             (exit 0))
 
            :let [possible-commands commands-map
                  matchable-terms (keys possible-commands)]
