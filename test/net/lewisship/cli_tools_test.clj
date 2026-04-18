@@ -2,6 +2,7 @@
   (:require [clj-commons.ansi :as ansi :refer [compose]]
             [clojure.string :as string]
             [clojure.test :refer [deftest is use-fixtures are]]
+            [clojure.tools.cli :as cli]
             [net.lewisship.cli-tools :as cli-tools :refer [defcommand select-option inject-command]]
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
@@ -576,3 +577,39 @@
               (-> nil
                   (inject-command ["foo" "bar"] {})
                   (inject-command ["foo" "bazz"] {})))))
+
+(comment
+  (require '[clojure.tools.cli :as cli])
+  
+  (def opts [["-d" "--debug"]])
+  
+  (cli/parse-opts
+    ["--foo"]
+    []
+    :subcommand :implicit)
+
+  (cli/parse-opts
+    ["xxx" "--foo"]
+    []
+
+    :subcommand :implicit)
+
+  (cli/parse-opts
+    ["--foo"]
+    opts
+    :subcommand :implicit
+    )
+  
+  (cli/parse-opts 
+    ["-d" "x" "--foo"]
+    opts
+    :subcommand :implicit)
+  
+  
+  ;
+  
+  
+  
+  
+  
+  )

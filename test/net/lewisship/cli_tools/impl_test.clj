@@ -105,7 +105,7 @@
     (is (= "Unexpected keyword" (ex-message e)))))
 
 (deftest in-order-option
-  (is (= {:in-order true}
+  (is (= {:subcommand :implicit}
          (:parse-opts-options (compile-interface '[:in-order true])))))
 
 (deftest in-order-must-be-boolean

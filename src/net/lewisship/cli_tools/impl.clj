@@ -582,9 +582,12 @@
   (when-not (boolean? form)
     (fail "Expected boolean after :in-order" state form))
 
-  (-> state
-      (assoc-in [:parse-opts-options :in-order] form)
-      complete-keyword))
+  (let [state' (if form
+                 (-> state
+                    #_  (assoc-in [:parse-opts-options :in-order] true) ; needed until Babashka gets new version of tools.cli
+                     (assoc-in [:parse-opts-options :subcommand] :implicit))
+                 state)]
+    (complete-keyword state')))
 
 (defmethod consumer :let
   [state form]
