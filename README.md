@@ -40,14 +40,18 @@ for the kind of low-ceremony tools that `cli-tools` is intended for.
 Although `cli-tools` can be used to build shared tools, it is also fully intended for developers to create a personal
 toolkit of commands specific to their individual workflows, as an alternative to a collection of shell aliases and one-off shell scripts.
 
-Below is an example of the author's personal toolkit, `flow`:
+Below is an example as used in the [dialog-tool](https://github.com/hlship/dialog-tool) project:
 
-![Example](images/example-usage.png)
+![dgt](images/example-usage.png)
 
-A complete and open-source example is [dialog-tool](https://github.com/hlship/dialog-tool), which also shows how to organize 
-a tool so that it can be installed as a Homebrew formula.
+The `dgt` command provided by dialog-tool is a complex tool; most of the commands are at the top level, but `skein` is a group containing sub-commands.
 
-> Note that dialog-tool uses a slightly earlier version of cli-tools.
+Another example is [dexter](https://github.com/hlship/dexter), which is an example of a simple tool (no sub-commands):
+
+![Dexter](images/dexter.png)
+
+This is accomplished in dexter's
+[`-main` entrypoint function](https://github.com/hlship/dexter/blob/main/src/net/lewisship/dex/main.clj) by using `defcommand` to define the `-main` function.
 
 
 ## Documentation
