@@ -9,6 +9,7 @@
                                            ::doc
                                            ::arguments
                                            ::groups
+                                           ::version
                                            ::transformer
                                            ::tool-options-handler
                                            ::extra-tool-options
@@ -40,6 +41,8 @@
 (s/def ::extra-tool-options vector?)
 
 (s/def ::tool-options-handler fn?)
+
+(s/def ::version ::non-blank-string)
 
 (s/def ::pre-dispatch fn?)
 
