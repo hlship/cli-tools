@@ -41,8 +41,9 @@
         * Can now handle the case where a command has the same name as a group
 * Cache files are now stored in `~/.cache/net.lewisship.cli-tools` by default
 * Added initial support for commands defined as Babashka CLI functions
-* Added `net.lewiship.cli-tools.test` namespace
+* Added `net.lewisship.cli-tools.test` namespace
 * Added `net.lewisship.cli-tools.styles` namespace
+* When a :version dispatch option is provided, a `--version` (or `-V`) tool option is added that prints the version and exits
 
 [Closed Issues](https://github.com/hlship/cli-tools/milestone/9?closed=1)
 
