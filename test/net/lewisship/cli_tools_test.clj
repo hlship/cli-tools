@@ -132,6 +132,35 @@
               (binding [ansi/*color-enabled* false]
                 (invoke-command "--unknown")))))
 
+(defn invoke-with-version
+  [& args]
+  (dispatch-with-result {:tool-name  "harness"
+                         :namespaces ['net.lewisship.cli-tools-test]
+                         :version    "1.2.3"
+                         :arguments  args}))
+
+(deftest version-long-flag
+  (is (match? {:status    0
+               :out-lines ["1.2.3"]}
+              (invoke-with-version "--version"))))
+
+(deftest version-short-flag
+  (is (match? {:status    0
+               :out-lines ["1.2.3"]}
+              (invoke-with-version "-V"))))
+
+(deftest version-takes-precedence-over-other-args
+  (is (match? {:status    0
+               :out-lines ["1.2.3"]}
+              (invoke-with-version "--version" "configure" "--host" "example.com"))))
+
+(deftest version-flag-unknown-without-version-key
+  (is (match? {:status 1
+               :err-lines
+               ["Error in harness: Unknown option: \"--version\""]}
+              (binding [ansi/*color-enabled* false]
+                (invoke-command "--version")))))
+
 (deftest standard-help
   (is (match? {:status 0
                :out    (slurp "test-resources/help.txt")}

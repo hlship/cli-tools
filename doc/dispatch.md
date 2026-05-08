@@ -19,6 +19,7 @@ are ultimately exposed as local symbols that your command's code can act on.
 (dispatch 
   {:namespaces [...]
    :doc "String that defines the tool, used in tool-level help."
+   :version "1.0.0"  ;; optional; adds --version / -V tool option
    :groups {"my-group" {:title "One line title describing the group."
                         :doc "Longer description of the group, used in group-level help."
                         :namespaces [...]

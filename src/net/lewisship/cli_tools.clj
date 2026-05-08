@@ -250,6 +250,7 @@
 
   - :tool-name (optional, string) - used in command summary and errors
   - :doc (optional, string) - used in help summary
+  - :version (optional, string) - if present, adds --version / -V tool option that prints the version and exits
   - :arguments - command line arguments to parse (defaults to `*command-line-args*`)
   - :namespaces - seq of symbols identifying namespaces to search for root-level commands
   - :groups - map of group command (a string) to a group map
@@ -295,8 +296,10 @@
   (let [merged-options    (merge {:arguments *command-line-args*}
                                  (default-dispatch-options)
                                  dispatch-options)
-        {:keys [extra-tool-options tool-options-handler]} merged-options
-        full-options      (concat extra-tool-options impl/default-tool-options)
+        {:keys [extra-tool-options tool-options-handler version]} merged-options
+        version-option    (when version
+                            [["-V" "--version" "Display version"]])
+        full-options      (concat extra-tool-options version-option impl/default-tool-options)
         {:keys [options arguments summary errors]}
         (cli/parse-opts (:arguments merged-options)
                         full-options
@@ -319,6 +322,10 @@
                      (when (seq errors)
                        (print-errors errors)
                        (exit 1))
+
+                     (when (:version options)
+                       (println version)
+                       (exit 0))
 
                      (if tool-options-handler
                        (tool-options-handler options dispatch-options' callback)
