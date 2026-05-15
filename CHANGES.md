@@ -17,26 +17,28 @@
     * `expand-dispatch-options` has been removed
 * When an arg is ambiguous during dispatch, the error text now says "could match" and uses "or" as the conjunction, e.g. "ex could match exhume or extract"
 * Tool and command help is now printed to \*out\*, not \*err*\*
-* The builtin `help` command now as an option, `-c` / `--commands`, that can be one of `none`, `root`, or `all`, and the `--flat` switch was removed.
+* The builtin `help` command now as an option, `-c` / `--commands`, that can be one of `none`, `root`, or `all`, and the `--flat` switch was removed
 * Dependencies no longer include those provided by Babashka itself, reverting the change in 0.15.1; new documentation identifies what to add back in
+* The :in-order key in a command interface results in parsing with option `:subcommand :implicit`; previously it was
+  (equivalent to) `:subcommand :explicit`.
   
 *Changes*
 
 * Groups may now be nested, to arbitrary depth
 * You may now enter `-h` or `--help` after a group to get help for just that group
 * Tool help output has been reordered, with top-level tool commands first (previously, those were in a "Builtin" group and listed last)
-* Tool help now displays just root-level commands by default (add `--commands all` to list nested commands)
+* Tool help now displays just root-level commands and groups by default (add `--commands all` to list nested commands)
 * When extracting the first sentence as the single-line title, embedded periods are no longer considered the end of the sentence
 * `net.lewisship.cli-tools`:
     * Added function `tool-name`
     * Added function `command-root`
     * Added function `read-password`
-    * New `command-path` function returns a composed string of the tool name and command path
+    * New `command-path` function returns a composed string of the tool name and command path (useful for error messages)
     * `dispatch` function has new options:
         * :extra-tool-options - vector of additional tool options to prefix the default
         * :tool-options-handler - callback function for handling extra tool options
-        * :transformer provides a function to add additional commands and groups after namespaces are loaded
-        * :source-dirs specifies extra directories to consider when caching
+        * :transformer - a function to add additional commands and groups after namespaces are loaded
+        * :source-dirs - specifies extra directories to consider when caching
         * :pre-dispatch - callback function invoked before dispatch
         * :pre-invoke - callback function invoked before the dispatched command function is invoked 
         * Can now handle the case where a command has the same name as a group
@@ -45,6 +47,7 @@
 * Added `net.lewisship.cli-tools.test` namespace
 * Added `net.lewisship.cli-tools.styles` namespace
 * When a :version dispatch option is provided, a `--version` (or `-V`) tool option is added that prints the version and exits
+* Command interface option :in-order has been deprecated and replaced with :pass-through
 
 [Closed Issues](https://github.com/hlship/cli-tools/milestone/9?closed=1)
 

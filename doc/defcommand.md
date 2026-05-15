@@ -125,7 +125,7 @@ Normally, the command title (which appears next to the command in the `help` too
 the first sentence of the command's docstring, up to the first `.`.  If, for some reason,
 that default is incorrect, the command's summary can be explicitly specified using `:title`.
 
-### :in-order true
+### :pass-through true
 
 By default, options are parsed using `clojure.tools.cli/parse-opts`, with the `:in-order` option set to false;
 this means that `parse-opts` will stop at the first
@@ -149,10 +149,12 @@ with an error that `-lR is not recognized`.
 You can always use `--` to split options from arguments, so `app-admin remote -- ls -lR` will work,
 but is clumsy.
 
-Instead, add `:in-order true` to the end of the interface, and any
+Instead, add `:pass-through true` to the end of the interface, and any
 unrecognized options will be parsed as positional arguments instead,
 so `app-admin remote ls -lR` will work, and `-lR` will be provided as a string in the `remote-args`
 seq.
+
+For backwards compatibility, you may also specify `:in-order true` to accomplish the same thing.
 
 ### :let \<bindings\>
 

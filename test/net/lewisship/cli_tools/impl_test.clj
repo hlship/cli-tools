@@ -105,8 +105,12 @@
     (is (= "Unexpected keyword" (ex-message e)))))
 
 (deftest in-order-option
-  (is (= {:in-order true}
+  (is (= {:pass-through true}
          (:parse-opts-options (compile-interface '[:in-order true])))))
+
+(deftest pass-thru-option
+  (is (= {:pass-through true}
+         (:parse-opts-options (compile-interface '[:pass-through true])))))
 
 (deftest in-order-must-be-boolean
   (when-let [e (is (thrown? Exception

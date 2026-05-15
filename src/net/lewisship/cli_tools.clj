@@ -303,7 +303,7 @@
         {:keys [options arguments summary errors]}
         (cli/parse-opts (:arguments merged-options)
                         full-options
-                        :in-order true
+                        :subcommand :explicit
                         :summary-fn summarize-specs)
         {:keys [color no-color help]} options
         color-flag        (cond color true

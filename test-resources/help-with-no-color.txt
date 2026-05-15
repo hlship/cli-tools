@@ -11,6 +11,7 @@ Commands:
   default-variants: Different option defaults
               help: List available commands
           in-order: Execute remote command
+         pass-thru: For testing :pass-through option
           set-mode: Sets the execution mode
          tool-info: Echoes the tool name and root command map keys
           validate: validate command
