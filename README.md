@@ -18,7 +18,7 @@ for you.
 - A simple tool simply parses its command line arguments and executes some code using those arguments (think: `ls` or `cat`)
 - A common tool is composed of multiple commands, across multiple namespaces. The first command line argument
   will select the specific sub-command to execute. (think: `git`)
-- A complex tool organizes some commands into command groups that share an initial name (think `kubectl`)
+- A complex tool organizes some commands into command groups that share an initial name (think: `kubectl`)
 
 For tools with multiple commands, `cli-tools` automatically adds 
 a built-in `help` command to list out what commands are available, and
@@ -61,6 +61,7 @@ Documentation starts with [the overview](doc/overview.md).
 ## Compatibility
 
 `cli-tools` is compatible with Clojure 1.11 and above, and w/ Babashka.  
+For Clojure, it requires JDK 17 or above.
 
 ## License
 

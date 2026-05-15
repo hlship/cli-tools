@@ -24,7 +24,7 @@
   command spec. Used when extracting options for completions."
   false)
 
-(def ^:private supported-keywords #{:in-order :args :options :command :title :let :validate})
+(def ^:private supported-keywords #{:in-order :pass-through :args :options :command :title :let :validate})
 
 (defn- compose-command-path
   [tool-name command-path]
@@ -577,14 +577,23 @@
   (assoc state :consuming :keyword
          :pending false))
 
+(defn- consume-boolean
+  [state k option-key form]
+  (when-not (boolean? form)
+    (fail (str "Expected boolean after " k) state form))
+  (-> state
+      (assoc-in [:parse-opts-options option-key] form)
+      complete-keyword))
+
+;; :in-order is the deprecated name for :pass-through
+
 (defmethod consumer :in-order
   [state form]
-  (when-not (boolean? form)
-    (fail "Expected boolean after :in-order" state form))
+  (consume-boolean state :in-order :pass-through form))
 
-  (-> state
-      (assoc-in [:parse-opts-options :in-order] form)
-      complete-keyword))
+(defmethod consumer :pass-through
+  [state form]
+  (consume-boolean state :pass-through :pass-through form))
 
 (defmethod consumer :let
   [state form]
@@ -653,15 +662,17 @@
   [command-name command-doc command-line-arguments command-spec]
   (cond-let
    :let [{:keys [command-args command-options parse-opts-options]} command-spec
-         {:keys [in-order]
-          :or {in-order false}} parse-opts-options
+         {:keys [pass-through]
+          :or {pass-through false}} parse-opts-options
          positional-specs (compile-positional-specs command-name command-args)
+         extra-cli-opts (cond-> []
+                          pass-through (conj :subcommand :implicit))
          command-map (merge command-spec
                             {:command-name command-name
                              :positional-specs positional-specs}
-                            (cli/parse-opts command-line-arguments command-options
-                                            :in-order in-order
-                                            :summary-fn summarize-specs))
+                            (apply cli/parse-opts command-line-arguments command-options
+                                            :summary-fn summarize-specs
+                                            extra-cli-opts))
          {:keys [arguments options]} command-map]
 
     ;; Check for help first, as otherwise can get needless errors r.e. missing required positional arguments.

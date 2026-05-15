@@ -22,7 +22,7 @@
 
 #_{:clj-kondo/ignore [:unused-private-var]}
 (defn- capture
-  "Used when output changes to capture new output (the embedded ANSI sequences are hard to work with."
+  "Used when output changes to capture new output (the embedded ANSI sequences are hard to work with)."
   ([file result]
    (capture file :out result))
   ([file k result]
@@ -52,6 +52,14 @@
                             (assoc m k v))
                :repeatable true]]
   {:verbose verbose :host host :key-values key-values})
+
+(defcommand pass-thru
+  "For testing :pass-through option."
+  [:pass-through true
+   :args
+   args ["ARGS" "Pass thru args"
+         :repeatable true]]
+   (-> args vec prn))
 
 
 (defcommand collect
@@ -121,7 +129,7 @@
 (deftest tool-options-access
   (is (match? {:status    0
                :out-lines ["Tool name: harness"
-                           "Commands: collect, configure, default-variants, help, in-order, set-mode, tool-info, validate"]}
+                           "Commands: collect, configure, default-variants, help, in-order, pass-thru, set-mode, tool-info, validate"]}
               (invoke-command "tool-info"))))
 
 (deftest unknown-tool-option
@@ -196,6 +204,11 @@
   (is (match? {:status 1
                :err    (slurp "test-resources/excess-values.txt")}
               (invoke-command "collect" "the-key" "the-value" "the-extra"))))
+
+(deftest extra-options-with-in-order
+  (is (match? {:status 0
+               :out "[\"--foo\" \"--bar\" \"baz\"]\n"}
+              (invoke-command "pass-thru" "--foo" "--bar" "baz"))))
 
 
 (defcommand default-variants

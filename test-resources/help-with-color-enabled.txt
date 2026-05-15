@@ -11,6 +11,7 @@ Commands:
   [0;32;1mdefault-variants[m: Different option defaults
               [0;32;1mhelp[m: List available commands
           [0;32;1min-order[m: Execute remote command
+         [0;32;1mpass-thru[m: For testing :pass-through option
           [0;32;1mset-mode[m: Sets the execution mode
          [0;32;1mtool-info[m: Echoes the tool name and root command map keys
           [0;32;1mvalidate[m: validate command
