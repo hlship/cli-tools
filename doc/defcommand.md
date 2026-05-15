@@ -127,8 +127,8 @@ that default is incorrect, the command's summary can be explicitly specified usi
 
 ### :pass-through true
 
-By default, options are parsed using `clojure.tools.cli/parse-opts`, with the `:in-order` option set to false;
-this means that `parse-opts` will stop at the first
+By default, options are parsed using `clojure.tools.cli/parse-opts` such that
+pasrsing will stop at the first
 option-like string that isn't declared.
 
 ```
@@ -146,11 +146,11 @@ option-like string that isn't declared.
 You might expect that `app-admin remote ls -lR` would work, but it will fail
 with an error that `-lR is not recognized`.
 
-You can always use `--` to split options from arguments, so `app-admin remote -- ls -lR` will work,
-but is clumsy.
+You can always use `--` to split options from arguments, so `app-admin remote -- ls -lR` will work
+as expected, but is clumsy.
 
 Instead, add `:pass-through true` to the end of the interface, and any
-unrecognized options will be parsed as positional arguments instead,
+unrecognized arguments _or_ options will be parsed as positional arguments instead,
 so `app-admin remote ls -lR` will work, and `-lR` will be provided as a string in the `remote-args`
 seq.
 
