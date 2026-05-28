@@ -52,9 +52,12 @@
   [digest source]
   (let [f (fs/file source)]
     (if (.isFile f)
-      ;; The assumption is that files are .jar files and the name will change if
-      ;; the contents change.
-      (update-digest-from-string digest (.getCanonicalPath f))
+      ;; The assumption is that files are .jar files.
+      (doto digest
+        (update-digest-from-string (.getCanonicalPath f))
+        ;; This handles a particular case where the classpath is a single Uberjar.
+        ;; See https://github.com/hlship/cli-tools/issues/66
+        (update-digest-from-file f))
       ;; But for a source directory, find all the sources (and digest their file time stamps).
       ;; Adding or removing a file (even if no other files are touched) will change the digest.
       (update-digest-recursively digest f))))
