@@ -1,4 +1,4 @@
-# 1.0.0 -- UNRELEASED
+# 1.0.0 -- 9 Jun 2026
 
 *BREAKING CHANGES*
 
