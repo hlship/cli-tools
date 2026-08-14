@@ -46,5 +46,5 @@
 
   ;; This is quite minimal and may be expanded in the future.
   (is (match? {:status 1,
-               :err    "Error in bb find: Coerce failure: cannot transform input \"xyz\" to long (option :id, value \"xyz\")\n",}
+               :err    "Error in bb find: Invalid value for option --id: cannot transform input \"xyz\" to long (option :id, value \"xyz\")\n"}
               (dispatch "bb" "find" "--id" "xyz"))))
