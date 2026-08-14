@@ -2,7 +2,8 @@
 *.asc
 .idea
 .cpcache
-.clj-kondo/.cache
+!.clj-kondo/config.edn
+.clj-kondo/*
 .nrepl-port
 *.iml
 .*preview

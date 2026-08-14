@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Setup Java
         uses: actions/setup-java@v5
@@ -24,12 +24,12 @@ jobs:
           distribution: 'corretto'
 
       - name: Install clojure tools
-        uses: DeLaGuardo/setup-clojure@13.6.0
+        uses: DeLaGuardo/setup-clojure@13.6.1
         with:
-          cli: 1.12.5.1645
+          cli: 1.12.5.1664
 
       - name: Cache clojure dependencies
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: |
             ~/.m2/repository
