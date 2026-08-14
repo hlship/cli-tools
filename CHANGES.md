@@ -1,3 +1,9 @@
+# 1.0.1 -- 14 Aug 2026
+
+* fix: Use of `defcommand` can produce a number of spurious warnings with clj-kondo [#67]()
+
+[Closed Issues](https://github.com/hlship/cli-tools/milestone/10?closed=1)
+
 # 1.0.0 -- 9 Jun 2026
 
 *BREAKING CHANGES*
