@@ -38,7 +38,14 @@
     (let [pairs     (partition 2 opts)
           collector (api/token-node (gensym "options"))
           map-terms (mapcat (fn [[sym v]]
-                              [(api/keyword-node (-> sym str keyword)) v])
+                              [(api/keyword-node (-> sym str keyword))
+                               ;; Trying to defeat clj-kondo, which sees the vectors that define arguments or options
+                               ;; a literals that are always true, or not a string.
+                               ;; This passes each vector through identity which, for the meantime, hides from clj-kondo
+                               ;; its type which prevents certain warnings.
+                               (api/list-node
+                                 (list `identity
+                                       v))])
                             pairs)]
       [collector
        (api/map-node (vec map-terms))
