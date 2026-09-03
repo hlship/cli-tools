@@ -57,5 +57,10 @@
               (dispatch
                 {:tool-name          "options"
                  :namespaces         '[net.lewisship.cli-tools.completions]
-                 :extra-tool-options [["-d" "--debug" "Enable debug mode"]
-                                      ["-o" "--output-path FILE" "Write output to file, not stdout"]]}))))
+                 :extra-tool-options [["-d" "--debug" "Enable debug mode"
+                                       :id :debug]
+                                      ["-o" "--output-path FILE" "Write output to file, not stdout"
+                                       :id :output-path
+                                       :default "-"
+                                       :parse-fn identity
+                                       :validate [some? "Must be provided"]]]}))))
