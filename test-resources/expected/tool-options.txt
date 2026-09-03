@@ -1,4 +1,4 @@
-#compdef _options options
+#compdef options
 
 _options() {
   local line state

@@ -1,0 +1,106 @@
+#compdef nested
+
+_nested() {
+  local line state
+
+  _arguments -C  \
+    '(-C --color)'{-C,--color}$'[Enable ANSI color output]'  \
+    '(-N --no-color)'{-N,--no-color}$'[Disable ANSI color output]'  \
+    '(-h --help)'{-h,--help}$'[This command summary]'  \
+    "1: :->cmds" \
+    "*::args:->args"
+
+   case "$state" in
+     cmds)
+        _values "nested command"  \
+            "completions[Generate zsh command completions]"  \
+            "help[List available commands]"  \
+            "group[Grouped commands]" 
+        ;;
+     args)
+       case $line[1] in 
+         completions) _nested_completions ;;
+
+         help) _nested_help ;;
+
+         group) _nested_group ;;
+
+       esac
+       ;;
+   esac
+}
+_nested_completions() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_nested_help() {
+    _arguments -s  \
+      '(-c --commands)'{-c,--commands}$'[Print commands: all, none, root]':FILTER  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_nested_group() {
+  local state line
+
+  _arguments -C \
+      "1: :->cmds" \
+      "*::arg:->args"
+
+  case "$state" in
+     cmds)
+       _values "nested group subcommands"  \
+         "edit[Edit a whatever]"  \
+         "echo[Echo a string]"  \
+         "nested[Nested commands inside group]" 
+       ;;
+     args)
+       case $line[1] in 
+         edit) _nested_group_edit ;; 
+         echo) _nested_group_echo ;; 
+         nested) _nested_group_nested ;; 
+       esac
+       ;;
+  esac
+}
+_nested_group_edit() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_nested_group_echo() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_nested_group_nested() {
+  local state line
+
+  _arguments -C \
+      "1: :->cmds" \
+      "*::arg:->args"
+
+  case "$state" in
+     cmds)
+       _values "nested nested subcommands"  \
+         "butterfly[Nested command butterfly]"  \
+         "leaf[Nested command leaf]" 
+       ;;
+     args)
+       case $line[1] in 
+         butterfly) _nested_group_nested_butterfly ;; 
+         leaf) _nested_group_nested_leaf ;; 
+       esac
+       ;;
+  esac
+}
+_nested_group_nested_butterfly() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+
+_nested_group_nested_leaf() {
+    _arguments -s  \
+      '(-h --help)'{-h,--help}$'[This command summary]' 
+}
+

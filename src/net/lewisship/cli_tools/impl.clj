@@ -1075,6 +1075,10 @@
     (cond->> root
       transformer (transformer dispatch-options))))
 
+(def version-tool-option
+  "Tool option added when dispatch is given a :version."
+  ["-V" "--version" "Display version"])
+
 (def default-tool-options
   "Default tool command line options."
   [["-C" "--color" "Enable ANSI color output"]
