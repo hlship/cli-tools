@@ -1,3 +1,7 @@
+# 1.0.2 -- UNRELEASED
+
+* fix: Completions generation fails when tool options include extra tools.cli keys [#70](https://github.com/hlship/cli-tools/issues/70)
+
 # 1.0.1 -- 14 Aug 2026
 
 * fix: Use of `defcommand` can produce a number of spurious warnings with clj-kondo [#67](https://github.com/hlship/cli-tools/issues/67)

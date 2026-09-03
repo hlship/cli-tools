@@ -24,7 +24,7 @@
   (string/replace s "'" "\\'"))
 
 (defn- to-opt
-  [short-option long-option summary]
+  [[short-option long-option summary]]
   (let [both (and long-option short-option)
         [long-option' option-name] (when long-option
                                      (string/split long-option #"\s+"))]
@@ -51,8 +51,7 @@
   (let [{:keys [fn]} command-map
         callable (requiring-resolve fn)
         {:keys [command-options]} (callable)]
-    (for [[short-option long-option summary] command-options]
-      (to-opt short-option long-option summary))))
+    (map to-opt command-options)))
 
 (defn- extract-command
   [fn-prefix [command-name command-map]]
@@ -88,7 +87,7 @@
 (defn- print-tool
   [tool-name command-root extra-options]
   (let [prefix   (str "_" tool-name)
-        options  (map #(apply to-opt %) (concat extra-options impl/default-tool-options))
+        options  (map to-opt (concat extra-options impl/default-tool-options))
         commands (->> command-root
                       (keep #(extract-command prefix %)))]
     (selmer.util/without-escaping
