@@ -41,6 +41,17 @@
                   :groups
                   {"subgroup" {:namespaces [net.lewisship.cli-tools.completion-group]}}}))))
 
+(deftest nested-group-completion
+  (is (match? (expected "nested-group-completions.txt")
+              (dispatch
+                '{:tool-name  "nested"
+                  :namespaces [net.lewisship.cli-tools.completions]
+                  :groups
+                  {"group" {:namespaces [net.lewisship.group-ns]
+                            :doc        "Grouped commands"
+                            :groups     {"nested" {:namespaces [net.lewisship.cli-tools.group-nested]
+                                                   :doc        "Nested commands inside group"}}}}}))))
+
 (deftest messy-completions
   ;; where command name and group name collide
   ;; Not sure the current behavior is correct
@@ -64,3 +75,10 @@
                                        :default "-"
                                        :parse-fn identity
                                        :validate [some? "Must be provided"]]]}))))
+
+(deftest version-option
+  (is (match? (expected "version-option.txt")
+              (dispatch
+                {:tool-name  "versioned"
+                 :namespaces '[net.lewisship.cli-tools.completions]
+                 :version    "1.2.3"}))))

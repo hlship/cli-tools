@@ -1,4 +1,4 @@
-#compdef _simple simple
+#compdef simple
 
 _simple() {
   local line state

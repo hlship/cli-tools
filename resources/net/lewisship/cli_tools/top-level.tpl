@@ -1,4 +1,4 @@
-#compdef _{{tool}} {{tool}}
+#compdef {{tool}}
 
 _{{tool}}() {
   local line state

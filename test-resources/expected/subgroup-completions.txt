@@ -1,4 +1,4 @@
-#compdef _subgroup subgroup
+#compdef subgroup
 
 _subgroup() {
   local line state

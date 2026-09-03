@@ -59,19 +59,14 @@
         title   (-> (impl/extract-command-title command-map)
                     ansi/compose
                     string/trim)
-        fn-name (simplify fn-prefix command-name)]
+        fn-name (simplify fn-prefix command-name)
+        base    {:name    command-name
+                 :fn-name fn-name
+                 :title   title}]
     ;; TODO: Support messy group/command combos
     (if fn
-      {:name    command-name
-       :fn-name fn-name
-       :title   title
-       :options (options command-map)}
-      {:name    (->> command-map
-                     :command-path
-                     (string/join " "))
-       :title   title
-       :fn-name fn-name
-       :subs    (map #(extract-command fn-name %) (:subs command-map))})))
+      (assoc base :options (options command-map))
+      (assoc base :subs (map #(extract-command fn-name %) (:subs command-map))))))
 
 (defn- render-commands
   [tool-name commands]
@@ -85,9 +80,11 @@
                          :command command}))))
 
 (defn- print-tool
-  [tool-name command-root extra-options]
+  [tool-name command-root extra-options version]
   (let [prefix   (str "_" tool-name)
-        options  (map to-opt (concat extra-options impl/default-tool-options))
+        options  (map to-opt (concat extra-options
+                                     (when version [impl/version-tool-option])
+                                     impl/default-tool-options))
         commands (->> command-root
                       (keep #(extract-command prefix %)))]
     (selmer.util/without-escaping
@@ -103,9 +100,9 @@
    output-path ["PATH" "File to write completions to."
                 :optional true]]
   (binding [impl/*introspection-mode* true]
-    (let [{:keys [command-root tool-name extra-tool-options]} impl/*tool-options*
+    (let [{:keys [command-root tool-name extra-tool-options version]} impl/*tool-options*
           generator #(binding [ansi/*color-enabled* false]
-                       (print-tool tool-name command-root extra-tool-options))]
+                       (print-tool tool-name command-root extra-tool-options version))]
       (if output-path
         (do
           (with-open [w (-> output-path

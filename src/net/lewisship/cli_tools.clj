@@ -209,7 +209,8 @@
     (merge {:tool-name    tool-name'
             :cache-digest digest
             :command-root command-root}
-           (select-keys options [:doc :arguments :tool-summary :pre-dispatch :pre-invoke :extra-tool-options]))))
+           (select-keys options [:doc :arguments :tool-summary :pre-dispatch :pre-invoke
+                                 :extra-tool-options :version]))))
 
 (defn- dispatch*
   "Called (indirectly/anonymously) from a tool handler to process remaining command line arguments."
@@ -297,9 +298,9 @@
                                  (default-dispatch-options)
                                  dispatch-options)
         {:keys [extra-tool-options tool-options-handler version]} merged-options
-        version-option    (when version
-                            [["-V" "--version" "Display version"]])
-        full-options      (concat extra-tool-options version-option impl/default-tool-options)
+        full-options      (concat extra-tool-options
+                                  (when version [impl/version-tool-option])
+                                  impl/default-tool-options)
         {:keys [options arguments summary errors]}
         (cli/parse-opts (:arguments merged-options)
                         full-options
