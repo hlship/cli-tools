@@ -1,4 +1,4 @@
-# 1.0.2 -- UNRELEASED
+# 1.0.2 -- 3 Sep 2026
 
 * fix: Completions generation fails when tool options include extra tools.cli keys [#70](https://github.com/hlship/cli-tools/issues/70)
 
