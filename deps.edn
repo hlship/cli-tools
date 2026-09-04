@@ -1,7 +1,9 @@
 {:paths ["src"
          "resources"]
 
- :deps  {org.clj-commons/pretty   {:mvn/version "3.8.0"}
+ :deps  {org.clj-commons/pretty
+         {:local/root "../pretty"}
+         #_ {:mvn/version "3.8.0"}
          org.clj-commons/humanize {:mvn/version "1.2"}}
 
  :net.lewisship.build/scm
@@ -28,7 +30,7 @@
                 babashka/fs           {:mvn/version "0.5.34" :optional true}
                 babashka/process      {:mvn/version "0.6.25" :optional true}
                 selmer/selmer         {:mvn/version "1.13.5" :optional true}
-                org.babashka/cli      {:mvn/version "0.12.86" :optional true}}}
+                org.babashka/cli      {:mvn/version "0.12.88" :optional true}}}
 
   :1.11
   {:override-deps {org.clojure/clojure ^:antq/exclude {:mvn/version "1.11.4"}}}
