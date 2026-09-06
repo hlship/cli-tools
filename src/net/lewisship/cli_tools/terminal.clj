@@ -2,7 +2,8 @@
   "A wrapper around the `/usr/bin/tput` command, used to obtain terminal control sequences for moving the cursor,
    clearing lines, and so forth."
   {:added "0.11"}
-  (:require [babashka.process :as p]))
+  (:require [babashka.cli :as cli]
+            [babashka.process :as p]))
 
 (def ^:dynamic *terminal-type*
   (or (System/getenv "TERM")
@@ -22,3 +23,8 @@
   "Runs the `tput` command to convert the opcodes and values to a terminal
    command string.  Results are memoized."
   (memoize (fn [& args] (tput* args))))
+
+(def ^:dynamic ^{:added "1.1.0"}
+  *terminal-width*
+  "Terminal width as defined by Babashka CLI."
+  (or (cli/default-width-fn nil) 80))

@@ -1,7 +1,5 @@
 (ns user
-  (:require [net.lewisship.trace :as trace]
-    ;; Enable (is (match? ..)):
-            matcher-combinators.clj-test))
+  (:require [net.lewisship.trace :as trace]))
 
 (trace/setup-default)
 

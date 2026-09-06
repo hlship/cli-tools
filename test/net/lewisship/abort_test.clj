@@ -1,5 +1,6 @@
 (ns net.lewisship.abort-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [matcher-combinators.test :refer [match?]]
             [clj-commons.ansi :as ansi :refer [compose]]
             [net.lewisship.cli-tools :refer [abort command-path]]
             [net.lewisship.cli-tools.test :refer [capture-result]]

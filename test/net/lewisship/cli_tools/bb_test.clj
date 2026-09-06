@@ -1,5 +1,6 @@
 (ns net.lewisship.cli-tools.bb-test
   (:require [clj-commons.ansi :as ansi]
+            [matcher-combinators.test :refer [match?]]
             [clojure.test :refer [deftest is]]
             [net.lewisship.cli-tools :as cli]
             [net.lewisship.cli-tools.test :refer [capture-result]]))
