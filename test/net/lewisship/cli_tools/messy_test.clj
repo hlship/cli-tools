@@ -3,6 +3,7 @@
             [clojure.string :as string]
             [net.lewisship.cli-tools :as cli]
             [net.lewisship.cli-tools.test :refer [capture-result]]
+            [matcher-combinators.test :refer [match?]]
             [clojure.test :refer [deftest is]]))
 
 (defn- dispatch [& args]

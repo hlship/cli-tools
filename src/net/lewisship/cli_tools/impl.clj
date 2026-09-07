@@ -1,8 +1,9 @@
 (ns ^:no-doc net.lewisship.cli-tools.impl
   "Private namespace for implementation details for new.lewisship.cli-tools, subject to change."
   (:require [clojure.string :as string]
-            [clj-commons.ansi :refer [compose pout perr]]
+            [clj-commons.ansi :as ansi :refer [compose pout perr]]
             [net.lewisship.cli-tools.styles :refer [style]]
+            [net.lewisship.cli-tools.terminal :refer [*terminal-width*]]
             [clojure.tools.cli :as cli]
             [clj-commons.humanize :as h]
             [clj-commons.humanize.inflect :as inflect]
@@ -161,21 +162,74 @@
     (str (apply str (repeat (- indent strip-chars) " "))
          text)))
 
-(defn- cleanup-docstring
+(defn- extend-result
+  [result line current]
+  (conj (cond-> result current (conj current)) line))
+
+(defn- combine-lines
+  "Combines consecutive non-indented lines into a single line, so that
+  the lines can be word-wrapped."
+  [lines]
+  (loop [result []
+         current nil
+         [line & more-lines] lines]
+    (cond
+      (nil? line)
+      (cond-> result current (conj current))
+
+      (= "" line)
+      (recur (extend-result result line current)
+             nil
+             more-lines)
+
+
+      ;; Indented lines are complete an assembled line then are added.
+      (string/starts-with? line " ")
+      (recur (extend-result result line current)
+             nil
+             more-lines)
+
+      current
+      (recur result
+             (str current " " line)
+             more-lines)
+
+      :else
+      (recur result line more-lines))))
+
+
+(defn- rebuild-docstring
+  "Breaks a docstring into individual lines, strips out common indent, then rebuilds
+  consecutive lines into long lines ready for word-wrapping."
   [docstring]
   (let [docstring' (string/trim docstring)
-        lines (->> docstring'
-                   string/split-lines
-                   (map indentation-of-line))
-        non-zero-indents (->> lines
+        indent+lines (->> docstring'
+                          string/split-lines
+                          (map indentation-of-line))
+        non-zero-indents (->> indent+lines
                               (map first)
-                              (remove zero?))]
-    (if (empty? non-zero-indents)
-      docstring'
-      (let [indentation (reduce min non-zero-indents)]
-        (->> lines
-             (mapv #(strip-indent indentation %))
-             (string/join "\n"))))))
+                              (remove zero?))
+        lines' (if (empty? non-zero-indents)
+                 (map second indent+lines)                  ; just the individual lines
+                 (let [indentation (reduce min non-zero-indents)]
+                   (map #(strip-indent indentation %) indent+lines)))]
+    (->> lines'
+         combine-lines
+         ;; Add hard breaks after each long line
+         (interpose "\n"))))
+
+(defn- wrap-and-indent
+  "Splits the line, indenting subsequent lines by the indentation amount.
+  If the terminal width less the indent is below 1, just returns the lines 
+  separated by newlines."
+  [indent & lines]
+  (let [width (- *terminal-width* indent)
+        width' (if (pos? width)
+                 width
+                 *terminal-width*)
+        indent-block (apply str "\n" (repeat indent " "))]
+    (->> (apply ansi/wrap width' lines)
+         (interpose indent-block))))
 
 (defn- print-summary
   [command-doc command-map]
@@ -184,20 +238,20 @@
         {:keys [command-name positional-specs summary]} command-map
         arg-strs (map arg-spec->str positional-specs)]
     (pout
-     "Usage: "
+      "Usage: "
       ;; A stand-alone tool doesn't have a tool-name (*options* will be nil)
-     (when tool-name
-       [(style :tool-name) tool-name " "])
+      (when tool-name
+        [(style :tool-name) tool-name " "])
       ;; A stand-alone tool will use its command-name, a command within
       ;; a multi-command tool will have a command-path.
-     [(style :command-path)
-      (if command-path
-        (string/join " " command-path)
-        command-name)]
-     " [OPTIONS]"
-     (map list (repeat " ") arg-strs))
+      [(style :command-path)
+       (if command-path
+         (string/join " " command-path)
+         command-name)]
+      " [OPTIONS]"
+      (map list (repeat " ") arg-strs))
     (when command-doc
-      (-> command-doc cleanup-docstring pout))
+      (->> command-doc rebuild-docstring (wrap-and-indent 0) pout))
 
     ;; There's always at least -h/--help:
     (pout "\nOptions:\n" summary)
@@ -211,10 +265,10 @@
                                  (+ 2))
             lines (for [{:keys [label doc]} positional-specs]
                     (list
-                     [{:width max-label-width}
+                      [{:width max-label-width}
                       [(style :option-label) label]]
-                     ": "
-                     doc))]
+                      ": "
+                      (wrap-and-indent (+ max-label-width 2) doc)))]
         (pout "\nArguments:")
         (pout (interpose \newline lines))))))
 
@@ -235,7 +289,9 @@
 
 (defn- format-option-summary
   [max-option-width max-default-width summary-part]
-  (let [{:keys [opt-label default opt-desc]} summary-part]
+  (let [{:keys [opt-label default opt-desc]} summary-part
+        indent (cond-> (+ max-option-width max-default-width 3)
+                       (pos? max-default-width) inc)]
     (list
      "  "
      [{:width max-option-width
@@ -245,7 +301,8 @@
        :align :left} default]
      (when (pos? max-default-width)
        " ")
-     opt-desc)))
+     (wrap-and-indent indent
+                      opt-desc))))
 
 (defn- make-summary-part
   "Given a single compiled option spec, into a compose-compatible label, a width for that label,
@@ -758,13 +815,16 @@
         command-name-width' (or command-name-width
                                 (->> sorted-commands
                                      (map #(-> % :command count))
-                                     (reduce max 0)))]
+                                     (reduce max 0)))
+        indent (+ command-name-width' 4)]
     (when container-map
+      ;; Don't need to use ansi/wrap because this text is not indented at all
+      ;; so the terminal will do a better job wrapping.
       (pout (when recurse? "\n")
             (compose-command-path (:tool-name *tool-options*)
                                   (:command-path container-map))
             " - "
-            (or (some-> container-map :group-doc cleanup-docstring)
+            (or (some-> container-map :group-doc rebuild-docstring)
                 (missing-doc))))
 
     (when (seq sorted-commands)
@@ -773,11 +833,12 @@
     ;; Commands (including sub-groups) inside this command
     (doseq [{:keys [fn command] :as command-map} sorted-commands]
       (pout
-       "  "
-       [{:width command-name-width'} [(style :command-path) command]]
-       ": "
-       [(when-not fn (style :subgroup-label))
-        (extract-command-title command-map)]))
+        "  "
+        [{:width command-name-width'} [(style :command-path) command]]
+        ": "
+        [(when-not fn (style :subgroup-label))
+         (wrap-and-indent indent
+                          (extract-command-title command-map))]))
 
     ;; Recurse and print sub-groups
     (when recurse?
@@ -823,7 +884,7 @@
     (pout "Usage: " [(style :tool-name) tool-name] " [OPTIONS] COMMAND ...")
     (when tool-doc
       (pout "\n"
-            (cleanup-docstring tool-doc)))
+            (rebuild-docstring tool-doc)))
     (pout "\nOptions:\n"
           (-> *tool-options* :tool-summary deref))
 

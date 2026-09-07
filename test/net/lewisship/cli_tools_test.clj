@@ -6,9 +6,11 @@
             net.lewisship.cli-tools.builtins
             net.lewisship.group-ns
             net.lewisship.conflict
+            [net.lewisship.cli-tools.terminal :refer [*terminal-width*]]
             [net.lewisship.cli-tools.impl :as impl]
             [net.lewisship.cli-tools.test :refer [with-err-str capture-result]]
             [net.lewisship.cli-tools.aux :refer [with-exit-errors dispatch-with-result]]
+            [matcher-combinators.test :refer [match?]]
             [clojure.repl :as repl])
   (:import (java.io BufferedReader StringReader)))
 
@@ -17,7 +19,10 @@
   :once
   (fn [f]
     (binding [impl/*tool-options* {:tool-name "harness"
-                                   :cache-dir nil}]
+                                   :cache-dir nil}
+              ;; Use very long terminal width because who knows what we'll get in
+              ;; CI/CD or some rando's terminal.
+              *terminal-width* 100]
       (f))))
 
 #_{:clj-kondo/ignore [:unused-private-var]}
@@ -178,6 +183,18 @@
   (is (match? {:status 0
                :out    (slurp "test-resources/help-with-no-color.txt")}
               (invoke-command "-N" "-h"))))
+
+(deftest command-help-word-wrapped
+  (is (match? {:status 0
+               :out    (slurp "test-resources/command-help-word-wrapped.txt")}
+              (binding [*terminal-width* 30]
+                (invoke-command "-N" "configure" "-h")))))
+
+(deftest tool-help-word-wrap
+  (is (match? {:status 0
+               :out    (slurp "test-resources/tool-help-word-wrap.txt")}
+              (binding [*terminal-width* 30]
+                (invoke-command "-N" "-h")))))
 
 (deftest help-with-color-enabled
   (binding [ansi/*color-enabled* false]

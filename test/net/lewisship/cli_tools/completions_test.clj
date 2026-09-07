@@ -3,6 +3,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.test :refer [deftest is]]
+            [matcher-combinators.test :refer [match?]]
             [net.lewisship.cli-tools.aux :refer [dispatch-with-result]]))
 
 (defn- expected [file]

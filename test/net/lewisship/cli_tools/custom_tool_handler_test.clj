@@ -1,5 +1,6 @@
 (ns net.lewisship.cli-tools.custom-tool-handler-test
   (:require [clojure.test :refer [deftest is]]
+            [matcher-combinators.test :refer [match?]]
             [net.lewisship.cli-tools :as cli-tools]
             [net.lewisship.cli-tools.alt-handler :as alt-handler]
             [net.lewisship.cli-tools.test :refer [capture-result]]))

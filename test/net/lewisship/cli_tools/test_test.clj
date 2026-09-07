@@ -1,5 +1,6 @@
 (ns net.lewisship.cli-tools.test-test
   (:require [clojure.test :refer [deftest is use-fixtures]]
+            [matcher-combinators.test :refer [match?]]
             [net.lewisship.cli-tools :as cli]
             [net.lewisship.cli-tools.test :refer [with-split-out
                                                   with-split-err
