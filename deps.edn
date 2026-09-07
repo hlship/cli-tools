@@ -1,9 +1,7 @@
 {:paths ["src"
          "resources"]
 
- :deps  {org.clj-commons/pretty
-         {:local/root "../pretty"}
-         #_ {:mvn/version "3.8.0"}
+ :deps  {org.clj-commons/pretty   {:mvn/version "3.9.0"}
          org.clj-commons/humanize {:mvn/version "1.2"}}
 
  :net.lewisship.build/scm
