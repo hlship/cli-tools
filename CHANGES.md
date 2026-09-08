@@ -1,4 +1,4 @@
-# 1.1.0 -- UNRELEASED
+# 1.1.0 -- 8 Sep 2026
 
 cli-tools now will word wrap tool docs, command docs, and option/argument docs to fit the terminal width.
 
