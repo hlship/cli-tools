@@ -20,6 +20,8 @@
   (fn [f]
     (binding [impl/*tool-options* {:tool-name "harness"
                                    :cache-dir nil}
+              ;; Needed when running tests inside Cursive:
+              ansi/*color-enabled* true
               ;; Use very long terminal width because who knows what we'll get in
               ;; CI/CD or some rando's terminal.
               *terminal-width* 100]
@@ -378,28 +380,47 @@
 
 (deftest best-match
   (let [colors   #{:red :green :blue}
-        commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}]
+        commands #{:help :frob-widget :gnip-gnop :setup :teardown :tip-top :tele-type :go}
+        options  #{:run/fast :run/slow :stop}]
     (are [input values expected] (= expected (cli-tools/best-match input values))
 
-      "r" colors :red                                       ; multiple matches
-      "red" colors :red                                     ; exact match
-      "Red" colors :red                                     ; caseless
+         "r" colors :red                                    ; multiple matches
+         "red" colors :red                                  ; exact match
+         "Red" colors :red                                  ; caseless
 
-      "b" colors :blue                                      ; partial match
-      "z" colors nil                                        ; no match
+         "b" colors :blue                                   ; partial match
+         "z" colors nil                                     ; no match
 
-      "exact" #{:exact :exact-is-prefix} :exact
+         "exact" #{:exact :exact-is-prefix} :exact
 
-      "h" commands :help
-      "g" commands nil
-      "gn" commands :gnip-gnop
-      "frob-wg" commands nil
-      "f" commands :frob-widget
-      "TI" commands :tip-top)))
+         "h" commands :help
+         "g" commands nil
+         "gn" commands :gnip-gnop
+         "frob-wg" commands nil
+         "f" commands :frob-widget
+         "TI" commands :tip-top
+
+         ;; qualified symbols
+
+         "s" options :stop
+         "r" options nil
+         "run/f" options :run/fast
+         "slow" options nil
+         "run/s" options :run/slow
+         "r/s" options nil                                  ; thought about this, but not implemented
+
+         )))
+
 
 (deftest sorted-name-list
   (is (= "foxtrot, tango, whiskey"
-         (cli-tools/sorted-name-list [:whiskey :tango :foxtrot]))))
+         (cli-tools/sorted-name-list [:whiskey :tango :foxtrot])))
+
+  (is (= "run/fast, run/slow, stop"
+         (cli-tools/sorted-name-list [:run/fast :run/slow :stop])))
+
+  (is (= "run/fast, run/slow, stop"
+         (cli-tools/sorted-name-list '[run/fast run/slow stop]))))
 
 (defn exec-group
   [& args]
