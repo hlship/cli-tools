@@ -20,9 +20,9 @@ jobs:
           distribution: 'corretto'
 
       - name: Install clojure tools
-        uses: DeLaGuardo/setup-clojure@13.6.1
+        uses: DeLaGuardo/setup-clojure@13.7.0
         with:
-          cli: 1.12.6.1673
+          cli: 1.12.7.1681
 
       - name: Cache clojure dependencies
         uses: actions/cache@v6
