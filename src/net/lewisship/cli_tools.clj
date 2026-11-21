@@ -88,11 +88,26 @@
   [errors]
   (impl/print-errors errors))
 
+(defn- to-name
+  [v]
+  (cond
+    (qualified-keyword? v)
+    (str (namespace v) "/" (name v))
+
+    (qualified-symbol? v)
+    (str v)
+
+    :else
+    (name v)))
+
 (defn best-match
   "Given an input string and a seq of possible values, returns the matching value if it can
   be uniquely identified.
 
   Values may be strings, symbols, or keywords.
+
+  For symbols and keywords that are namespaced, the namespace will prefix the value.  Keywords will
+  have the leading colon removed.
 
   best-match does a caseless prefix match against the provided values. It returns the single
   value that matches the input. It returns nil if no value matches, or if multiple values match.
@@ -106,7 +121,7 @@
   Expects symbols and keywords to be unqualified."
   [input values]
   (let [m       (reduce (fn [m v]
-                          (assoc m (name v) v))
+                          (assoc m (to-name v) v))
                         {}
                         values)
         matches (impl/find-matches input (keys m))]
@@ -115,10 +130,13 @@
 
 (defn sorted-name-list
   "Converts a seq of strings, keywords, or symbols (as used with [[best-match]]) to a comma-separated
-  string listing the values. This is often used with help summary or error messages."
+  string listing the values. This is often used with help summary or error messages.
+
+  For symbols and keywords that are namespaced, the namespace will prefix the value.  Keywords will
+  have the leading colon removed."
   [values]
   (->> values
-       (map name)
+       (map to-name)
        sort
        (string/join ", ")))
 
@@ -335,7 +353,7 @@
 (defn select-option
   "Builds a standard option spec for selecting from a list of possible values.
   Uses [[best-match]] to parse the user-supplied value (allowing for
-  reasonable abbeviations).
+  reasonable abbreviations).
 
   Following the input values is a list of key value pairs; the :default
   key, if non-nil, should be a member of input-values and will generate

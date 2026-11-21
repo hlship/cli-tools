@@ -1,3 +1,9 @@
+# 1.2.0 -- UNRELEASED
+
+`net.lewisship.cli-tools:`
+- `best-match` and `sorted-name-list` (and by extension, `select-option`) now operate correctly
+   with qualified symbols or keywords as the values.
+
 # 1.1.0 -- 8 Sep 2026
 
 cli-tools now will word wrap tool docs, command docs, and option/argument docs to fit the terminal width.
